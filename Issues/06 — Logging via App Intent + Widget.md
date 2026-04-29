@@ -18,10 +18,14 @@ The most important interaction in the app: log a hit fast, from anywhere, withou
 
 ## Home Screen widget
 
-- [ ] Small widget with a tap target that runs `LogHitIntent`
-- [ ] Display: time since last hit, optionally a tiny spirit (static, not animated — widgets can't animate)
-- [ ] Configurable via `WidgetConfigurationIntent` if we want different display modes
-- [ ] Refresh policy: every 5 min while in active timeline; the widget shows time since last hit so it has to refresh
+- [x] App Group `group.studio.kilo.drift` entitled on both `Drift` and `DriftWidgetExtension` targets
+- [x] `WidgetBridge` mirrors `lastHit` / `wakingAvgSec` / `longestWakingGapSec` / `longestGapSec` into App Group UserDefaults from `HitStore.append` (and on init); widget reads the same keys (file duplicated into the widget target — synchronized groups don't share files cleanly)
+- [x] `DriftProvider` returns 6 entries every 5 minutes; `getTimeline` re-reads the bridge each refresh
+- [x] `DriftWidgetEntryView` shows "free for X{m,s,h}" using the same format helper as the hero, plus a "tap to log" hint. systemSmall family.
+- [x] Widget tap defaults to opening the app (no Button(intent:) yet — that needs a shared `LogHitIntent` definition)
+- [ ] **Phase C — silent tap-to-log:** share `LogHitIntent.swift` across both targets (Swift Package or pbxproj exception trick), then wire `Button(intent: LogHitIntent())` so the widget logs without launching the app
+- [ ] **Phase C — optional tiny static spirit** alongside the timer
+- [ ] `WidgetConfigurationIntent` for display modes — defer; not needed for v1
 
 ## Lock Screen / StandBy widget
 

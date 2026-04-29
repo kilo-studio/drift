@@ -30,6 +30,7 @@ final class HitStore {
             self.records = new
         }
         try reload()
+        publishToWidget()
     }
 
     func reload() throws {
@@ -55,12 +56,24 @@ final class HitStore {
         context.insert(hit)
         try context.save()
         hits.append(hit)
+        publishToWidget()
     }
 
     func remove(_ hit: Hit) throws {
         context.delete(hit)
         try context.save()
         try reload()
+        publishToWidget()
+    }
+
+    /// Mirrors the slice of state the widget renders from.
+    private func publishToWidget() {
+        WidgetBridge.write(.init(
+            lastHit: hits.lastHitDate,
+            wakingAvgSec: hits.wakingAvgSec(threshold: sessionThresholdSec),
+            longestWakingGapSec: records.longestWakingGapSec,
+            longestGapSec: records.longestGapSec
+        ))
     }
 
     // MARK: - Records (persisted, session-level gaps)

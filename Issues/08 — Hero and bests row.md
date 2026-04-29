@@ -1,5 +1,5 @@
 ---
-status: todo
+status: doing
 priority: medium
 tags: [dashboard]
 ---
@@ -10,14 +10,16 @@ The top of the dashboard. Source of truth: [[Design system]].
 
 ## Tasks
 
-- [ ] `HeroView` — vertical stack: hero label "free for" (Caveat 26px), big timer, bests row
-- [ ] Live timer driven by `TimelineView(.periodic(from: ..., by: 1.0))` — updates every second
-- [ ] `formatElapsed(ms)` utility — `Xs` / `Xm` / `Xh Ym`
-- [ ] Timer styling: Quicksand 600 / 80px / `letter-spacing: -1.5px`
-- [ ] Unit suffix (`m`, `s`, `h`) — Quicksand 300 / 32px / muted color, smaller than the number
-- [ ] Bests row: two-column flex, 36px gap. Each column = number on top (Quicksand 600 / 22px), label below (Caveat 16px / muted)
-- [ ] Wire milestone glows: peach text-shadow on the timer + waking best when `ratio >= longestWakingGap_ratio`; gold animated glow when `ratio >= longestGap_ratio`. Source: [[Spirit#Milestones — not levels, but real moments]]
-- [ ] Smooth transitions in/out of milestone state (1.6s ease)
+- [x] `HeroView` — "free for" label, big timer, bests row
+- [x] Live timer via `TimelineView(.periodic(from: .now, by: 1))`
+- [x] `formatElapsed` utility (number + unit) and `formatGap` (compact string for bests)
+- [x] Timer: `driftDisplay` (Quicksand 600 / 80) with `tracking(-1.5)`
+- [x] Unit suffix: `driftTimerUnit` (Quicksand Light / 32) on `.driftInkFade`
+- [x] Bests row: two columns, 36 spacing. `driftBestNum` (22) on top, `driftBestLabel` (Caveat 16) below
+- [x] `Text.caveat(_:)` generalized from the old `driftCardTitle` helper so all Caveat-rendered text gets the swash-padding fix
+- [x] HitStore wired into the app via `@Environment` — `DriftApp` constructs the `ModelContainer` and `HitStore`, exposes the store
+- [x] Debug `+` floating button (`#if DEBUG` only) appends a hit so we can populate data before Issue 06 lands
+- [ ] **Deferred to Issue 14:** milestone glows (peach text-shadow at waking ratio, animated gold at overall ratio) and 1.6s ease transitions — these need spirit ratio + the milestone state from Issue 10
 
 ## Animations
 

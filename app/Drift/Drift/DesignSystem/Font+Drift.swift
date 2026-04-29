@@ -19,16 +19,20 @@ extension Font {
     static let driftDisplay   = Font.custom("Quicksand-SemiBold", size: 80)
     static let driftStatNum   = Font.custom("Quicksand-SemiBold", size: 52)
     static let driftBestNum   = Font.custom("Quicksand-SemiBold", size: 22)
+    static let driftTimerUnit = Font.custom("Quicksand-Light", size: 32)
     static let driftCardTitle = Font.custom("Caveat", size: 24).weight(.semibold)
+    static let driftHeroLabel = Font.custom("Caveat", size: 26).weight(.semibold)
+    static let driftBestLabel = Font.custom("Caveat", size: 16).weight(.semibold)
     static let driftLabel     = Font.custom("Quicksand-Medium", size: 13)
     static let driftSub       = Font.custom("Quicksand-Medium", size: 12)
 }
 
 extension Text {
-    // Caveat's cursive overshoots extend past its typographic advance, so SwiftUI's
-    // Text frame clips trailing swashes. Padding can't fix it (Text frame is set by
-    // content), so append a hair-space to widen the underlying string.
-    static func driftCardTitle(_ content: String) -> Text {
-        Text(content + "\u{2003}").font(.driftCardTitle)
+    // Caveat's cursive overshoots extend past its typographic advance, so SwiftUI
+    // clips trailing swashes against the Text frame. Padding can't fix it (Text
+    // frame is set by content), so append an em-space to widen the underlying string.
+    // Apply a Caveat font yourself after — e.g. Text.caveat("today").font(.driftCardTitle)
+    static func caveat(_ content: String) -> Text {
+        Text(content + "\u{2003}")
     }
 }

@@ -8,7 +8,8 @@ struct DesignSystemShowcase: View {
 
             ScrollView {
                 VStack(spacing: 16) {
-                    Text.driftCardTitle("Drift design system")
+                    Text.caveat("Drift design system")
+                        .font(.driftCardTitle)
                         .foregroundStyle(.driftInk)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 8)
@@ -28,13 +29,14 @@ struct DesignSystemShowcase: View {
 
     private var sectionType: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text.driftCardTitle("Type")
+            Text.caveat("Type")
+                .font(.driftCardTitle)
                 .foregroundStyle(.driftInk)
 
             typeRow("driftDisplay",   "80 / Quicksand SemiBold") { Text("12:34").font(.driftDisplay).tracking(-1.5) }
             typeRow("driftStatNum",   "52 / Quicksand SemiBold") { Text("3").font(.driftStatNum).tracking(-1) }
             typeRow("driftBestNum",   "22 / Quicksand SemiBold") { Text("4d 12h").font(.driftBestNum).tracking(-0.2) }
-            typeRow("driftCardTitle", "24 / Caveat SemiBold")    { Text.driftCardTitle("today") }
+            typeRow("driftCardTitle", "24 / Caveat SemiBold")    { Text.caveat("today").font(.driftCardTitle) }
             typeRow("driftLabel",     "13 / Quicksand Medium")   { Text("STAT LABEL").font(.driftLabel) }
             typeRow("driftSub",       "12 / Quicksand Medium")   { Text("subtitle text").font(.driftSub) }
         }
@@ -77,7 +79,8 @@ struct DesignSystemShowcase: View {
 
     private var sectionCardExample: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text.driftCardTitle("today")
+            Text.caveat("today")
+                .font(.driftCardTitle)
                 .foregroundStyle(.driftInk)
             Text("3")
                 .font(.driftStatNum)
@@ -93,7 +96,8 @@ struct DesignSystemShowcase: View {
 
     private func section<Content: View>(title: String, @ViewBuilder _ rows: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text.driftCardTitle(title)
+            Text.caveat(title)
+                .font(.driftCardTitle)
                 .foregroundStyle(.driftInk)
             VStack(spacing: 10) {
                 rows()

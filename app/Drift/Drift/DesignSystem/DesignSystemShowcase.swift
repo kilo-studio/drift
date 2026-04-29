@@ -9,11 +9,12 @@ struct DesignSystemShowcase: View {
             ScrollView {
                 VStack(spacing: 16) {
                     Text("Drift design system")
-                        .font(.system(size: 24, weight: .semibold))
+                        .font(.driftCardTitle)
                         .foregroundStyle(.driftInk)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 8)
 
+                    sectionType
                     sectionData
                     sectionText
                     sectionSurface
@@ -24,6 +25,23 @@ struct DesignSystemShowcase: View {
                 .padding(.bottom, 32)
             }
         }
+    }
+
+    private var sectionType: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("Type")
+                .font(.driftCardTitle)
+                .foregroundStyle(.driftInk)
+
+            typeRow("driftDisplay",   "80 / Quicksand SemiBold", Text("12:34").font(.driftDisplay).tracking(-1.5))
+            typeRow("driftStatNum",   "52 / Quicksand SemiBold", Text("3").font(.driftStatNum).tracking(-1))
+            typeRow("driftBestNum",   "22 / Quicksand SemiBold", Text("4d 12h").font(.driftBestNum).tracking(-0.2))
+            typeRow("driftCardTitle", "24 / Caveat SemiBold",    Text("today").font(.driftCardTitle))
+            typeRow("driftLabel",     "13 / Quicksand Medium",   Text("STAT LABEL").font(.driftLabel))
+            typeRow("driftSub",       "12 / Quicksand Medium",   Text("subtitle text").font(.driftSub))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .driftCard()
     }
 
     private var sectionData: some View {
@@ -61,15 +79,16 @@ struct DesignSystemShowcase: View {
 
     private var sectionCardExample: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Card")
-                .font(.system(size: 18, weight: .semibold))
+            Text("today")
+                .font(.driftCardTitle)
                 .foregroundStyle(.driftInk)
-            Text("This text sits on a .driftCard() surface — translucent cream over the sky, soft border, layered shadow.")
-                .font(.system(size: 14))
+            Text("3")
+                .font(.driftStatNum)
+                .tracking(-1)
+                .foregroundStyle(.driftCoral)
+            Text("HITS")
+                .font(.driftLabel)
                 .foregroundStyle(.driftInkSoft)
-            Text("Tertiary detail")
-                .font(.system(size: 12))
-                .foregroundStyle(.driftInkFade)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .driftCard()
@@ -78,7 +97,7 @@ struct DesignSystemShowcase: View {
     private func section<Content: View>(title: String, @ViewBuilder _ rows: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.system(size: 18, weight: .semibold))
+                .font(.driftCardTitle)
                 .foregroundStyle(.driftInk)
             VStack(spacing: 10) {
                 rows()
@@ -99,16 +118,28 @@ struct DesignSystemShowcase: View {
                 )
             VStack(alignment: .leading, spacing: 2) {
                 Text(name)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.driftLabel)
                     .foregroundStyle(.driftInk)
                 Text(note)
-                    .font(.system(size: 12))
+                    .font(.driftSub)
                     .foregroundStyle(.driftInkFade)
             }
             Spacer(minLength: 0)
             Text(hex)
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .font(.driftSub.monospaced())
                 .foregroundStyle(.driftInkSoft)
+        }
+    }
+
+    private func typeRow(_ name: String, _ spec: String, _ sample: Text) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            sample.foregroundStyle(.driftInk)
+            Text(name)
+                .font(.driftLabel)
+                .foregroundStyle(.driftInkSoft)
+            Text(spec)
+                .font(.driftSub)
+                .foregroundStyle(.driftInkFade)
         }
     }
 }

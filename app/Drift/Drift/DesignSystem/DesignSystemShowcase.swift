@@ -8,8 +8,7 @@ struct DesignSystemShowcase: View {
 
             ScrollView {
                 VStack(spacing: 16) {
-                    Text("Drift design system")
-                        .font(.driftCardTitle)
+                    Text.driftCardTitle("Drift design system")
                         .foregroundStyle(.driftInk)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 8)
@@ -29,16 +28,15 @@ struct DesignSystemShowcase: View {
 
     private var sectionType: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("Type")
-                .font(.driftCardTitle)
+            Text.driftCardTitle("Type")
                 .foregroundStyle(.driftInk)
 
-            typeRow("driftDisplay",   "80 / Quicksand SemiBold", Text("12:34").font(.driftDisplay).tracking(-1.5))
-            typeRow("driftStatNum",   "52 / Quicksand SemiBold", Text("3").font(.driftStatNum).tracking(-1))
-            typeRow("driftBestNum",   "22 / Quicksand SemiBold", Text("4d 12h").font(.driftBestNum).tracking(-0.2))
-            typeRow("driftCardTitle", "24 / Caveat SemiBold",    Text("today").font(.driftCardTitle))
-            typeRow("driftLabel",     "13 / Quicksand Medium",   Text("STAT LABEL").font(.driftLabel))
-            typeRow("driftSub",       "12 / Quicksand Medium",   Text("subtitle text").font(.driftSub))
+            typeRow("driftDisplay",   "80 / Quicksand SemiBold") { Text("12:34").font(.driftDisplay).tracking(-1.5) }
+            typeRow("driftStatNum",   "52 / Quicksand SemiBold") { Text("3").font(.driftStatNum).tracking(-1) }
+            typeRow("driftBestNum",   "22 / Quicksand SemiBold") { Text("4d 12h").font(.driftBestNum).tracking(-0.2) }
+            typeRow("driftCardTitle", "24 / Caveat SemiBold")    { Text.driftCardTitle("today") }
+            typeRow("driftLabel",     "13 / Quicksand Medium")   { Text("STAT LABEL").font(.driftLabel) }
+            typeRow("driftSub",       "12 / Quicksand Medium")   { Text("subtitle text").font(.driftSub) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .driftCard()
@@ -79,8 +77,7 @@ struct DesignSystemShowcase: View {
 
     private var sectionCardExample: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("today")
-                .font(.driftCardTitle)
+            Text.driftCardTitle("today")
                 .foregroundStyle(.driftInk)
             Text("3")
                 .font(.driftStatNum)
@@ -96,8 +93,7 @@ struct DesignSystemShowcase: View {
 
     private func section<Content: View>(title: String, @ViewBuilder _ rows: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.driftCardTitle)
+            Text.driftCardTitle(title)
                 .foregroundStyle(.driftInk)
             VStack(spacing: 10) {
                 rows()
@@ -131,9 +127,9 @@ struct DesignSystemShowcase: View {
         }
     }
 
-    private func typeRow(_ name: String, _ spec: String, _ sample: Text) -> some View {
+    private func typeRow<Sample: View>(_ name: String, _ spec: String, @ViewBuilder _ sample: () -> Sample) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            sample.foregroundStyle(.driftInk)
+            sample().foregroundStyle(.driftInk)
             Text(name)
                 .font(.driftLabel)
                 .foregroundStyle(.driftInkSoft)

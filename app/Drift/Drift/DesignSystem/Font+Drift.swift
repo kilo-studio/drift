@@ -23,3 +23,12 @@ extension Font {
     static let driftLabel     = Font.custom("Quicksand-Medium", size: 13)
     static let driftSub       = Font.custom("Quicksand-Medium", size: 12)
 }
+
+extension Text {
+    // Caveat's cursive overshoots extend past its typographic advance, so SwiftUI's
+    // Text frame clips trailing swashes. Padding can't fix it (Text frame is set by
+    // content), so append a hair-space to widen the underlying string.
+    static func driftCardTitle(_ content: String) -> Text {
+        Text(content + "\u{2003}").font(.driftCardTitle)
+    }
+}

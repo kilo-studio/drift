@@ -28,11 +28,10 @@ struct DesignSystemShowcase: View {
 
     private var sectionData: some View {
         section(title: "Data") {
-            swatch("driftCoral",     "#E8836B", .driftCoral,     note: "today / current")
-            swatch("driftPeach",     "#F4B393", .driftPeach,     note: "past data")
-            swatch("driftPeachDeep", "#E18B66", .driftPeachDeep, note: "deeper accent")
-            swatch("driftSage",      "#A8BC93", .driftSage,      note: "aggregates light")
-            swatch("driftSageDeep",  "#7E9476", .driftSageDeep,  note: "aggregates strong")
+            swatch("driftCoral",    "#E8836B", .driftCoral,    note: "today / current / deep accent")
+            swatch("driftPeach",    "#F4B393", .driftPeach,    note: "past data")
+            swatch("driftSage",     "#A8BC93", .driftSage,     note: "aggregates light")
+            swatch("driftSageDeep", "#7E9476", .driftSageDeep, note: "aggregates strong")
         }
     }
 

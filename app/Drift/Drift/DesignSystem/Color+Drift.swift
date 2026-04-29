@@ -10,7 +10,6 @@ extension Color {
 
     static let driftCoral      = Color(hex: 0xE8836B)
     static let driftPeach      = Color(hex: 0xF4B393)
-    static let driftPeachDeep  = Color(hex: 0xE18B66)
     static let driftSage       = Color(hex: 0xA8BC93)
     static let driftSageDeep   = Color(hex: 0x7E9476)
 
@@ -30,7 +29,6 @@ extension Color {
 extension ShapeStyle where Self == Color {
     static var driftCoral:      Color { .driftCoral }
     static var driftPeach:      Color { .driftPeach }
-    static var driftPeachDeep:  Color { .driftPeachDeep }
     static var driftSage:       Color { .driftSage }
     static var driftSageDeep:   Color { .driftSageDeep }
 

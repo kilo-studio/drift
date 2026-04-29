@@ -23,9 +23,8 @@
 
 | Token | Hex | Used for |
 |---|---|---|
-| `--coral` | `#E8836B` | **Today / current** — today's count, today's bar in fortnight chart, today's stretches line |
+| `--coral` | `#E8836B` | **Today / current** — today's count, today's bar in fortnight chart, today's stretches line. Also the deep accent (cheeks at overall milestone). |
 | `--peach` | `#F4B393` | **Past data points** — non-today bars in fortnight chart |
-| `--peach-deep` | `#E18B66` | Deeper accent (cheeks at overall milestone) |
 | `--sage` | `#A8BC93` | **Aggregates light** — chart fills, hour-bar gradients |
 | `--sage-deep` | `#7E9476` | **Aggregates strong** — average per day, waking gap stat numbers, rolling-avg line |
 

@@ -6,7 +6,7 @@ A small, gentle iOS app for noticing the gaps between hits. It rewards time spen
 
 ## What Drift is not
 
-- Not a quit-app. No streaks, no shame, no daily targets, no progress meter that resets when you fail.
+- Not a quit-app. No shame, no daily targets, no failure-resetting streaks. Achievements that only grow (personal records, cumulative time drifted, milestone unlocks) are different and welcome — see [[Issues/15 — Achievement system]]. A counter that drops to zero on a bad day is the thing being avoided.
 - Not a tracker that asks you to journal triggers or feelings.
 - Not a quantified-self dashboard. The numbers are there but the spirit is the headline.
 - Not social. No accounts, no sharing, no leaderboards.

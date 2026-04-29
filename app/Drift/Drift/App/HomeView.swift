@@ -9,12 +9,19 @@ struct HomeView: View {
 
             ScrollView {
                 VStack(spacing: 16) {
+                    SpiritView(
+                        lastSessionEnd: store.lastSessionEnd(),
+                        wakingAvgSec: store.wakingAvgSec(),
+                        longestWakingGapSec: store.longestWakingGapSec,
+                        longestGapSec: store.longestGapSec
+                    )
+                    .padding(.top, 36)
+
                     HeroView(
                         lastHitDate: store.lastSessionEnd(),
                         longestWakingGapSec: store.longestWakingGapSec,
                         longestGapSec: store.longestGapSec
                     )
-                    .padding(.top, 36)
                     .padding(.bottom, 16)
 
                     statCardsRow

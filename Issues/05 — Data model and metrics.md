@@ -11,35 +11,30 @@ Build the `Hit` SwiftData entity, the `HitStore` wrapper, and every computed met
 ## Tasks
 
 - [x] `Hit` SwiftData model with `t: Date` and `tzOffsetMinutes: Int`
-- [x] `Records` SwiftData model for persisted `longestGapSec` / `longestWakingGapSec`
-- [x] `HitStore` — `@Observable @MainActor` wrapper over `ModelContext`
+- [x] `Records` SwiftData model for persisted `longestGapSec` / `longestWakingGapSec` (now session-level — see Issue 16)
+- [x] `Session` derived struct + `[Hit].sessions(threshold:)` (Issue 16)
+- [x] `HitStore` — `@Observable @MainActor` wrapper over `ModelContext`, plus `sessionThresholdSec` UserDefaults-backed setting
 - [x] `Hit.local` (was `localOf` in prototype) — Hit extension property
 - [x] `Hit.wakingDayKey` (4am cutoff)
 - [x] `Hit.logLocalDateKey`
-- [x] `deviceLocalDateKey(_:)` free function
-- [x] `currentWakingDayKey(_:)` free function for "today" with 4am cutoff
+- [x] `deviceLocalDateKey(_:)` / `currentWakingDayKey(_:)` free functions
 - [x] `hitsInRollingWindow(includeToday:now:window:)` on `[Hit]`
-- [x] `avgPerDay` (excludes today)
-- [x] `wakingAvgSec` (includes today, returns optional)
-- [x] `longestWakingGapSec` (persisted via `Records`, updated on append with same-waking-day check)
-- [x] `longestGapSec` (persisted via `Records`, updated on append)
-- [x] `todayCount`
-- [x] `dailyCounts(lastN: 14)`
-- [x] `hitsByHour: [Int]`
-- [x] `todayStretches() -> [(Date, TimeInterval)]`
-- [x] `rollingAvg(window: 7, lastN: 30) -> [(Date, TimeInterval)]`
+- [x] **Session-level (frequency, drives spirit + dashboard):** `todaySessionCount`, `avgSessionsPerDay`, `wakingAvgSec`, `sessionsByHour`, `dailySessionCounts`, `todayStretches`, `rollingAvg`, `lastSessionEnd`
+- [x] **Hit-level (intensity, secondary display + achievements):** `todayHitCount`, `avgHitsPerSession`
+- [x] **Persisted records:** `longestGapSec` / `longestWakingGapSec` updated only when a new hit starts a new session (intra-session deltas don't pollute records)
 - [x] `lastHitDate: Date?`
 
-Pure metric functions live on `Array where Element == Hit` so they're testable without a `ModelContext`. `HitStore` exposes them as forwarders.
+Pure metric functions live on `Array where Element == Hit` so they're testable without a `ModelContext`. `HitStore` exposes them as forwarders that pass the configured threshold.
 
 ## Tests
 
-12 unit tests, all passing on iOS 26 sim:
+19 unit tests, all passing on iOS 26 sim:
 
 - [x] `wakingDayKey` — 3:59am, 4:00am, midnight, tz-shifted, plus `logLocalDateKey` ignoring the cutoff
-- [x] `avgPerDay` excludes today; empty array yields 0
-- [x] `wakingAvgSec` includes today's intervals; nil when no day has 2+ hits
-- [x] `longestWakingGap` updates on same-waking-day pair, does NOT update across the 4am boundary
+- [x] **Session derivation** — solo hit, within-threshold cluster, beyond-threshold split, exact-threshold edge, session crossing 4am inheriting first hit's bucket
+- [x] `avgSessionsPerDay` excludes today; empty array yields 0
+- [x] `wakingAvgSec` averages between-session gaps across waking-day buckets; nil when no bucket has 2+ sessions
+- [x] `longestWakingGap` — intra-session hits don't update record; inter-session same-day does; across-4am-boundary updates only `longestGap`
 - [x] Rolling-window edge: first hit older than window vs within window
 
 ## Migration

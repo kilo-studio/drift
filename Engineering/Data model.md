@@ -107,38 +107,69 @@ var wakingAvgSec: TimeInterval? {
 }
 ```
 
+### Sessions (derived)
+
+Per [[Issues/16 — Sessions vs individual hits]], all gap-based metrics operate on
+**sessions**, not raw hits. A session is a maximal cluster of consecutive hits
+where every inter-hit gap is ≤ the session threshold (default 5 min, configurable).
+Sessions are derived on read, never persisted; raw hits are still the only stored data.
+
+```swift
+struct Session {
+    let hits: [Hit]
+    var start: Date { hits.first!.t }
+    var end:   Date { hits.last!.t }
+    var wakingDayKey: String { hits.first!.wakingDayKey }  // first hit wins, even if session crosses 4am
+}
+
+extension Array where Element == Hit {
+    func sessions(threshold: TimeInterval) -> [Session] { /* … */ }
+}
+```
+
 ### `longestWakingGap` / `longestGap`
 
-`longestGap` = max interval between any two consecutive hits, ever. (Sleep gaps are usually the largest — used only for display, not for celebration logic.)
+Both are gaps **between sessions** (not between hits).
 
-`longestWakingGap` = max interval between two consecutive hits *within a single waking-day bucket*. This is the metric the spirit and notifications celebrate.
+`longestGap` = max gap from one session's end to the next session's start, ever.
+(Sleep gaps are usually the largest — used only for display.)
 
-Both are persisted (not just computed on the fly) — when a new hit comes in, we check whether it sets a new record:
+`longestWakingGap` = same, but only when both sessions share a waking-day bucket.
+This is what the spirit and notifications celebrate.
+
+Persisted (not recomputed every read) — `HitStore.append` updates them only when
+the new hit *starts a new session* (delta > threshold). Intra-session hits don't
+touch the records:
 
 ```swift
 func append(_ hit: Hit) {
     if let last = hits.last {
         let delta = hit.t.timeIntervalSince(last.t)
-        if delta > longestGap { longestGap = delta }
-        if wakingDayKey(last) == wakingDayKey(hit), delta > longestWakingGap {
-            longestWakingGap = delta
+        if delta > sessionThreshold {                          // new session
+            if delta > longestGap { longestGap = delta }
+            if last.wakingDayKey == hit.wakingDayKey, delta > longestWakingGap {
+                longestWakingGap = delta
+            }
         }
     }
     hits.append(hit)
 }
 ```
 
-The waking-day check is critical — without it, an overnight gap would set the "waking" record, defeating the purpose.
-
 ## Spirit ratio
 
-The spirit's appearance is driven by:
-
 ```swift
-let ratio = max(0.001, lastHitMs / wakingAvgMs)
+let ratio = max(0.001, msSinceLastSessionEnd / wakingAvgMs)
 ```
 
-Where `lastHitMs = now - lastHit.t` and `wakingAvgMs = wakingAvgSec * 1000` (or 0 if not enough data — in which case the spirit defaults to ratio 1).
+`lastSessionEnd` equals `lastHit.t` (the last hit always ends the most recent
+session). The spirit's "in session" state is a separate boolean — when
+`now - lastHit ≤ threshold` the user is still in a session, so the timer
+displays "0s" rather than counting up. Once threshold elapses, the timer starts
+counting from `lastSessionEnd` and the spirit drifts upward.
+
+`wakingAvgMs = wakingAvgSec * 1000`. If there isn't enough data, the spirit
+defaults to ratio 1.
 
 See [[Spirit]] for what the ratio drives.
 

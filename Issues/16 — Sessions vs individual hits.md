@@ -1,8 +1,13 @@
 ---
-status: todo
+status: done
 priority: medium
 tags: [foundation, data, design]
 ---
+
+> **Implementation status:** session derivation, threshold gating in `HitStore.append`,
+> and session-aware metric semantics landed alongside the Issue 05 data layer.
+> Spirit's ratio + "in session" rendering happens in Issue 10. Settings UI for the
+> threshold picker happens with the rest of settings.
 
 # Sessions vs individual hits
 

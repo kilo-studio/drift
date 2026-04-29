@@ -12,7 +12,8 @@ extension Array where Element == Hit {
     var lastHitDate: Date? { sortedByTime().last?.t }
 
     /// Hits whose logged-local date falls within the last `window` days.
-    /// `includeToday: false` matches `avgPerDay`'s window; `true` matches `wakingAvgSec`'s.
+    /// `includeToday: false` matches `avgSessionsPerDay`'s window;
+    /// `true` matches `wakingAvgSec`'s.
     func hitsInRollingWindow(includeToday: Bool, now: Date = .now, window: Int = 30) -> [Hit] {
         let cal = Calendar(identifier: .gregorian)
         let todayStart = cal.startOfDay(for: now)
@@ -25,16 +26,36 @@ extension Array where Element == Hit {
         }
     }
 
+    // MARK: - Hit-level (intensity / secondary display)
+
     /// Hits whose logged-local date matches today's device-local date.
-    func todayCount(now: Date = .now) -> Int {
+    /// Used as the secondary "Y hits" subtitle on the today card.
+    func todayHitCount(now: Date = .now) -> Int {
         let todayKey = deviceLocalDateKey(now)
         return filter { $0.logLocalDateKey == todayKey }.count
     }
 
-    /// Mean of per-day counts over the last `window` days, excluding today.
-    /// Iteration starts from the later of (first hit's day, window start) so
-    /// pre-history days don't dilute the average with zeros.
-    func avgPerDay(now: Date = .now, window: Int = 30) -> Double {
+    /// Average hits per session over the rolling window (intensity axis).
+    /// Returns nil if no sessions exist in the window.
+    func avgHitsPerSession(now: Date = .now, window: Int = 30, threshold: TimeInterval = defaultSessionThresholdSec) -> Double? {
+        let sessions = hitsInRollingWindow(includeToday: true, now: now, window: window)
+            .sessions(threshold: threshold)
+        guard !sessions.isEmpty else { return nil }
+        let totalHits = sessions.reduce(0) { $0 + $1.count }
+        return Double(totalHits) / Double(sessions.count)
+    }
+
+    // MARK: - Session-level (frequency / primary)
+
+    /// Sessions whose start falls in today's device-local date.
+    func todaySessionCount(now: Date = .now, threshold: TimeInterval = defaultSessionThresholdSec) -> Int {
+        let todayKey = deviceLocalDateKey(now)
+        return sessions(threshold: threshold).filter { $0.logLocalDateKey == todayKey }.count
+    }
+
+    /// Mean of per-day SESSION counts over the last `window` days, excluding today.
+    /// Iteration starts from the later of (first hit's day, window start).
+    func avgSessionsPerDay(now: Date = .now, window: Int = 30, threshold: TimeInterval = defaultSessionThresholdSec) -> Double {
         guard !isEmpty else { return 0 }
         let cal = Calendar(identifier: .gregorian)
         let todayStart = cal.startOfDay(for: now)
@@ -42,9 +63,10 @@ extension Array where Element == Hit {
         let endKey = deviceLocalDateKey(todayStart)
         let windowStartKey = deviceLocalDateKey(windowStart)
 
-        let countsByKey = Dictionary(grouping: self, by: \.logLocalDateKey).mapValues(\.count)
-        let sorted = sortedByTime()
-        guard let firstKey = sorted.first?.logLocalDateKey else { return 0 }
+        let allSessions = sessions(threshold: threshold)
+        let countsByKey = Dictionary(grouping: allSessions, by: \.logLocalDateKey).mapValues(\.count)
+        let sortedHits = sortedByTime()
+        guard let firstKey = sortedHits.first?.logLocalDateKey else { return 0 }
         let actualStartKey = Swift.max(firstKey, windowStartKey)
 
         var total = 0
@@ -58,40 +80,39 @@ extension Array where Element == Hit {
         return dayCount == 0 ? 0 : Double(total) / Double(dayCount)
     }
 
-    /// Average gap between consecutive hits within waking-day buckets,
-    /// across the last `window` days INCLUDING today. nil if no day has 2+ hits.
-    func wakingAvgSec(now: Date = .now, window: Int = 30) -> TimeInterval? {
-        let cal = Calendar(identifier: .gregorian)
-        let todayStart = cal.startOfDay(for: now)
-        let windowStart = cal.date(byAdding: .day, value: -window, to: todayStart)!
-        let windowStartKey = deviceLocalDateKey(windowStart)
-        let inWindow = filter { $0.logLocalDateKey >= windowStartKey }
-        let buckets = Dictionary(grouping: inWindow, by: \.wakingDayKey)
-        var totalSpan: TimeInterval = 0
+    /// Average gap BETWEEN sessions within waking-day buckets, across the last `window`
+    /// days INCLUDING today. nil if no waking-day bucket has 2+ sessions.
+    func wakingAvgSec(now: Date = .now, window: Int = 30, threshold: TimeInterval = defaultSessionThresholdSec) -> TimeInterval? {
+        let inWindow = hitsInRollingWindow(includeToday: true, now: now, window: window)
+        let allSessions = inWindow.sessions(threshold: threshold)
+        let buckets = Dictionary(grouping: allSessions, by: \.wakingDayKey)
+        var totalGap: TimeInterval = 0
         var totalIntervals = 0
-        for (_, dayHits) in buckets where dayHits.count >= 2 {
-            let sorted = dayHits.sorted { $0.t < $1.t }
-            totalSpan += sorted.last!.t.timeIntervalSince(sorted.first!.t)
-            totalIntervals += dayHits.count - 1
+        for (_, daySessions) in buckets where daySessions.count >= 2 {
+            let sorted = daySessions.sorted { $0.start < $1.start }
+            for i in 1..<sorted.count {
+                totalGap += sorted[i].start.timeIntervalSince(sorted[i-1].end)
+            }
+            totalIntervals += sorted.count - 1
         }
         guard totalIntervals > 0 else { return nil }
-        return totalSpan / Double(totalIntervals)
+        return totalGap / Double(totalIntervals)
     }
 
-    /// 24 buckets, hour-of-day distribution across all hits using each hit's logged-local hour.
-    func hitsByHour() -> [Int] {
+    /// 24 buckets, hour-of-day distribution of session START times (logged-local hour).
+    func sessionsByHour(threshold: TimeInterval = defaultSessionThresholdSec) -> [Int] {
         var counts: [Int] = .init(repeating: 0, count: 24)
-        for hit in self {
-            counts[utcCalendar.component(.hour, from: hit.local)] += 1
+        for session in sessions(threshold: threshold) {
+            counts[utcCalendar.component(.hour, from: session.hits.first!.local)] += 1
         }
         return counts
     }
 
-    /// Per-day counts for the last `lastN` days (oldest first). Today is the last entry.
-    func dailyCounts(lastN: Int = 14, now: Date = .now) -> [DailyCount] {
+    /// Per-day SESSION counts for the last `lastN` days (oldest first).
+    func dailySessionCounts(lastN: Int = 14, now: Date = .now, threshold: TimeInterval = defaultSessionThresholdSec) -> [DailyCount] {
         let cal = Calendar(identifier: .gregorian)
         let todayStart = cal.startOfDay(for: now)
-        let countsByKey = Dictionary(grouping: self, by: \.logLocalDateKey).mapValues(\.count)
+        let countsByKey = Dictionary(grouping: sessions(threshold: threshold), by: \.logLocalDateKey).mapValues(\.count)
         var result: [DailyCount] = []
         for offset in stride(from: lastN - 1, through: 0, by: -1) {
             let day = cal.date(byAdding: .day, value: -offset, to: todayStart)!
@@ -101,44 +122,52 @@ extension Array where Element == Hit {
         return result
     }
 
-    /// Stretches between consecutive hits within today's waking-day bucket.
-    /// Each entry is (timestamp of the later hit, gap duration).
-    func todayStretches(now: Date = .now) -> [(Date, TimeInterval)] {
+    /// Gaps BETWEEN sessions within today's waking-day bucket.
+    /// Each entry is (next session's start, gap from previous session's end).
+    func todayStretches(now: Date = .now, threshold: TimeInterval = defaultSessionThresholdSec) -> [(Date, TimeInterval)] {
         let todayKey = currentWakingDayKey(now)
-        let todayHits = filter { $0.wakingDayKey == todayKey }.sorted { $0.t < $1.t }
+        let todaySessions = sessions(threshold: threshold)
+            .filter { $0.wakingDayKey == todayKey }
+            .sorted { $0.start < $1.start }
         var result: [(Date, TimeInterval)] = []
-        for i in 1..<todayHits.count {
-            let gap = todayHits[i].t.timeIntervalSince(todayHits[i-1].t)
-            result.append((todayHits[i].t, gap))
+        for i in 1..<todaySessions.count {
+            let gap = todaySessions[i].start.timeIntervalSince(todaySessions[i-1].end)
+            result.append((todaySessions[i].start, gap))
         }
         return result
     }
 
-    /// Rolling average gap across `window` days, computed once per day from the first
-    /// hit's day through today. Last `lastN` data points returned, oldest first.
-    func rollingAvg(window: Int = 7, lastN: Int = 30, now: Date = .now) -> [(Date, TimeInterval)] {
-        guard count >= 2 else { return [] }
-        let sorted = sortedByTime()
+    /// Rolling average gap BETWEEN sessions across `window` days, computed once per
+    /// day from the first hit's day through today. Last `lastN` data points returned.
+    func rollingAvg(window: Int = 7, lastN: Int = 30, now: Date = .now, threshold: TimeInterval = defaultSessionThresholdSec) -> [(Date, TimeInterval)] {
+        let allSessions = sessions(threshold: threshold)
+        guard allSessions.count >= 2 else { return [] }
         let cal = Calendar(identifier: .gregorian)
         let endDay = cal.startOfDay(for: now)
-        let firstHitDay = cal.startOfDay(for: sorted.first!.local)
+        let firstDay = cal.startOfDay(for: allSessions.first!.start.addingTimeInterval(TimeInterval(self.first!.tzOffsetMinutes * 60)))
         var result: [(Date, TimeInterval)] = []
-        var day = firstHitDay
+        var day = firstDay
         while day <= endDay {
             let windowEnd = cal.date(bySettingHour: 23, minute: 59, second: 59, of: day)!
             let windowStart = cal.date(byAdding: .day, value: -window, to: day)!
-            let windowHits = sorted.filter { $0.t >= windowStart && $0.t <= windowEnd }
-            if windowHits.count >= 2 {
+            let windowSessions = allSessions.filter { $0.end >= windowStart && $0.start <= windowEnd }
+            if windowSessions.count >= 2 {
+                let sorted = windowSessions.sorted { $0.start < $1.start }
                 var totalGap: TimeInterval = 0
-                for i in 1..<windowHits.count {
-                    totalGap += windowHits[i].t.timeIntervalSince(windowHits[i-1].t)
+                for i in 1..<sorted.count {
+                    totalGap += sorted[i].start.timeIntervalSince(sorted[i-1].end)
                 }
-                let avg = totalGap / Double(windowHits.count - 1)
+                let avg = totalGap / Double(sorted.count - 1)
                 result.append((day, avg))
             }
             day = cal.date(byAdding: .day, value: 1, to: day)!
         }
         return [(Date, TimeInterval)](result.suffix(lastN))
+    }
+
+    /// End time of the most recent session (drives the spirit's ratio).
+    func lastSessionEnd(threshold: TimeInterval = defaultSessionThresholdSec) -> Date? {
+        sessions(threshold: threshold).last?.end
     }
 }
 

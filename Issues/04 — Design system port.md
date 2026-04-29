@@ -1,5 +1,5 @@
 ---
-status: todo
+status: doing
 priority: high
 tags: [foundation]
 ---
@@ -10,13 +10,14 @@ Port the prototype's design tokens to a SwiftUI design system. Source of truth: 
 
 ## Tasks
 
-- [ ] `Color+Drift.swift` — extension on `Color` for every named token (`.driftCoral`, `.driftPeach`, `.driftSage`, `.driftSageDeep`, `.driftInk`, `.driftInkSoft`, `.driftInkFade`, `.driftCream`, `.driftCreamWarm`, sky stops). Use `Color(hex:)` helper.
-- [ ] `LinearGradient` constants for the body sky gradient and the sun-haze overlay
-- [ ] `Font+Drift.swift` — `.driftDisplay`, `.driftStatNum`, `.driftBestNum`, `.driftCardTitle` (Caveat), `.driftLabel`, `.driftSub`. All concrete sizes baked in.
-- [ ] Bundle Quicksand 500/600 and Caveat 500/600 as TTFs in the app — don't depend on Google Fonts at runtime
-- [ ] Card style as a `ViewModifier` (`.driftCard()`) — handles padding, blur background, border, shadow
-- [ ] Milestone glow modifiers: `.wakingGlow(on: Bool)` and `.overallGlow(on: Bool)` that apply the right `.shadow` or `.background` for text-shadow halos
-- [ ] Bar-chart corner-rounding helper (rounded top, flat bottom) — use `Chart` with `.cornerRadius` and `RoundedRectangle` clip if needed
+- [x] `Color+Drift.swift` — `Color(hex:)` helper + every named token. Mirrored on `ShapeStyle where Self == Color` so `.foregroundStyle(.driftInk)` works.
+- [x] `LinearGradient` constants — `.driftSky` (4-stop body gradient) and `.driftSunHaze` (top overlay)
+- [x] Card style as a `ViewModifier` (`.driftCard()`) — padding, ultra-thin material under tinted cream, white inner border, layered shadows
+- [x] `DesignSystemShowcase.swift` — visual spec sheet wired into `ContentView` until home screen lands; doubles as case-study artifact
+- [ ] `Font+Drift.swift` — `.driftDisplay`, `.driftStatNum`, `.driftBestNum`, `.driftCardTitle` (Caveat), `.driftLabel`, `.driftSub`. (Blocked on bundling.)
+- [ ] Bundle Quicksand 500/600 and Caveat 500/600 TTFs + register via Info.plist `UIAppFonts`
+- [ ] Milestone glow modifiers (`.wakingGlow`, `.overallGlow`) — **deferred to Issue 14** (need the milestone state and the targets they apply to)
+- [ ] Bar-chart corner-rounding helper — **deferred to Issues 09/10** (need the actual `Chart` surface)
 
 ## Tests
 

@@ -129,6 +129,7 @@ extension Array where Element == Hit {
         let todaySessions = sessions(threshold: threshold)
             .filter { $0.wakingDayKey == todayKey }
             .sorted { $0.start < $1.start }
+        guard todaySessions.count >= 2 else { return [] }
         var result: [(Date, TimeInterval)] = []
         for i in 1..<todaySessions.count {
             let gap = todaySessions[i].start.timeIntervalSince(todaySessions[i-1].end)

@@ -7,7 +7,7 @@ struct HeroView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 12) {
+            VStack(spacing: 4) {
                 Text.caveat("free for")
                     .font(.driftHeroLabel)
                     .foregroundStyle(.driftInkSoft)
@@ -17,13 +17,12 @@ struct HeroView: View {
                 }
             }
             .padding(.top, 12)
-            .padding(.bottom, 32)
+            .padding(.bottom, 12)
 
             HStack(spacing: 36) {
                 bestColumn(label: "longest waking", value: longestWakingGapSec)
                 bestColumn(label: "longest overall", value: longestGapSec)
             }
-            .padding(.top, 26)
         }
     }
 
@@ -36,7 +35,7 @@ struct HeroView: View {
                 .foregroundStyle(.driftInk)
             Text(parts.unit)
                 .font(.driftTimerUnit)
-                .foregroundStyle(.driftInkFade)
+                .foregroundStyle(.driftInkSoft)
         }
     }
 
@@ -48,7 +47,7 @@ struct HeroView: View {
                 .foregroundStyle(.driftInk)
             Text.caveat(label)
                 .font(.driftBestLabel)
-                .foregroundStyle(.driftInkFade)
+                .foregroundStyle(.driftInkSoft)
         }
     }
 }

@@ -83,6 +83,29 @@ final class HitStore {
         publishToWidget()
     }
 
+    /// Inserts many hits in chronological order, walking the same record-update logic
+    /// as `append` but without firing notifications or saving per-hit. Used by the
+    /// one-time prototype import.
+    func bulkImport(_ parsed: [PrototypeImport.ParsedHit]) throws {
+        let threshold = sessionThresholdSec
+        for ph in parsed {
+            let hit = Hit(t: ph.t, tzOffsetMinutes: ph.tzOffsetMinutes)
+            if let last = hits.last {
+                let delta = hit.t.timeIntervalSince(last.t)
+                if delta > threshold {
+                    if delta > records.longestGapSec { records.longestGapSec = delta }
+                    if last.wakingDayKey == hit.wakingDayKey, delta > records.longestWakingGapSec {
+                        records.longestWakingGapSec = delta
+                    }
+                }
+            }
+            context.insert(hit)
+            hits.append(hit)
+        }
+        try context.save()
+        publishToWidget()
+    }
+
     /// Mirrors the slice of state the widget renders from.
     private func publishToWidget() {
         WidgetBridge.write(.init(

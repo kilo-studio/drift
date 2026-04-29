@@ -32,12 +32,11 @@ enum NotificationScheduler {
     /// Cancel both scheduled notifications, fire the immediate one, and re-add
     /// the scheduled pair if the state warrants it. Call after every append.
     static func reschedule(after ctx: HitNotificationContext) async {
-        // Per Issue 07: surface the permission prompt on the user's first hit
-        // (not on cold launch). Idempotent — iOS only shows the system dialog
-        // once; subsequent calls return the existing status.
-        if ctx.totalHits == 1 {
-            _ = await requestAuthorization()
-        }
+        // Surface the permission prompt on every hit append. Idempotent — iOS
+        // only shows the system dialog the first time the app makes the request,
+        // and the Settings → Drift → Notifications row only appears once
+        // requestAuthorization has been called at least once.
+        _ = await requestAuthorization()
 
         center.removePendingNotificationRequests(withIdentifiers: [beatAverageID, beatRecordID])
 

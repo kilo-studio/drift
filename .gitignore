@@ -11,6 +11,10 @@
 Notes.md
 private/
 
+# Personal prototype data bundled for one-time import on the dev device.
+# Real users would use a UIDocumentPicker flow instead (see Issue 05).
+**/Resources/vape-log-bundle.json
+
 # Xcode (will apply once app/ exists)
 **/xcuserdata/
 **/build/

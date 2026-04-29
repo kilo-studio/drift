@@ -27,7 +27,8 @@ struct FortnightChart: View {
         Chart(counts, id: \.date) { day in
             BarMark(
                 x: .value("day", day.date, unit: .day),
-                y: .value("count", day.count)
+                y: .value("count", day.count),
+                width: .ratio(0.6)
             )
             .foregroundStyle(barFill(today: day.isToday))
             .cornerRadius(12)

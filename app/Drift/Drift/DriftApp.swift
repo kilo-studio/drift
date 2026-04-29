@@ -20,7 +20,9 @@ struct DriftApp: App {
         DriftFonts.register()
         store = MainActor.assumeIsolated {
             do {
-                return try HitStore(context: DriftApp.container.mainContext)
+                let s = try HitStore(context: DriftApp.container.mainContext)
+                PrototypeMigration.runIfNeeded(s)
+                return s
             } catch {
                 fatalError("Failed to create HitStore: \(error)")
             }

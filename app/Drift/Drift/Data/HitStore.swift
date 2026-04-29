@@ -1,0 +1,68 @@
+import Foundation
+import SwiftData
+
+@Observable
+@MainActor
+final class HitStore {
+    private let context: ModelContext
+    private(set) var hits: [Hit] = []
+    private var records: Records
+
+    init(context: ModelContext) throws {
+        self.context = context
+        if let existing = try context.fetch(FetchDescriptor<Records>()).first {
+            self.records = existing
+        } else {
+            let new = Records()
+            context.insert(new)
+            try context.save()
+            self.records = new
+        }
+        try reload()
+    }
+
+    func reload() throws {
+        var descriptor = FetchDescriptor<Hit>()
+        descriptor.sortBy = [SortDescriptor(\.t)]
+        hits = try context.fetch(descriptor)
+    }
+
+    func append(_ hit: Hit = Hit()) throws {
+        if let last = hits.last {
+            let delta = hit.t.timeIntervalSince(last.t)
+            if delta > records.longestGapSec { records.longestGapSec = delta }
+            if last.wakingDayKey == hit.wakingDayKey, delta > records.longestWakingGapSec {
+                records.longestWakingGapSec = delta
+            }
+        }
+        context.insert(hit)
+        try context.save()
+        hits.append(hit)
+    }
+
+    func remove(_ hit: Hit) throws {
+        context.delete(hit)
+        try context.save()
+        try reload()
+    }
+
+    // MARK: - Records (persisted)
+
+    var longestGapSec: TimeInterval { records.longestGapSec }
+    var longestWakingGapSec: TimeInterval { records.longestWakingGapSec }
+
+    // MARK: - Live metrics
+
+    var lastHit: Hit? { hits.last }
+    var lastHitDate: Date? { hits.lastHitDate }
+
+    func todayCount(now: Date = .now) -> Int { hits.todayCount(now: now) }
+    func avgPerDay(now: Date = .now, window: Int = 30) -> Double { hits.avgPerDay(now: now, window: window) }
+    func wakingAvgSec(now: Date = .now, window: Int = 30) -> TimeInterval? { hits.wakingAvgSec(now: now, window: window) }
+    func hitsByHour() -> [Int] { hits.hitsByHour() }
+    func dailyCounts(lastN: Int = 14, now: Date = .now) -> [DailyCount] { hits.dailyCounts(lastN: lastN, now: now) }
+    func todayStretches(now: Date = .now) -> [(Date, TimeInterval)] { hits.todayStretches(now: now) }
+    func rollingAvg(window: Int = 7, lastN: Int = 30, now: Date = .now) -> [(Date, TimeInterval)] {
+        hits.rollingAvg(window: window, lastN: lastN, now: now)
+    }
+}

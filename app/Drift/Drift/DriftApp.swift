@@ -11,6 +11,6 @@ struct DriftApp: App {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(for: Hit.self)
+        .modelContainer(for: [Hit.self, Records.self])
     }
 }

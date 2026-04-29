@@ -16,31 +16,54 @@ The two-line rule:
 - ✅ Achievements that only grow / unlock once and stay
 - ❌ Counters that drop to zero when you have a bad day
 
+## Two axes
+
+Once we adopt the session model from [[Issues/16 — Sessions vs individual hits]], there are two real axes of progress and the achievement system should track both:
+
+- **Frequency** — how often you have a session. Captured by gaps between sessions, longest waking, average per day.
+- **Intensity** — how much you hit per session. Captured by avg hits-per-session, biggest session of the day, runs of solo-hit sessions.
+
+Frequency is what the spirit visualizes (time since last session). Intensity is invisible to the spirit on purpose — it's a looking-back dimension that lives entirely in achievements.
+
 ## Achievement types
 
 ### Personal records — ratchets that only improve
 
+**Frequency axis:**
 - [x] Longest waking gap (already in hero)
 - [x] Longest overall gap (already in hero)
-- [ ] **Lowest rolling-7d average ever** — track in `HitStore`. Update when current 7d avg is below the persisted record.
-- [ ] **Lowest rolling-30d average ever** — same shape, longer window.
-- [ ] **Lowest single-day count ever** — fewest hits in any complete day. Updated nightly at the 4am cutoff. Show with date.
+- [ ] **Lowest rolling-7d sessions/day ever** — track in `HitStore`. Update when current 7d sessions-per-day is below the persisted record.
+- [ ] **Lowest rolling-30d sessions/day ever** — same shape, longer window.
+- [ ] **Lowest single-day session count ever** — fewest sessions in any complete day. Updated nightly at the 4am cutoff. Show with date.
+
+**Intensity axis:**
+- [ ] **Lowest rolling-30d avg hits-per-session ever** — the headline intensity metric. Watching this number drift downward over months is the long-form reward.
+- [ ] **Smallest "biggest session of the day" record** — your worst session today had N hits, and your record-low for "biggest session of any day" is X.
+- [ ] **Most consecutive solo-hit sessions** — sessions of length 1 in a row, all-time record.
 
 ### One-time milestone unlocks
 
 Each unlocks once and persists forever. The first time you cross a threshold — that moment becomes part of your record.
 
+**Frequency axis:**
 - [ ] First time `ratio >= 1` (matched your average)
 - [ ] First time `ratio >= 5` (5× your average — meaningful)
 - [ ] First time `ratio >= 10` (10× — rare for typical users)
-- [ ] First time you logged fewer than half your typical-day hits in a complete day
-- [ ] First time your rolling-7d average dropped below your all-time average
+- [ ] First time you logged fewer than half your typical-day session count in a complete day
+- [ ] First time your rolling-7d sessions/day dropped below your all-time average
 - [ ] Set a new longest-waking record (1st time, 5th time, 10th time …)
+
+**Intensity axis:**
+- [ ] First time you ended a session at exactly 1 hit (a solo-hit session)
+- [ ] First time your daily avg hits-per-session dropped below 3
+- [ ] First time your daily avg hits-per-session dropped below 2
+- [ ] First time you held a session to fewer hits than your previous rolling-30d avg
 
 ### Cumulative counters — only grow, never decrease
 
-- [ ] **Days drifted under average** — count of days whose hit count was below the rolling-30d average. Lifetime total.
-- [ ] **Total time drifted** — sum of every gap that was ≥ 1× your waking average. A big satisfying number that always grows.
+- [ ] **Days drifted under average** — count of days whose session count was below the rolling-30d average. Lifetime total.
+- [ ] **Total time drifted** — sum of every inter-session gap that was ≥ 1× your waking average. A big satisfying number that always grows.
+- [ ] **Total solo-hit sessions** — lifetime count of sessions of length 1.
 
 ### Optional: soft "current run"
 
@@ -87,4 +110,6 @@ A subtle in-app indicator is fine: a coral dot on the Achievements icon when the
 
 **v1.x, not v1.** v1 ships the spirit + dashboard + logging + notifications first. Achievements are additive — nothing about the v1 design depends on them.
 
-If we want exactly one achievement-style thing in v1, the highest-leverage choice is **lowest rolling-30d average ever**. It's the most honest measure of "are you actually drifting more than you used to" and it pairs naturally with the existing waking-gap card. Could even be displayed inline: "30d avg: Xm · best ever: Ym".
+If we want exactly one achievement-style thing in v1, the highest-leverage choice is **lowest rolling-30d sessions/day ever**. It's the most honest measure of "are you actually drifting more than you used to" and it pairs naturally with the existing waking-gap card. Could even be displayed inline: "30d avg: X sessions/day · best ever: Y".
+
+A close second is **lowest rolling-30d avg hits-per-session ever** — captures the intensity axis, which the spirit can't show, with the same one-number-pair display: "30d avg: 4.2 hits/session · best ever: 3.1".

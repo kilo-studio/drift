@@ -56,6 +56,17 @@ A **session** is a maximal cluster of consecutive hits where no inter-hit gap ex
 - **Raw data** — every hit still stored as `{t, tz}`. Sessions are derived on read, not persisted
 - **App Intent / Widget / Lock Screen** — all log a single hit per tap, no awareness of sessions
 
+### Two axes of progress
+
+Once sessions exist as a derived concept, the data has two real axes of progress:
+
+- **Frequency** — how often you have a session. Captured by inter-session gaps, sessions-per-day, longest waking gap. **This is what the spirit visualizes.**
+- **Intensity** — how much you hit per session (avg hits-per-session, biggest session of the day). **This is invisible to the spirit on purpose — it's a looking-back metric that lives in achievements.**
+
+A user who chains 5 hits per session 5×/day looks identical (5 sessions/day) to a user who solo-hits 5×/day at the frequency layer. The intensity axis is what distinguishes them, and improving on either axis is real progress. See [[Issues/15 — Achievement system]] for the personal records and milestone unlocks that capture the intensity axis.
+
+Why the spirit only reflects frequency: the spirit is a *present-moment visualization* (per [[Philosophy]]), and the only meaningful present-moment quantity is "time since last session ended." Intensity is a looking-back property — you can only know your average hits-per-session by aggregating over time, which is achievement territory. Trying to encode both axes in one creature dilutes the "one number, one feeling" principle.
+
 ### Settings
 
 - **Session threshold** — picker: 1 / 3 / 5 / 10 / 15 / 30 minutes. Default 5.

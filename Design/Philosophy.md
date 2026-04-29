@@ -21,9 +21,23 @@ All data lives on-device by default. Optional iCloud sync via CloudKit (your iCl
 
 The hero is "free for X." Everything else — the spirit's expression, sparkle density, color of the timer — is a derivative of that one quantity. The user shouldn't have to interpret a dashboard to feel how they're doing.
 
-### Continuous, not gamified
+### Streaks, achievements, visualization — three different things
 
-There are no levels, badges, or unlocks. The spirit's eyes scale continuously with `ratio = ms / avgMs`. The sparkles reveal continuously. There are two milestones (longest waking, longest overall) and they're styled as warmth, not as tokens.
+Three concepts that look similar from outside but are different in kind. Drift draws a sharp line between them.
+
+- **Streaks** describe your behavior over time and *judge* it. A counter that drops to zero on a bad day implicitly frames that day as a failure. ❌ Out.
+- **Achievements** describe your behavior over time and *only celebrate* it. Personal records that ratchet, milestones that unlock and stay, cumulative counters that only grow. ✅ In. See [[Issues/15 — Achievement system]].
+- **Visualization** describes a *present-moment quantity*, neutrally. The cloud spirit is `ratio = ms / avgMs` drawn as a creature with feelings. When the eyes shrink after a hit, nothing was "lost" — the variable being measured just changed value, the way a clock face changes when time passes. ✅ Always fine.
+
+The cleanest test: **a streak describes *you*; the spirit describes *time*.** The spirit isn't a streak even though it visibly grows and shrinks. It's not narrating your behavior at all — it's a clock with feelings.
+
+Why streaks specifically are the failure mode being avoided:
+
+- They shame bad days, which can trigger the very behavior they're trying to discourage.
+- They bias toward dishonest logging — users skip hits to preserve the streak, polluting the data.
+- They frame data as morality. A hit becomes a "failure" instead of a thing that happened.
+
+Achievements that only grow have none of these failure modes. The spirit, since it's not narrating behavior at all, has none either. So both fit alongside each other without contradiction.
 
 ### Honest celebrations
 

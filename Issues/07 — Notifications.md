@@ -1,5 +1,5 @@
 ---
-status: todo
+status: done
 priority: high
 tags: [logging]
 ---
@@ -10,20 +10,23 @@ Port the prototype's three-notification system to `UNUserNotificationCenter`. So
 
 ## Tasks
 
-- [ ] `NotificationScheduler` class
-- [ ] Permission request flow with a clear explainer screen (don't auto-prompt on cold launch; trigger from settings or first hit)
-- [ ] Immediate notification on hit log (`drift-logged`)
-  - [ ] Body shape baseline-aware: `Xm since last hit · N/10 baseline` vs `⏱ Xm since last hit · avg Ym`
-  - [ ] Append `· 🥇 new waking best` if `longestWakingGap` was just updated
-- [ ] Scheduled "beat your average" (`drift-beat-average`)
-  - [ ] Only after baseline (10 hits)
-  - [ ] Trigger: `now + wakingAvgSec + 60`
-  - [ ] Overnight hedge body
-- [ ] Scheduled "beat your record" (`drift-beat-record`)
-  - [ ] Trigger: `now + longestWakingGap + 1`
-  - [ ] Skip if trigger is past next 4am cutoff
-  - [ ] Overnight hedge body
-- [ ] On every hit: `removePendingNotificationRequests` for both scheduled identifiers, then re-add
+- [x] `NotificationScheduler` enum (MainActor) — `requestAuthorization`, `reschedule(after:)`
+- [x] Permission request: triggered on the user's first hit (not cold launch). Idempotent.
+- [x] Immediate notification on log
+  - [x] Pre-baseline body: "Xm since last hit · N/10 baseline" / "First hit logged. Building your baseline."
+  - [x] Post-baseline body: "⏱ Xm since last hit · avg Ym"
+  - [x] Appends "· 🥇 new waking best" when `longestWakingGap` was just updated by this append
+  - [x] Unique identifier per immediate notification so two quick hits both surface
+- [x] Scheduled "beat your average" (`drift-beat-average`)
+  - [x] Only when `totalHits >= 10` and `wakingAvgSec > 0`
+  - [x] Trigger: `wakingAvgSec + 60` from now
+  - [x] Overnight hedge body when trigger lands in 23:00–05:59 local
+- [x] Scheduled "beat your record" (`drift-beat-record`)
+  - [x] Trigger: `longestWakingGapSec + 1` from now
+  - [x] Skipped if trigger lands past `endOfWakingDay(now)` (next 4am cutoff)
+  - [x] Overnight hedge body, same window
+  - [x] Skipped when `longestWakingGapSec == 0` or `totalHits < 2`
+- [x] `HitStore.append` captures `prevLast` + `prevWakingRecord`, computes `isNewWakingBest`, fires `Task { NotificationScheduler.reschedule(after:) }` after the SwiftData save
 
 ## Tests
 

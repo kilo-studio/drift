@@ -44,12 +44,17 @@ final class HitStore {
     /// previous hit exceeds the session threshold. Intra-session hits don't.
     func append(_ hit: Hit = Hit()) throws {
         let threshold = sessionThresholdSec
-        if let last = hits.last {
+        let prevLast = hits.last
+        let prevWakingRecord = records.longestWakingGapSec
+        var isNewWakingBest = false
+
+        if let last = prevLast {
             let delta = hit.t.timeIntervalSince(last.t)
             if delta > threshold {
                 if delta > records.longestGapSec { records.longestGapSec = delta }
                 if last.wakingDayKey == hit.wakingDayKey, delta > records.longestWakingGapSec {
                     records.longestWakingGapSec = delta
+                    isNewWakingBest = records.longestWakingGapSec > prevWakingRecord
                 }
             }
         }
@@ -57,6 +62,18 @@ final class HitStore {
         try context.save()
         hits.append(hit)
         publishToWidget()
+
+        let notifContext = HitNotificationContext(
+            now: hit.t,
+            previousHitDate: prevLast?.t,
+            totalHits: hits.count,
+            wakingAvgSec: hits.wakingAvgSec(threshold: threshold),
+            longestWakingGapSec: records.longestWakingGapSec,
+            isNewWakingBest: isNewWakingBest
+        )
+        Task {
+            await NotificationScheduler.reschedule(after: notifContext)
+        }
     }
 
     func remove(_ hit: Hit) throws {

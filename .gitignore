@@ -1,0 +1,32 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Obsidian — workspace state, plugin caches, search index
+.obsidian/
+
+# Private notes — not for the public repo. Put any additional private
+# scratch files alongside Notes.md or in a private/ folder.
+Notes.md
+private/
+
+# Xcode (will apply once app/ exists)
+**/xcuserdata/
+**/build/
+**/.build/
+**/*.xcuserstate
+**/DerivedData/
+
+# Swift Package Manager
+**/Package.resolved
+**/.swiftpm/
+
+# Fastlane / TestFlight build artifacts
+**/fastlane/report.xml
+**/fastlane/Preview.html
+**/fastlane/screenshots/**/*.png
+**/fastlane/test_output
+
+# CocoaPods (if ever used)
+**/Pods/

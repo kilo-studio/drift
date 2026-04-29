@@ -1,5 +1,5 @@
 ---
-status: todo
+status: doing
 priority: high
 tags: [logging]
 ---
@@ -10,10 +10,11 @@ The most important interaction in the app: log a hit fast, from anywhere, withou
 
 ## App Intent
 
-- [ ] `LogHitIntent: AppIntent` with `static var openAppWhenRun = false`
-- [ ] Returns `IntentResult` with a dialog: `"Logged. Xm since last hit · avg Ym"` (or baseline message)
-- [ ] Donates the intent so Siri suggests it
-- [ ] Test surfaces: Shortcuts, Action Button, Lock Screen widget, Control Center (iOS 18+), Spotlight
+- [x] `LogHitIntent: AppIntent` defined. Phase A ships with `openAppWhenRun = true` — opens Drift on run so the intent reuses the app's `ModelContainer`.
+- [x] Returns `IntentResult & ProvidesDialog` with dialog: "First steps logged. X/10 baseline." for the first 10 hits, then "Logged. Xm since last hit · avg Ym."
+- [x] `DriftAppShortcuts: AppShortcutsProvider` surfaces the intent to Spotlight/Siri without manual Shortcuts setup
+- [x] DriftApp's `ModelContainer` promoted to a static so the intent can construct its own `HitStore` against the same store
+- [ ] **Phase B:** flip to `openAppWhenRun = false` once App Group + shared SwiftData is wired through (so widget taps log silently)
 
 ## Home Screen widget
 

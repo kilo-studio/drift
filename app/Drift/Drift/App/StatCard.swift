@@ -30,11 +30,8 @@ struct StatCard: View {
             Text.caveat(title)
                 .font(.driftCardTitle)
                 .foregroundStyle(.driftInk)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                // Reserved 2-line height keeps stat cards visually balanced when
-                // some titles fit on one line and others wrap.
-                .frame(maxWidth: .infinity, minHeight: 60, alignment: .top)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.bottom, 4)
 
             HStack(alignment: .firstTextBaseline, spacing: 0) {

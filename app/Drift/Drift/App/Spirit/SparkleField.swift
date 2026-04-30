@@ -4,6 +4,14 @@ import SwiftUI
 /// a power curve so the closest sparkles unlock around ratio ≥ 1× (just past your
 /// average) and the farthest unlock around ratio ≥ 20× (extreme territory).
 /// Drift + twinkle animate continuously via a single Canvas inside TimelineView.
+enum SparkleLayer {
+    /// Behind the cards. Full count + size so the spirit halo reads cleanly.
+    case back
+    /// In front of the cards. Smaller, sparser, slightly translucent — adds
+    /// depth without obscuring readable content.
+    case front
+}
+
 struct SparkleField: View {
     let lastSessionEnd: Date?
     let wakingAvgSec: TimeInterval?
@@ -12,14 +20,22 @@ struct SparkleField: View {
     /// distance from this point, so the halo grows out from the spirit.
     let spiritPercent: CGPoint
 
+    let layer: SparkleLayer
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var sparkles: [Sparkle]
 
-    init(lastSessionEnd: Date?, wakingAvgSec: TimeInterval?, spiritPercent: CGPoint = CGPoint(x: 78, y: 14)) {
+    init(
+        lastSessionEnd: Date?,
+        wakingAvgSec: TimeInterval?,
+        layer: SparkleLayer = .back,
+        spiritPercent: CGPoint = CGPoint(x: 78, y: 14)
+    ) {
         self.lastSessionEnd = lastSessionEnd
         self.wakingAvgSec = wakingAvgSec
         self.spiritPercent = spiritPercent
-        self._sparkles = State(initialValue: makeSparkles(spiritPercent: spiritPercent))
+        self.layer = layer
+        self._sparkles = State(initialValue: makeSparkles(layer: layer, spiritPercent: spiritPercent))
     }
 
     var body: some View {
@@ -101,8 +117,18 @@ private let palette: [Color] = [
     Color(hex: 0xFFD08C),  // light gold accent
 ]
 
-private func makeSparkles(spiritPercent: CGPoint) -> [Sparkle] {
-    let total = 200
+private func makeSparkles(layer: SparkleLayer, spiritPercent: CGPoint) -> [Sparkle] {
+    let total: Int
+    let sizeRange: (small: ClosedRange<Double>, large: ClosedRange<Double>)
+    switch layer {
+    case .back:
+        total = 200
+        sizeRange = (6...10, 10...16)
+    case .front:
+        // Sparser + smaller so they don't occlude readable card content.
+        total = 60
+        sizeRange = (3...5, 5...7)
+    }
     var generator = SystemRandomNumberGenerator()
 
     struct Raw {
@@ -132,8 +158,8 @@ private func makeSparkles(spiritPercent: CGPoint) -> [Sparkle] {
         let revealAt = 1 + pow(Double(i) / Double(total - 1), 1.5) * 19
         let big = Double.random(in: 0...1, using: &generator) < 0.18
         let size = big
-            ? 10 + Double.random(in: 0...6, using: &generator)
-            : 6 + Double.random(in: 0...4, using: &generator)
+            ? Double.random(in: sizeRange.large, using: &generator)
+            : Double.random(in: sizeRange.small, using: &generator)
         let driftAmp = CGPoint(
             x: Double.random(in: -15...15, using: &generator),
             y: Double.random(in: -15...15, using: &generator)

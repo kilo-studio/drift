@@ -11,7 +11,8 @@ struct HomeView: View {
 
             SparkleField(
                 lastSessionEnd: store.lastSessionEnd(),
-                wakingAvgSec: store.wakingAvgSec()
+                wakingAvgSec: store.wakingAvgSec(),
+                layer: .back
             )
 
             ScrollView {
@@ -60,6 +61,15 @@ struct HomeView: View {
                 .padding(.bottom, 96)
             }
 
+            // Front sparkle layer — sparser, smaller, slightly translucent so it
+            // adds depth in front of the cards without obscuring readable content.
+            SparkleField(
+                lastSessionEnd: store.lastSessionEnd(),
+                wakingAvgSec: store.wakingAvgSec(),
+                layer: .front
+            )
+            .opacity(0.7)
+
             #if DEBUG
             debugHitButton
             #endif
@@ -78,10 +88,10 @@ struct HomeView: View {
                 label: "\(hits) hit\(hits == 1 ? "" : "s")"
             )
             StatCard(
-                title: "avg sessions / day",
+                title: "avg / day",
                 bigNumber: formatAvg(avg),
                 bigNumberColor: .driftSageDeep,
-                label: "30 day average"
+                label: "sessions · 30 day"
             )
         }
     }

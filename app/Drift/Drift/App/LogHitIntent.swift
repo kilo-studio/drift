@@ -15,7 +15,11 @@ struct LogHitIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        let store = try HitStore(context: DriftApp.container.mainContext)
+        // Prefer the running app's live store so the dashboard sees the new hit
+        // immediately (the @Observable on the running HitStore broadcasts the
+        // change to HomeView). Fall back to a fresh store when the app isn't
+        // already running yet.
+        let store = try DriftApp.sharedStore ?? HitStore(context: DriftApp.container.mainContext)
         let prevLast = store.lastHitDate
         try store.append()
 

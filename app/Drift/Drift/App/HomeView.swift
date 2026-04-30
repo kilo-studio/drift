@@ -3,77 +3,143 @@ import SwiftUI
 struct HomeView: View {
     @Environment(HitStore.self) private var store
 
+    /// Trigger flips when the user starts scrolling and back when they return
+    /// near the top — drives a keyframe-based swoop animation that interpolates
+    /// the spirit's screen-space position over a curved path.
+    @State private var isStuck: Bool = false
+
+    private let spiritSize: CGFloat = 96
+
     var body: some View {
-        ZStack {
-            Color.driftSkyLowerMid.ignoresSafeArea()
+        GeometryReader { geo in
+            ZStack(alignment: .topLeading) {
+                Color.driftSkyLowerMid.ignoresSafeArea()
 
-            AmbientLayer()
+                AmbientLayer()
 
-            SparkleField(
-                lastSessionEnd: store.lastSessionEnd(),
-                wakingAvgSec: store.wakingAvgSec(),
-                layer: .back
-            )
+                SparkleField(
+                    lastSessionEnd: store.lastSessionEnd(),
+                    wakingAvgSec: store.wakingAvgSec(),
+                    layer: .back
+                )
 
-            ScrollView {
-                VStack(spacing: 16) {
-                    HStack(alignment: .top) {
-                        HeroPrimaryView(lastHitDate: store.lastSessionEnd())
-                        Spacer(minLength: 8)
-                        SpiritView(
-                            lastSessionEnd: store.lastSessionEnd(),
-                            wakingAvgSec: store.wakingAvgSec(),
+                ScrollView {
+                    VStack(spacing: 16) {
+                        HStack(alignment: .top) {
+                            HeroPrimaryView(lastHitDate: store.lastSessionEnd())
+                            Spacer(minLength: 8)
+                            // Placeholder where the spirit normally sits, so the
+                            // hero layout doesn't reflow when the spirit is rendered
+                            // separately as a screen-space overlay.
+                            Color.clear
+                                .frame(width: spiritSize, height: spiritSize)
+                                .offset(x: -16, y: 24)
+                        }
+                        .padding(.top, 36)
+
+                        HeroBestsView(
                             longestWakingGapSec: store.longestWakingGapSec,
                             longestGapSec: store.longestGapSec
                         )
-                        .offset(x: -16, y: 24)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.bottom, 16)
+
+                        statCardsRow
+
+                        wakingGapCard
+
+                        ChartCard(title: "today's stretches", subtitle: "minutes between sessions today") {
+                            TodayStretchesChart(stretches: store.todayStretches())
+                        }
+
+                        ChartCard(title: "the last fortnight", subtitle: "sessions per day · last 14 days") {
+                            FortnightChart(counts: store.dailySessionCounts(lastN: 14))
+                        }
+
+                        ChartCard(title: "when the cravings hit", subtitle: "sessions by hour of day") {
+                            HoursChart(counts: store.sessionsByHour())
+                        }
+
+                        ChartCard(title: "stretching the gaps", subtitle: "minutes between sessions\n7-day rolling average") {
+                            RollingAvgChart(series: store.rollingAvg(window: 7, lastN: 30))
+                        }
                     }
-                    .padding(.top, 36)
-
-                    HeroBestsView(
-                        longestWakingGapSec: store.longestWakingGapSec,
-                        longestGapSec: store.longestGapSec
-                    )
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.bottom, 16)
-
-                    statCardsRow
-
-                    wakingGapCard
-
-                    ChartCard(title: "today's stretches", subtitle: "minutes between sessions today") {
-                        TodayStretchesChart(stretches: store.todayStretches())
-                    }
-
-                    ChartCard(title: "the last fortnight", subtitle: "sessions per day · last 14 days") {
-                        FortnightChart(counts: store.dailySessionCounts(lastN: 14))
-                    }
-
-                    ChartCard(title: "when the cravings hit", subtitle: "sessions by hour of day") {
-                        HoursChart(counts: store.sessionsByHour())
-                    }
-
-                    ChartCard(title: "stretching the gaps", subtitle: "7-day rolling average · minutes between sessions") {
-                        RollingAvgChart(series: store.rollingAvg(window: 7, lastN: 30))
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 96)
+                }
+                .onScrollGeometryChange(for: Bool.self) { geom in
+                    // 8pt of slack so the spirit doesn't twitch on tiny rubber-band
+                    // overscrolls; comes back when scroll returns near the top.
+                    geom.contentOffset.y > 8
+                } action: { _, shouldStick in
+                    if shouldStick != isStuck {
+                        isStuck = shouldStick
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 96)
+
+                // Spirit lives outside the ScrollView so it can stick to a
+                // screen-space position. Keyframe animator drives a swoop curve
+                // when isStuck flips: vertical rises first, then horizontal
+                // slides over to the corner. Reverse on return.
+                spiritFlight(in: geo.size)
+
+                // Front sparkle layer — rare and big, same ratio-gated reveal as
+                // the back. Reads as "closer to the camera" sparkles drifting in
+                // front of the cards as you stretch further past your average.
+                SparkleField(
+                    lastSessionEnd: store.lastSessionEnd(),
+                    wakingAvgSec: store.wakingAvgSec(),
+                    layer: .front
+                )
+
+                #if DEBUG
+                debugHitButton
+                #endif
             }
-
-            // Front sparkle layer — sparser, smaller, always-visible (no ratio
-            // gating). Adds atmospheric shimmer over the cards.
-            SparkleField(
-                lastSessionEnd: store.lastSessionEnd(),
-                wakingAvgSec: store.wakingAvgSec(),
-                layer: .front
-            )
-            .opacity(0.85)
-
-            #if DEBUG
-            debugHitButton
-            #endif
         }
+    }
+
+    /// Animatable spirit, swooping between rest and sticky.
+    @ViewBuilder
+    private func spiritFlight(in size: CGSize) -> some View {
+        let rest = restCenter(in: size)
+        let sticky = stickyCenter(in: size)
+        let target = isStuck ? sticky : rest
+
+        SpiritView(
+            lastSessionEnd: store.lastSessionEnd(),
+            wakingAvgSec: store.wakingAvgSec(),
+            longestWakingGapSec: store.longestWakingGapSec,
+            longestGapSec: store.longestGapSec
+        )
+        .frame(width: spiritSize, height: spiritSize)
+        .scaleEffect(isStuck ? 0.7 : 1.0, anchor: .topTrailing)
+        .position(x: target.x, y: target.y)
+        // Bouncy spring gives a natural swoop feel — overshoots slightly past
+        // the destination on its way in, settles back. Both directions.
+        .animation(.spring(response: 0.55, dampingFraction: 0.7), value: isStuck)
+    }
+
+    /// Spirit center at rest — matches the placeholder position in the hero row.
+    /// scaleEffect anchor is .topTrailing, so when scale=1 the bbox center is
+    /// the unscaled center; nothing exotic on the rest side.
+    private func restCenter(in size: CGSize) -> CGPoint {
+        CGPoint(
+            x: size.width - 16 - spiritSize / 2 - 16,
+            y: 36 + 24 + spiritSize / 2
+        )
+    }
+
+    /// Spirit center when stuck — top-right corner of safe area, scaled down so
+    /// the visible top-right pixel sits ~4pt from the actual screen corner.
+    /// With anchor .topTrailing, the unscaled bbox's top-right corner stays at
+    /// the position we compute, and the rest of the body shrinks toward it.
+    private func stickyCenter(in size: CGSize) -> CGPoint {
+        let inset: CGFloat = 4
+        return CGPoint(
+            x: size.width - inset - spiritSize / 2,
+            y: inset + spiritSize / 2
+        )
     }
 
     private var statCardsRow: some View {

@@ -80,6 +80,7 @@ struct ChartCard<Content: View>: View {
             Text(subtitle)
                 .font(.driftLabel)
                 .foregroundStyle(.driftInkSoft)
+                .multilineTextAlignment(.center)
                 .padding(.bottom, 16)
 
             content()

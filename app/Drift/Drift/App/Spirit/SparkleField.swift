@@ -125,10 +125,11 @@ private func makeSparkles(layer: SparkleLayer, spiritPercent: CGPoint) -> [Spark
         total = 200
         sizeRange = (6...10, 10...16)
     case .front:
-        // Always-visible decorative atmosphere — sparser + smaller than the back
-        // halo, but not ratio-gated so they shimmer continuously over the cards.
-        total = 50
-        sizeRange = (3...5, 5...7)
+        // Rare + big — they read as "closer to the camera" sparkles. Same
+        // ratio-gated reveal curve as the back layer, so when most of the front
+        // pool unlocks the user is well past their average.
+        total = 25
+        sizeRange = (12...18, 18...26)
     }
     var generator = SystemRandomNumberGenerator()
 
@@ -154,12 +155,10 @@ private func makeSparkles(layer: SparkleLayer, spiritPercent: CGPoint) -> [Spark
     // 2. Closest-to-spirit first.
     raws.sort { $0.dist < $1.dist }
 
-    // 3. revealAt power curve. Front layer is decorative — always visible
-    //    regardless of ratio, so set revealAt = 0 there.
+    // 3. revealAt power curve — same for both layers. Closest sparkles unlock
+    //    just past avg (~1×); furthest unlock around 20×.
     return raws.enumerated().map { (i, p) in
-        let revealAt: Double = layer == .front
-            ? 0
-            : 1 + pow(Double(i) / Double(total - 1), 1.5) * 19
+        let revealAt = 1 + pow(Double(i) / Double(total - 1), 1.5) * 19
         let big = Double.random(in: 0...1, using: &generator) < 0.18
         let size = big
             ? Double.random(in: sizeRange.large, using: &generator)

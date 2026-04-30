@@ -14,6 +14,12 @@ struct DriftApp: App {
         }
     }()
 
+    /// Live reference to the running app's HitStore. The App Intent prefers this
+    /// when set so a foreground hit logs into the same @Observable instance the
+    /// dashboard is observing — without it the intent's mutations would land on
+    /// a separate store instance and the UI would stay frozen until next launch.
+    @MainActor static var sharedStore: HitStore?
+
     let store: HitStore
 
     init() {
@@ -22,6 +28,7 @@ struct DriftApp: App {
             do {
                 let s = try HitStore(context: DriftApp.container.mainContext)
                 PrototypeMigration.runIfNeeded(s)
+                DriftApp.sharedStore = s
                 return s
             } catch {
                 fatalError("Failed to create HitStore: \(error)")

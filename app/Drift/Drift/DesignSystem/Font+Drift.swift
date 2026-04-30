@@ -17,9 +17,10 @@ enum DriftFonts {
 
 extension Font {
     static let driftDisplay   = Font.custom("Quicksand-SemiBold", size: 80)
-    static let driftStatNum   = Font.custom("Quicksand-SemiBold", size: 52)
+    static let driftStatNum     = Font.custom("Quicksand-SemiBold", size: 52)
+    static let driftStatNumUnit = Font.custom("Quicksand-SemiBold", size: 22)
     static let driftBestNum   = Font.custom("Quicksand-SemiBold", size: 22)
-    static let driftTimerUnit = Font.custom("Quicksand-Light", size: 32)
+    static let driftTimerUnit = Font.custom("Quicksand-SemiBold", size: 32)
     static let driftCardTitle = Font.custom("Caveat", size: 24).weight(.semibold)
     static let driftHeroLabel = Font.custom("Caveat", size: 26).weight(.semibold)
     static let driftBestLabel = Font.custom("Caveat", size: 16).weight(.semibold)

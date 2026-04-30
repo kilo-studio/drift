@@ -17,15 +17,21 @@ struct HeroPrimaryView: View {
     }
 
     private func timer(elapsed: TimeInterval) -> some View {
-        let parts = formatElapsed(elapsed)
-        return HStack(alignment: .firstTextBaseline, spacing: 2) {
-            Text(parts.number)
-                .font(.driftDisplay)
-                .tracking(-1.5)
-                .foregroundStyle(.driftInk)
-            Text(parts.unit)
-                .font(.driftTimerUnit)
-                .foregroundStyle(.driftInkSoft)
+        let parts = formatElapsedParts(elapsed)
+        return HStack(alignment: .firstTextBaseline, spacing: 0) {
+            ForEach(parts.indices, id: \.self) { i in
+                switch parts[i] {
+                case .number(let s):
+                    Text(s)
+                        .font(.driftDisplay)
+                        .tracking(-1.5)
+                        .foregroundStyle(.driftInk)
+                case .unit(let s):
+                    Text(s)
+                        .font(.driftTimerUnit)
+                        .foregroundStyle(.driftInkSoft)
+                }
+            }
         }
     }
 }

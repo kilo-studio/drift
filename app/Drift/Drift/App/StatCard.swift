@@ -4,9 +4,26 @@ import SwiftUI
 /// then a small label. Used by today / average / waking-gap.
 struct StatCard: View {
     let title: String
-    let bigNumber: String
+    let bigNumberParts: [ElapsedPart]
     let bigNumberColor: Color
     let label: String
+
+    /// Plain-string init for cards whose big number is just a number ("17", "5.8").
+    init(title: String, bigNumber: String, bigNumberColor: Color, label: String) {
+        self.title = title
+        self.bigNumberParts = [.number(bigNumber)]
+        self.bigNumberColor = bigNumberColor
+        self.label = label
+    }
+
+    /// Parts init for cards whose big number includes unit suffixes ("2h 37m") so
+    /// the units render at a smaller size than the digits.
+    init(title: String, bigNumberParts: [ElapsedPart], bigNumberColor: Color, label: String) {
+        self.title = title
+        self.bigNumberParts = bigNumberParts
+        self.bigNumberColor = bigNumberColor
+        self.label = label
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -18,11 +35,18 @@ struct StatCard: View {
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.bottom, 4)
 
-            Text(bigNumber)
-                .font(.driftStatNum)
-                .tracking(-1)
-                .foregroundStyle(bigNumberColor)
-                .padding(.bottom, 4)
+            HStack(alignment: .firstTextBaseline, spacing: 0) {
+                ForEach(bigNumberParts.indices, id: \.self) { i in
+                    switch bigNumberParts[i] {
+                    case .number(let s):
+                        Text(s).font(.driftStatNum).tracking(-1)
+                    case .unit(let s):
+                        Text(s).font(.driftStatNumUnit)
+                    }
+                }
+            }
+            .foregroundStyle(bigNumberColor)
+            .padding(.bottom, 4)
 
             Text(label)
                 .font(.driftLabel)

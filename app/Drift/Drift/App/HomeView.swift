@@ -7,6 +7,8 @@ struct HomeView: View {
         ZStack {
             Color.driftSkyLowerMid.ignoresSafeArea()
 
+            AmbientLayer()
+
             SparkleField(
                 lastSessionEnd: store.lastSessionEnd(),
                 wakingAvgSec: store.wakingAvgSec()
@@ -88,7 +90,7 @@ struct HomeView: View {
         let avg = store.wakingAvgSec()
         return StatCard(
             title: "waking gap",
-            bigNumber: avg.map { formatGap($0) } ?? "—",
+            bigNumberParts: avg.map { formatGapParts($0) } ?? [.number("—")],
             bigNumberColor: .driftSageDeep,
             label: "average between sessions · 30d"
         )

@@ -45,6 +45,32 @@ extension Array where Element == Hit {
         return Double(totalHits) / Double(sessions.count)
     }
 
+    /// Average hits per day over the last `window` days, excluding today.
+    /// Mirrors `avgSessionsPerDay`'s windowing rules but counts hits not sessions.
+    func avgHitsPerDay(now: Date = .now, window: Int = 30) -> Double {
+        guard !isEmpty else { return 0 }
+        let cal = Calendar(identifier: .gregorian)
+        let todayStart = cal.startOfDay(for: now)
+        let windowStart = cal.date(byAdding: .day, value: -window, to: todayStart)!
+        let endKey = deviceLocalDateKey(todayStart)
+        let windowStartKey = deviceLocalDateKey(windowStart)
+
+        let countsByKey = Dictionary(grouping: self, by: \.logLocalDateKey).mapValues(\.count)
+        let sortedHits = sortedByTime()
+        guard let firstKey = sortedHits.first?.logLocalDateKey else { return 0 }
+        let actualStartKey = Swift.max(firstKey, windowStartKey)
+
+        var total = 0
+        var dayCount = 0
+        var cur = parseDeviceDateKey(actualStartKey)
+        while deviceLocalDateKey(cur) < endKey {
+            total += countsByKey[deviceLocalDateKey(cur), default: 0]
+            dayCount += 1
+            cur = cal.date(byAdding: .day, value: 1, to: cur)!
+        }
+        return dayCount == 0 ? 0 : Double(total) / Double(dayCount)
+    }
+
     // MARK: - Session-level (frequency / primary)
 
     /// Sessions whose start falls in today's device-local date.

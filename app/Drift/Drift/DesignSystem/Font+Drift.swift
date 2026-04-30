@@ -31,16 +31,17 @@ extension Font {
 extension Text {
     // Caveat's cursive overshoots extend past its typographic advance, so SwiftUI
     // clips trailing swashes against the Text frame. Padding can't fix it (Text
-    // frame is set by content), so wrap the string with em-space on both sides —
-    // both gives the swash room AND keeps the rendered string visually centered.
+    // frame is set by content), so wrap the string with thin-space (1/5 em ≈ 5pt
+    // at 24pt size) on both sides — just enough for the swash, narrow enough that
+    // it doesn't visibly skew centering the way em-space (24pt) did.
     // Apply a Caveat font yourself after — e.g. Text.caveat("today").font(.driftCardTitle)
     static func caveat(_ content: String) -> Text {
-        Text("\u{2003}" + content + "\u{2003}")
+        Text("\u{2009}" + content + "\u{2009}")
     }
 
     /// Like `caveat` but only pads the trailing swash — use for left-aligned text
-    /// where the leading em-space would read as indentation.
+    /// where any leading whitespace would read as indentation.
     static func caveatLeading(_ content: String) -> Text {
-        Text(content + "\u{2003}")
+        Text(content + "\u{2009}")
     }
 }

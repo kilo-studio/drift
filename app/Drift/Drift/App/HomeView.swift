@@ -61,14 +61,14 @@ struct HomeView: View {
                 .padding(.bottom, 96)
             }
 
-            // Front sparkle layer — sparser, smaller, slightly translucent so it
-            // adds depth in front of the cards without obscuring readable content.
+            // Front sparkle layer — sparser, smaller, always-visible (no ratio
+            // gating). Adds atmospheric shimmer over the cards.
             SparkleField(
                 lastSessionEnd: store.lastSessionEnd(),
                 wakingAvgSec: store.wakingAvgSec(),
                 layer: .front
             )
-            .opacity(0.7)
+            .opacity(0.85)
 
             #if DEBUG
             debugHitButton
@@ -91,7 +91,7 @@ struct HomeView: View {
                 title: "avg / day",
                 bigNumber: formatAvg(avg),
                 bigNumberColor: .driftSageDeep,
-                label: "sessions · 30 day"
+                label: "\(Int(store.avgHitsPerDay().rounded())) hits"
             )
         }
     }

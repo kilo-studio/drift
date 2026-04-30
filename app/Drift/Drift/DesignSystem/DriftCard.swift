@@ -4,12 +4,11 @@ import UIKit
 private let cardCornerRadius: CGFloat = 28
 
 /// Light: warm cream tint over the ultra-thin material.
-/// Dark: faint white tint over the (auto-darkened) material — preserves the glass feel.
-/// Both pulled down for more transparency on top of the new ambient cloud / star
-/// layer so the atmosphere shows through the cards.
+/// Dark: clear — ultraThinMaterial alone gives the right "glass over night sky"
+/// translucency without an additional tint that makes the card feel flat.
 private let cardSurface: Color = Color(uiColor: UIColor { trait in
     trait.userInterfaceStyle == .dark
-        ? UIColor.white.withAlphaComponent(0.04)
+        ? UIColor.clear
         : UIColor(red: 1.0, green: 251/255, blue: 244/255, alpha: 0.22)
 })
 

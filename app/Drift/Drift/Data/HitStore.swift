@@ -166,4 +166,7 @@ final class HitStore {
     func avgHitsPerSession(now: Date = .now, window: Int = 30) -> Double? {
         hits.avgHitsPerSession(now: now, window: window, threshold: sessionThresholdSec)
     }
+    func avgHitsPerDay(now: Date = .now, window: Int = 30) -> Double {
+        hits.avgHitsPerDay(now: now, window: window)
+    }
 }

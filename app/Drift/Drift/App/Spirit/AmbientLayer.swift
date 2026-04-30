@@ -82,15 +82,13 @@ private struct CloudTrack {
 }
 
 /// Mix of widths, scales, vertical positions, periods, and phase offsets so the
-/// sky has variety and a realistic 0–3 visible at any time. Periods 90–160s give
-/// genuinely slow drift; phase offsets are spread so they don't cluster.
+/// sky has variety and 0–2 visible at any time. Periods 95–165s give genuinely
+/// slow drift; phase offsets are spread so they don't cluster.
 private let cloudTracks: [CloudTrack] = [
     CloudTrack(shape: cloud1, yPos: 70,  scale: 1.0,  period: 110, phaseOffset: 0),
     CloudTrack(shape: cloud2, yPos: 240, scale: 0.85, period: 145, phaseOffset: 55),
     CloudTrack(shape: cloud3, yPos: 140, scale: 1.1,  period: 95,  phaseOffset: 130),
     CloudTrack(shape: cloud2, yPos: 50,  scale: 0.7,  period: 165, phaseOffset: 220),
-    CloudTrack(shape: cloud1, yPos: 320, scale: 0.65, period: 125, phaseOffset: 80),
-    CloudTrack(shape: cloud3, yPos: 180, scale: 0.55, period: 100, phaseOffset: 290),
 ]
 
 // MARK: - Cloud fills
@@ -101,12 +99,12 @@ private let lightCloudFill = Gradient(stops: [
     .init(color: Color(red: 242/255, green: 224/255, blue: 206/255).opacity(0.75), location: 1),
 ])
 
-/// Bg navy is roughly rgb(15, 26, 36). For "dark cloud" silhouettes we go DARKER
-/// than the sky so they read as occluding mass.
+/// Bg navy is roughly rgb(15, 26, 36). Dark mode clouds are *very slightly*
+/// lighter than the sky — they read as moonlit haze rather than occluding mass.
 private let darkCloudFill = Gradient(stops: [
-    .init(color: Color(red: 6/255, green: 12/255, blue: 20/255).opacity(0.95), location: 0),
-    .init(color: Color(red: 4/255, green: 8/255,  blue: 15/255).opacity(0.85), location: 0.65),
-    .init(color: Color(red: 2/255, green: 5/255,  blue: 10/255).opacity(0.55), location: 1),
+    .init(color: Color(red: 28/255, green: 42/255, blue: 58/255).opacity(0.85), location: 0),
+    .init(color: Color(red: 22/255, green: 35/255, blue: 50/255).opacity(0.70), location: 0.65),
+    .init(color: Color(red: 18/255, green: 30/255, blue: 42/255).opacity(0.40), location: 1),
 ])
 
 // MARK: - Drift drawing

@@ -5,7 +5,7 @@ struct HeroPrimaryView: View {
     let lastHitDate: Date?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 0) {
             Text.caveatLeading("free for")
                 .font(.driftHeroLabel)
                 .foregroundStyle(.driftInkSoft)

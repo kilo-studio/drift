@@ -78,10 +78,10 @@ struct HomeView: View {
                 label: "\(hits) hit\(hits == 1 ? "" : "s")"
             )
             StatCard(
-                title: "average",
+                title: "avg sessions / day",
                 bigNumber: formatAvg(avg),
                 bigNumberColor: .driftSageDeep,
-                label: "sessions per day · 30d"
+                label: "30 day average"
             )
         }
     }

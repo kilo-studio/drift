@@ -30,9 +30,11 @@ struct StatCard: View {
             Text.caveat(title)
                 .font(.driftCardTitle)
                 .foregroundStyle(.driftInk)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-                .frame(maxWidth: .infinity, alignment: .center)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                // Reserved 2-line height keeps stat cards visually balanced when
+                // some titles fit on one line and others wrap.
+                .frame(maxWidth: .infinity, minHeight: 60, alignment: .top)
                 .padding(.bottom, 4)
 
             HStack(alignment: .firstTextBaseline, spacing: 0) {
@@ -79,8 +81,8 @@ struct ChartCard<Content: View>: View {
                 .padding(.bottom, 4)
 
             Text(subtitle)
-                .font(.driftSub)
-                .foregroundStyle(.driftInkFade)
+                .font(.driftLabel)
+                .foregroundStyle(.driftInkSoft)
                 .padding(.bottom, 16)
 
             content()

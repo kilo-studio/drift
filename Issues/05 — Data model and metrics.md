@@ -1,5 +1,5 @@
 ---
-status: doing
+status: done
 priority: high
 tags: [foundation]
 ---

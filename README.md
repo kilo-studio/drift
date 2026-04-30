@@ -6,7 +6,7 @@ A small, beautiful iOS app that helps you notice the gaps. Currently a Scriptabl
 
 ## Status
 
-Prototype works and is in daily personal use. Native iOS rebuild planned. Distribution: free on the App Store, source on GitHub, case study on portfolio.
+Prototype still in daily personal use. Native iOS rebuild well underway: dashboard, spirit, sparkles, logging via App Intent, notifications, ambient cloud/star layer, dark mode, and the prototype-data migration are all in. What's left before submission: settings + onboarding + app icon (Issue 12), hit history (Issue 17), milestone glows (Issue 14), and App Store metadata (Issue 13). Distribution: free on the App Store, source on GitHub, case study on portfolio.
 
 ## Where things live
 

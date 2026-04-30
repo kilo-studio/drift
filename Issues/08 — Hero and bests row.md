@@ -1,5 +1,5 @@
 ---
-status: doing
+status: done
 priority: medium
 tags: [dashboard]
 ---

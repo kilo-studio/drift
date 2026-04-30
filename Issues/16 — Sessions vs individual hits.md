@@ -6,8 +6,8 @@ tags: [foundation, data, design]
 
 > **Implementation status:** session derivation, threshold gating in `HitStore.append`,
 > and session-aware metric semantics landed alongside the Issue 05 data layer.
-> Spirit's ratio + "in session" rendering happens in Issue 10. Settings UI for the
-> threshold picker happens with the rest of settings.
+> Spirit's ratio uses session-end as drift anchor (Issue 10). Settings UI for the
+> threshold picker is part of [[Issues/12 — Onboarding, settings, app icon|Issue 12]].
 
 # Sessions vs individual hits
 

@@ -11,7 +11,7 @@
 - **Charts** (Apple's Charts framework) for the four chart cards
 - **SwiftUI Canvas + TimelineView** for the spirit character and 200-particle sparkle field
 
-Minimum target: iOS 17 (App Intents Lock Screen entries, native Charts, Observation framework). Comfortably bumps to iOS 18+ for polish.
+Minimum target: **iOS 26**. We get unrestricted access to the latest Charts, App Intents, Observation, SwiftData, `onScrollGeometryChange`, and the cloud/sparkle Canvas APIs without any availability gating.
 
 ## App shape
 

@@ -1,27 +1,17 @@
 import SwiftUI
 
-struct HeroView: View {
+/// Top-of-dashboard "free for X" block. Left-aligned so the spirit can sit to its right.
+struct HeroPrimaryView: View {
     let lastHitDate: Date?
-    let longestWakingGapSec: TimeInterval
-    let longestGapSec: TimeInterval
 
     var body: some View {
-        VStack(spacing: 0) {
-            VStack(spacing: 4) {
-                Text.caveat("free for")
-                    .font(.driftHeroLabel)
-                    .foregroundStyle(.driftInkSoft)
+        VStack(alignment: .leading, spacing: 4) {
+            Text.caveatLeading("free for")
+                .font(.driftHeroLabel)
+                .foregroundStyle(.driftInkSoft)
 
-                TimelineView(.periodic(from: .now, by: 1)) { ctx in
-                    timer(elapsed: lastHitDate.map { ctx.date.timeIntervalSince($0) } ?? 0)
-                }
-            }
-            .padding(.top, 12)
-            .padding(.bottom, 12)
-
-            HStack(spacing: 36) {
-                bestColumn(label: "longest waking", value: longestWakingGapSec)
-                bestColumn(label: "longest overall", value: longestGapSec)
+            TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                timer(elapsed: lastHitDate.map { ctx.date.timeIntervalSince($0) } ?? 0)
             }
         }
     }
@@ -38,14 +28,28 @@ struct HeroView: View {
                 .foregroundStyle(.driftInkSoft)
         }
     }
+}
 
-    private func bestColumn(label: String, value: TimeInterval) -> some View {
-        VStack(spacing: 4) {
+/// Two stacked, left-aligned bests rows.
+/// Top: longest gap while awake. Below: all-time longest gap.
+struct HeroBestsView: View {
+    let longestWakingGapSec: TimeInterval
+    let longestGapSec: TimeInterval
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            bestRow(label: "longest gap while awake", value: longestWakingGapSec)
+            bestRow(label: "all time longest gap", value: longestGapSec)
+        }
+    }
+
+    private func bestRow(label: String, value: TimeInterval) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
             Text(value > 0 ? formatGap(value) : "—")
                 .font(.driftBestNum)
                 .tracking(-0.2)
                 .foregroundStyle(.driftInk)
-            Text.caveat(label)
+            Text.caveatLeading(label)
                 .font(.driftBestLabel)
                 .foregroundStyle(.driftInkSoft)
         }

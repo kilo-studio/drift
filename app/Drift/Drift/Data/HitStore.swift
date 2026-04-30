@@ -83,6 +83,19 @@ final class HitStore {
         publishToWidget()
     }
 
+    /// Wipes all hits and resets the persisted records. Debug-only — used by the
+    /// "Reload from prototype" action so the migration can re-run cleanly.
+    func resetEverything() throws {
+        for h in hits {
+            context.delete(h)
+        }
+        records.longestGapSec = 0
+        records.longestWakingGapSec = 0
+        try context.save()
+        try reload()
+        publishToWidget()
+    }
+
     /// Inserts many hits in chronological order, walking the same record-update logic
     /// as `append` but without firing notifications or saving per-hit. Used by the
     /// one-time prototype import.

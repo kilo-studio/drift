@@ -41,6 +41,13 @@ struct TodayStretchesChart: View {
             .foregroundStyle(Color.driftCoral)
             .lineStyle(StrokeStyle(lineWidth: 2))
             .interpolationMethod(.catmullRom)
+
+            PointMark(
+                x: .value("time", p.date),
+                y: .value("min", p.minutes)
+            )
+            .foregroundStyle(Color.driftCoral)
+            .symbolSize(60)
         }
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 4)) { value in

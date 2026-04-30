@@ -9,19 +9,24 @@ struct HomeView: View {
 
             ScrollView {
                 VStack(spacing: 16) {
-                    SpiritView(
-                        lastSessionEnd: store.lastSessionEnd(),
-                        wakingAvgSec: store.wakingAvgSec(),
-                        longestWakingGapSec: store.longestWakingGapSec,
-                        longestGapSec: store.longestGapSec
-                    )
+                    HStack(alignment: .top) {
+                        HeroPrimaryView(lastHitDate: store.lastSessionEnd())
+                        Spacer(minLength: 8)
+                        SpiritView(
+                            lastSessionEnd: store.lastSessionEnd(),
+                            wakingAvgSec: store.wakingAvgSec(),
+                            longestWakingGapSec: store.longestWakingGapSec,
+                            longestGapSec: store.longestGapSec
+                        )
+                        .offset(x: -16, y: 24)
+                    }
                     .padding(.top, 36)
 
-                    HeroView(
-                        lastHitDate: store.lastSessionEnd(),
+                    HeroBestsView(
                         longestWakingGapSec: store.longestWakingGapSec,
                         longestGapSec: store.longestGapSec
                     )
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.bottom, 16)
 
                     statCardsRow
@@ -103,6 +108,7 @@ struct HomeView: View {
                 }
                 .contextMenu {
                     Button("Seed 14 days") { seedDebugData() }
+                    Button("Reload from prototype") { reloadFromPrototype() }
                     Button("Clear all hits", role: .destructive) { clearAllHits() }
                 }
                 .padding(.trailing, 24)
@@ -132,9 +138,13 @@ struct HomeView: View {
     }
 
     private func clearAllHits() {
-        for h in store.hits {
-            try? store.remove(h)
-        }
+        try? store.resetEverything()
+    }
+
+    private func reloadFromPrototype() {
+        try? store.resetEverything()
+        UserDefaults.standard.removeObject(forKey: "drift.migration.scriptable.complete")
+        PrototypeMigration.runIfNeeded(store)
     }
     #endif
 }

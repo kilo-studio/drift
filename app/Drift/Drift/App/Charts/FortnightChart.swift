@@ -35,7 +35,7 @@ struct FortnightChart: View {
         }
         .chartXAxis {
             AxisMarks(values: .stride(by: .day, count: 2)) { value in
-                AxisValueLabel(format: .dateTime.day())
+                AxisValueLabel(format: .dateTime.weekday(.abbreviated))
                     .font(.driftSub)
                     .foregroundStyle(.driftInkSoft)
             }

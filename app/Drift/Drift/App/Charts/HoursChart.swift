@@ -25,8 +25,7 @@ struct HoursChart: View {
         Chart(buckets) { b in
             BarMark(
                 x: .value("hour", b.id),
-                y: .value("count", b.count),
-                width: .ratio(0.6)
+                y: .value("count", b.count)
             )
             .foregroundStyle(LinearGradient(
                 colors: [Color.driftSage, Color.driftSageDeep.opacity(0.7)],

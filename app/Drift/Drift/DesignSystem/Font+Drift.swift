@@ -36,4 +36,10 @@ extension Text {
     static func caveat(_ content: String) -> Text {
         Text("\u{2003}" + content + "\u{2003}")
     }
+
+    /// Like `caveat` but only pads the trailing swash — use for left-aligned text
+    /// where the leading em-space would read as indentation.
+    static func caveatLeading(_ content: String) -> Text {
+        Text(content + "\u{2003}")
+    }
 }

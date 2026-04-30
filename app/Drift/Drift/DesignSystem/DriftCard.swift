@@ -1,8 +1,30 @@
 import SwiftUI
+import UIKit
 
 private let cardCornerRadius: CGFloat = 28
-private let cardSurface = Color(hex: 0xFFFBF4).opacity(0.4)
-private let cardShadow = Color(hex: 0x4B3C2D)
+
+/// Light: warm cream tint over the thin material.
+/// Dark: faint white tint over the (auto-darkened) material — preserves the glass feel.
+private let cardSurface: Color = Color(uiColor: UIColor { trait in
+    trait.userInterfaceStyle == .dark
+        ? UIColor.white.withAlphaComponent(0.06)
+        : UIColor(red: 1.0, green: 251/255, blue: 244/255, alpha: 0.4)
+})
+
+/// Light: warm brown for shadow. Dark: black, very subtle (most of the depth comes
+/// from the bg/card brightness contrast).
+private let cardShadow: Color = Color(uiColor: UIColor { trait in
+    trait.userInterfaceStyle == .dark
+        ? UIColor.black
+        : UIColor(red: 75/255, green: 60/255, blue: 45/255, alpha: 1)
+})
+
+/// Light: white inner highlight on the rounded edge. Dark: subtle white for glass rim.
+private let cardStroke: Color = Color(uiColor: UIColor { trait in
+    trait.userInterfaceStyle == .dark
+        ? UIColor.white.withAlphaComponent(0.10)
+        : UIColor.white.withAlphaComponent(0.6)
+})
 
 struct DriftCardModifier: ViewModifier {
     func body(content: Content) -> some View {
@@ -20,7 +42,7 @@ struct DriftCardModifier: ViewModifier {
             }
             .overlay {
                 RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.6), lineWidth: 1)
+                    .strokeBorder(cardStroke, lineWidth: 1)
             }
             .shadow(color: cardShadow.opacity(0.08), radius: 16, x: 0, y: 12)
             .shadow(color: cardShadow.opacity(0.04), radius: 4, x: 0, y: 2)

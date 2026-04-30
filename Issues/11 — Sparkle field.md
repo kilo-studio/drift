@@ -1,5 +1,5 @@
 ---
-status: todo
+status: done
 priority: high
 tags: [dashboard, spirit]
 ---
@@ -10,22 +10,18 @@ tags: [dashboard, spirit]
 
 ## Tasks
 
-- [ ] `SparkleField` view: sized to fill its parent (likely the dashboard background layer)
-- [ ] On first appear, generate 200 sparkles deterministically (or with a stable seed) — *but* with a fresh per-launch random rotation/jitter so the halo isn't identical every time
-- [ ] Each sparkle has:
-  - Position in viewport-percentage coords (`x: 0..100`, `y: 0..100`)
-  - `revealAt` threshold computed from sorted-by-distance index using `1 + pow(i/199, 1.5) * 19`
-  - Size (mostly 6–10pt, occasionally 10–16pt)
-  - Drift offset (`dx`, `dy`, ±18pt) and drift duration (4.5–9.5s)
-  - Twinkle duration (2.4–4s) and phase
-  - Color from a small warm palette (`#E8B86B`, `#F0C57C`, `#FFD08C`, `#E8836B`, `#F4D88B`)
-- [ ] `Canvas { context, size, currentTime in ... }` driven by `TimelineView(.animation)`:
-  - For each sparkle: skip if `ratio < revealAt` (cull culling so we don't pay for hidden ones)
-  - Compute drift offset from sin of `(currentTime + phase) * (2π / driftDuration)`
-  - Compute opacity from sin of `(currentTime + twinklePhase) * (2π / twinkleDuration)` mapped to 0.35–1
-  - Draw a 4-point star path at `(x, y) + driftOffset` filled with the sparkle's color
-- [ ] Pass current `ratio` in via the view model so reveal updates as time progresses
-- [ ] Smooth opacity fade-in when a sparkle's `revealAt` is crossed (track per-sparkle `wasVisible`, lerp opacity over ~1.4s)
+- [x] `SparkleField` view sized to fill its parent. Wrapped in a `GeometryReader` to anchor the Canvas at the screen size; `.ignoresSafeArea()` so sparkles can drift behind the status bar / home indicator.
+- [x] 200 sparkles generated in `init` (via `State(initialValue:)` — `.onAppear` was racing the first Canvas tick and leaving the array empty on first paint). Fresh per-launch via `SystemRandomNumberGenerator`.
+- [x] Each sparkle:
+  - viewport-pct position (`xPct`, `yPct`)
+  - `revealAt = 1 + (i/199)^1.5 * 19` after sorting by distance to spirit (78%, 14%) with vertical weighted 0.85× to avoid horizontal-only fills
+  - size 6–10 normally, 10–16 18% of the time
+  - drift amplitude (±15pt), driftDuration 4.5–9.5s, random phase
+  - twinkleDuration 2.4–4s, random phase
+  - color from a warm palette weighted toward coral/peach (the prototype's mostly-yellow palette blended into light blue too readily)
+- [x] `Canvas` inside `TimelineView(.animation(minimumInterval: 1/60))` reads `currentRatio` per frame from `lastSessionEnd` + `wakingAvgSec`, skips sparkles where `ratio < revealAt`, otherwise draws a 4-point star at the drift-offset position with twinkle opacity (0.35–1.0)
+- [x] Reduce Motion: full opacity, zero drift — sparkles still appear / disappear with ratio
+- [ ] **Deferred polish:** smooth fade-in when a sparkle's `revealAt` is crossed (currently they pop in). Could track per-sparkle `wasVisible` and lerp; minor enhancement.
 
 ## Performance
 

@@ -7,6 +7,11 @@ struct HomeView: View {
         ZStack {
             Color.driftSkyLowerMid.ignoresSafeArea()
 
+            SparkleField(
+                lastSessionEnd: store.lastSessionEnd(),
+                wakingAvgSec: store.wakingAvgSec()
+            )
+
             ScrollView {
                 VStack(spacing: 16) {
                     HStack(alignment: .top) {

@@ -1,14 +1,14 @@
 import SwiftUI
 import SwiftData
 
-/// Read/write/delete counterpart to "log a hit." Vibe-matched: solid sky bg
-/// (no scroll-content offsets — same as HomeView), an activity grid of day
-/// circles at the top, then session cards grouped by day. Each session row
-/// expands to show individual hits with a context-menu for edit/delete.
+/// History page: a month calendar with day circles whose fill ramps with the
+/// session count, and a section below showing the selected day's sessions.
+/// Tap a day in the calendar to drill in.
 struct HistoryView: View {
     @Environment(HitStore.self) private var store
 
-    @State private var expandedSessions: Set<Date> = []
+    @State private var displayedMonth: Date = Calendar(identifier: .gregorian).startOfMonth(Date())
+    @State private var selectedDay: Date = Calendar(identifier: .gregorian).startOfDay(for: Date())
     @State private var hitToEdit: Hit?
     @State private var hitToDelete: Hit?
 
@@ -25,18 +25,16 @@ struct HistoryView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 36)
 
-                    ActivityGridCard(store: store)
+                    CalendarCard(
+                        store: store,
+                        displayedMonth: $displayedMonth,
+                        selectedDay: $selectedDay
+                    )
 
-                    if daySections.isEmpty {
-                        emptyState
-                    } else {
-                        ForEach(daySections, id: \.key) { day in
-                            daySectionCard(day)
-                        }
-                    }
+                    selectedDayCard
                 }
                 .padding(.horizontal, 16)
-                .padding(.bottom, 120)  // breathing room for the bottom bar
+                .padding(.bottom, 120)
             }
         }
         .sheet(item: $hitToEdit) { hit in
@@ -56,249 +54,317 @@ struct HistoryView: View {
         }
     }
 
-    private var emptyState: some View {
-        VStack(spacing: 8) {
-            Text.caveat("no hits yet")
-                .font(.driftCardTitle)
-                .foregroundStyle(.driftInk)
-            Text("logged hits will appear here.")
-                .font(.driftLabel)
-                .foregroundStyle(.driftInkSoft)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 28)
-        .driftCard()
-    }
-
     @ViewBuilder
-    private func daySectionCard(_ day: DaySection) -> some View {
+    private var selectedDayCard: some View {
+        let sessions = sessionsForSelectedDay
         VStack(alignment: .leading, spacing: 14) {
-            Text.caveat(day.title)
+            Text.caveat(dayTitle(for: selectedDay))
                 .font(.driftCardTitle)
                 .foregroundStyle(.driftInk)
 
-            VStack(spacing: 10) {
-                ForEach(day.sessions, id: \.id) { session in
-                    sessionRow(session)
-                    if expandedSessions.contains(session.start) {
-                        VStack(spacing: 6) {
-                            ForEach(session.hits, id: \.persistentModelID) { hit in
-                                hitRow(hit)
-                            }
-                        }
-                        .padding(.leading, 22)
-                        .padding(.top, 2)
+            if sessions.isEmpty {
+                Text("no hits this day.")
+                    .font(.driftLabel)
+                    .foregroundStyle(.driftInkSoft)
+                    .padding(.vertical, 12)
+            } else {
+                VStack(spacing: 10) {
+                    ForEach(sessions, id: \.id) { session in
+                        sessionRow(session)
                     }
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .driftCard()
+    }
+
+    private var sessionsForSelectedDay: [Session] {
+        let key = wakingDayKey(for: selectedDay)
+        return store.hits
+            .sessions(threshold: store.sessionThresholdSec)
+            .filter { $0.wakingDayKey == key }
+            .sorted { $0.start > $1.start }
     }
 
     @ViewBuilder
     private func sessionRow(_ session: Session) -> some View {
-        let isExpanded = expandedSessions.contains(session.start)
-        Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                if isExpanded { expandedSessions.remove(session.start) }
-                else { expandedSessions.insert(session.start) }
-            }
-        } label: {
+        VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
-                Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.driftInkFade)
-                    .frame(width: 14)
-
                 Text(timeOfDay(session.start))
                     .font(.driftLabel)
                     .foregroundStyle(.driftInk)
-
                 Spacer()
-
                 Text(session.count == 1 ? "solo hit" : "session of \(session.count) hits")
                     .font(.driftSub)
                     .foregroundStyle(.driftInkSoft)
             }
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func hitRow(_ hit: Hit) -> some View {
-        HStack {
-            Circle()
-                .fill(Color.driftCoral.opacity(0.6))
-                .frame(width: 6, height: 6)
-            Text(timeOfDay(hit.t))
-                .font(.driftSub)
-                .foregroundStyle(.driftInkSoft)
-            Spacer()
-        }
-        .contentShape(Rectangle())
-        .contextMenu {
-            Button {
-                hitToEdit = hit
-            } label: {
-                Label("Edit time", systemImage: "pencil")
-            }
-            Button(role: .destructive) {
-                hitToDelete = hit
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
-        }
-    }
-
-    // MARK: - Day grouping
-
-    private struct DaySection {
-        let key: String
-        let title: String
-        let sessions: [Session]
-    }
-
-    private var daySections: [DaySection] {
-        let allSessions = store.hits.sessions(threshold: store.sessionThresholdSec)
-        let grouped = Dictionary(grouping: allSessions, by: \.wakingDayKey)
-        return grouped.keys.sorted(by: >).map { key in
-            let sessions = (grouped[key] ?? []).sorted { $0.start > $1.start }
-            return DaySection(key: key, title: dayTitle(for: key), sessions: sessions)
-        }
-    }
-
-    private func dayTitle(for wakingDayKey: String) -> String {
-        let cal = Calendar(identifier: .gregorian)
-        if wakingDayKey == currentWakingDayKey() { return "today" }
-
-        let yesterday = cal.date(byAdding: .day, value: -1, to: Date())!
-        if wakingDayKey == currentWakingDayKey(yesterday) { return "yesterday" }
-
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withFullDate]
-        if let date = f.date(from: wakingDayKey) {
-            let display = DateFormatter()
-            display.dateFormat = "EEE · MMM d"
-            return display.string(from: date).lowercased()
-        }
-        return wakingDayKey
-    }
-}
-
-// MARK: - Activity grid
-
-/// GitHub-style contribution grid using circles instead of squares. 7 columns
-/// (Sun..Sat) × N rows (most recent week at the bottom). Each cell's opacity is
-/// bucketed by session count for that day; today gets a coral ring.
-private struct ActivityGridCard: View {
-    let store: HitStore
-
-    private let columns = 7        // days of week
-    private let rows = 7           // ~7 weeks back
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text.caveat("the last 7 weeks")
-                .font(.driftCardTitle)
-                .foregroundStyle(.driftInk)
-
-            grid
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .driftCard()
-    }
-
-    private var grid: some View {
-        let cells = buildCells()
-        // Layout: rows of 7 each, oldest week first / newest at bottom.
-        return VStack(spacing: 8) {
-            ForEach(0..<rows, id: \.self) { r in
-                HStack(spacing: 8) {
-                    ForEach(0..<columns, id: \.self) { c in
-                        let i = r * columns + c
-                        cell(cells[i])
+            if session.count > 1 {
+                HStack(spacing: 6) {
+                    ForEach(session.hits, id: \.persistentModelID) { hit in
+                        hitChip(hit)
                     }
                 }
             }
         }
     }
 
-    private func cell(_ data: ActivityCell) -> some View {
-        Circle()
-            .fill(Color.driftSageDeep.opacity(data.opacity))
-            .frame(maxWidth: .infinity)
-            .aspectRatio(1, contentMode: .fit)
-            .overlay {
-                if data.isToday {
-                    Circle().strokeBorder(Color.driftCoral, lineWidth: 1.5)
+    private func hitChip(_ hit: Hit) -> some View {
+        Text(timeOfDay(hit.t))
+            .font(.system(size: 11, weight: .medium))
+            .foregroundStyle(.driftInkSoft)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.driftCoral.opacity(0.15), in: Capsule())
+            .contextMenu {
+                Button {
+                    hitToEdit = hit
+                } label: {
+                    Label("Edit time", systemImage: "pencil")
+                }
+                Button(role: .destructive) {
+                    hitToDelete = hit
+                } label: {
+                    Label("Delete", systemImage: "trash")
                 }
             }
     }
 
-    private struct ActivityCell {
-        let date: Date
-        let opacity: Double
-        let isToday: Bool
-    }
+    // MARK: - Helpers
 
-    /// Build cells oldest-first so the bottom-right is "today" — mirrors GitHub.
-    private func buildCells() -> [ActivityCell] {
+    private func dayTitle(for date: Date) -> String {
         let cal = Calendar(identifier: .gregorian)
-        let today = cal.startOfDay(for: Date())
+        if cal.isDateInToday(date) { return "today" }
+        if cal.isDateInYesterday(date) { return "yesterday" }
+        let f = DateFormatter()
+        f.dateFormat = "EEEE · MMM d"
+        return f.string(from: date).lowercased()
+    }
 
-        // Today's column index (0=Sun .. 6=Sat in default Gregorian) — but
-        // .weekday is 1-indexed so subtract 1.
-        let todayCol = (cal.component(.weekday, from: today) - 1).clamped(to: 0...6)
+    private func wakingDayKey(for date: Date) -> String {
+        // For the selected day in calendar, treat the day boundaries as device-local.
+        // (The hits' own wakingDayKey already rolls 0–4am to the previous day.)
+        let cal = Calendar(identifier: .gregorian)
+        let comps = cal.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", comps.year!, comps.month!, comps.day!)
+    }
+}
 
-        // Total cells; last cell is today. Compute the date for cell 0:
-        let totalCells = rows * columns
-        let daysBack = totalCells - 1 - (columns - 1 - todayCol)
-        let firstDate = cal.date(byAdding: .day, value: -(totalCells - 1), to: today)!
+// MARK: - Calendar card
 
-        // Map device-local date keys to session counts for the rolling window.
+private struct CalendarCard: View {
+    let store: HitStore
+    @Binding var displayedMonth: Date
+    @Binding var selectedDay: Date
+
+    private let cal = Calendar(identifier: .gregorian)
+
+    var body: some View {
+        VStack(spacing: 14) {
+            header
+
+            // Day-of-week labels
+            HStack(spacing: 0) {
+                ForEach(["s", "m", "t", "w", "t", "f", "s"], id: \.self) { dow in
+                    Text(dow)
+                        .font(.driftSub)
+                        .foregroundStyle(.driftInkFade)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+
+            grid
+        }
+        .frame(maxWidth: .infinity)
+        .driftCard()
+    }
+
+    private var header: some View {
+        HStack {
+            Button {
+                displayedMonth = cal.date(byAdding: .month, value: -1, to: displayedMonth)!
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.driftInk)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+
+            // Tap month/year label to open a year-month picker.
+            Menu {
+                ForEach(monthYearOptions, id: \.self) { date in
+                    Button(monthYearLabel(date)) {
+                        displayedMonth = date
+                    }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text.caveat(monthYearLabel(displayedMonth))
+                        .font(.driftCardTitle)
+                        .foregroundStyle(.driftInk)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.driftInkSoft)
+                }
+            }
+
+            Spacer()
+
+            Button {
+                displayedMonth = cal.date(byAdding: .month, value: 1, to: displayedMonth)!
+            } label: {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.driftInk)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    /// 24 months of dropdown options (12 back, 12 forward) so the user can jump
+    /// directly to a given month.
+    private var monthYearOptions: [Date] {
+        let now = Date()
+        let start = cal.date(byAdding: .month, value: -12, to: now)!
+        var options: [Date] = []
+        for i in 0..<25 {
+            if let d = cal.date(byAdding: .month, value: i, to: cal.startOfMonth(start)) {
+                options.append(d)
+            }
+        }
+        return options.reversed()
+    }
+
+    private func monthYearLabel(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "MMMM yyyy"
+        return f.string(from: date).lowercased()
+    }
+
+    // MARK: - Grid
+
+    private var grid: some View {
+        let cells = buildCells()
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
+        return LazyVGrid(columns: columns, spacing: 8) {
+            ForEach(cells.indices, id: \.self) { i in
+                let cell = cells[i]
+                if let date = cell.date {
+                    dayCircle(date: date, count: cell.count, inMonth: cell.inMonth)
+                } else {
+                    Color.clear
+                        .aspectRatio(1, contentMode: .fit)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func dayCircle(date: Date, count: Int, inMonth: Bool) -> some View {
+        let isSelected = cal.isDate(date, inSameDayAs: selectedDay)
+        let isToday = cal.isDateInToday(date)
+        let opacity = bucketedOpacity(count: count)
+        let dayNumber = cal.component(.day, from: date)
+
+        Button {
+            selectedDay = cal.startOfDay(for: date)
+        } label: {
+            ZStack {
+                if count > 0 {
+                    Circle()
+                        .fill(Color.driftSageDeep.opacity(opacity))
+                } else {
+                    Circle()
+                        .strokeBorder(Color.driftSageDeep.opacity(0.25), lineWidth: 1)
+                }
+                if isToday {
+                    Circle()
+                        .strokeBorder(Color.driftCoral, lineWidth: 1.5)
+                }
+                if isSelected {
+                    Circle()
+                        .strokeBorder(Color.driftInk, lineWidth: 2)
+                        .padding(-2)
+                }
+                Text("\(dayNumber)")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(textColor(filled: count > 0, inMonth: inMonth))
+            }
+            .aspectRatio(1, contentMode: .fit)
+            .opacity(inMonth ? 1 : 0.35)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func textColor(filled: Bool, inMonth: Bool) -> Color {
+        if !inMonth { return .driftInkFade }
+        if filled { return .driftCream }
+        return .driftInkSoft
+    }
+
+    /// 6-step bucket so heavy days clearly differ from light days. Empty cells
+    /// are handled separately as outline-only.
+    private func bucketedOpacity(count: Int) -> Double {
+        switch count {
+        case 0:        return 0
+        case 1...2:    return 0.35
+        case 3...5:    return 0.55
+        case 6...10:   return 0.72
+        case 11...18:  return 0.85
+        default:       return 1.0
+        }
+    }
+
+    // MARK: - Cells
+
+    private struct Cell {
+        let date: Date?    // nil = padding before first day / after last
+        let count: Int
+        let inMonth: Bool
+    }
+
+    private func buildCells() -> [Cell] {
+        let monthStart = cal.startOfMonth(displayedMonth)
+        let range = cal.range(of: .day, in: .month, for: monthStart) ?? 1..<31
+        let daysInMonth = range.count
+
+        // First weekday of month (1 = Sun)
+        let firstWeekday = cal.component(.weekday, from: monthStart) - 1   // 0..6
+
+        // Counts by device-local date key
         let allSessions = store.hits.sessions(threshold: store.sessionThresholdSec)
-        let countsByDay = Dictionary(grouping: allSessions, by: \.logLocalDateKey).mapValues(\.count)
-        let maxCount = countsByDay.values.max() ?? 0
+        let countsByKey = Dictionary(grouping: allSessions, by: \.logLocalDateKey).mapValues(\.count)
 
-        var result: [ActivityCell] = []
-        result.reserveCapacity(totalCells)
-        for i in 0..<totalCells {
-            let day = cal.date(byAdding: .day, value: i, to: firstDate)!
-            let key = deviceLocalDateKey(day)
-            let count = countsByDay[key] ?? 0
-            result.append(ActivityCell(
-                date: day,
-                opacity: bucketedOpacity(count: count, max: maxCount),
-                isToday: cal.isDate(day, inSameDayAs: today)
-            ))
-        }
-        _ = daysBack
-        return result
-    }
+        var cells: [Cell] = []
 
-    /// GitHub-style discrete buckets so a chart with one outlier doesn't
-    /// completely flatten the rest. Empty days get a faint floor so the grid
-    /// never reads as totally blank.
-    private func bucketedOpacity(count: Int, max: Int) -> Double {
-        if count == 0 { return 0.10 }
-        guard max > 0 else { return 0.10 }
-        let ratio = Double(count) / Double(max)
-        switch ratio {
-        case ..<0.25: return 0.30
-        case ..<0.5:  return 0.50
-        case ..<0.75: return 0.70
-        default:       return 0.90
+        // Leading padding
+        for _ in 0..<firstWeekday {
+            cells.append(Cell(date: nil, count: 0, inMonth: false))
         }
+        // Days of this month
+        for d in 1...daysInMonth {
+            var comps = cal.dateComponents([.year, .month], from: monthStart)
+            comps.day = d
+            let date = cal.date(from: comps)!
+            let key = String(format: "%04d-%02d-%02d", comps.year!, comps.month!, d)
+            cells.append(Cell(date: date, count: countsByKey[key, default: 0], inMonth: true))
+        }
+        // Trailing padding to round out the row
+        let trailing = (7 - cells.count % 7) % 7
+        for _ in 0..<trailing {
+            cells.append(Cell(date: nil, count: 0, inMonth: false))
+        }
+        return cells
     }
 }
 
-private extension Comparable {
-    func clamped(to range: ClosedRange<Self>) -> Self {
-        min(max(self, range.lowerBound), range.upperBound)
-    }
-}
-
-// MARK: - Add / Edit sheets (used by ContentView's bottom-bar menu too)
+// MARK: - Add / Edit sheets
 
 struct AddHitSheet: View {
     @Environment(HitStore.self) private var store
@@ -391,4 +457,11 @@ private func timeOfDay(_ date: Date) -> String {
 
 extension Session: Identifiable {
     var id: Date { start }
+}
+
+extension Calendar {
+    func startOfMonth(_ date: Date) -> Date {
+        let comps = dateComponents([.year, .month], from: date)
+        return self.date(from: comps) ?? date
+    }
 }

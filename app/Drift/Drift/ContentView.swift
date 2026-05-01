@@ -40,6 +40,7 @@ struct ContentView: View {
                 Color.clear
             }
         }
+        .tint(.white)
         .overlay { spiritOverlay }
         .sheet(isPresented: $showAddSheet) {
             AddHitSheet()

@@ -3,13 +3,13 @@ import UIKit
 
 private let cardCornerRadius: CGFloat = 28
 
-/// Light: warm cream tint over the ultra-thin material.
-/// Dark: clear — ultraThinMaterial alone gives the right "glass over night sky"
-/// translucency without an additional tint that makes the card feel flat.
+/// Light: very faint warm cream tint over the ultra-thin material.
+/// Dark: fully clear — ultraThinMaterial alone is enough.
+/// Both pulled down further per user — let more of the bg show through.
 private let cardSurface: Color = Color(uiColor: UIColor { trait in
     trait.userInterfaceStyle == .dark
         ? UIColor.clear
-        : UIColor(red: 1.0, green: 251/255, blue: 244/255, alpha: 0.22)
+        : UIColor(red: 1.0, green: 251/255, blue: 244/255, alpha: 0.10)
 })
 
 /// Light: warm brown for shadow. Dark: black, very subtle (most of the depth comes

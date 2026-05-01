@@ -45,8 +45,12 @@ struct DriftCardModifier: ViewModifier {
                 RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
                     .strokeBorder(cardStroke, lineWidth: 1)
             }
-            .shadow(color: cardShadow.opacity(0.08), radius: 16, x: 0, y: 12)
-            .shadow(color: cardShadow.opacity(0.04), radius: 4, x: 0, y: 2)
+            // Near-zero shadows — the soft darkening around card edges was the
+            // remaining thing that made cards read as opaque "objects" rather
+            // than translucent panes. Just enough lift to disambiguate the
+            // edge from the bg.
+            .shadow(color: cardShadow.opacity(0.025), radius: 12, x: 0, y: 8)
+            .shadow(color: cardShadow.opacity(0.015), radius: 3, x: 0, y: 1)
     }
 }
 

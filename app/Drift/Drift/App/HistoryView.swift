@@ -32,7 +32,7 @@ struct HistoryView: View {
                         selectedDay: $selectedDay
                     )
 
-                    selectedDayCard
+                    selectedDaySection
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 120)
@@ -62,7 +62,7 @@ struct HistoryView: View {
     }
 
     @ViewBuilder
-    private var selectedDayCard: some View {
+    private var selectedDaySection: some View {
         let key = wakingDayKey(for: selectedDay)
         let sessions = allSessions
             .filter { $0.wakingDayKey == key }
@@ -74,71 +74,62 @@ struct HistoryView: View {
             threshold: store.sessionThresholdSec
         )
 
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(spacing: 16) {
+            // Day label outside the cards, mirroring how "history" labels the page.
             Text.caveat(dayTitle(for: selectedDay))
+                .font(.driftHeroLabel)
+                .foregroundStyle(.driftInkSoft)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 8)
+
+            // Two stat cards side-by-side, matching home's hero stat row.
+            HStack(spacing: 16) {
+                StatCard(
+                    title: "sessions",
+                    bigNumber: "\(sessions.count)",
+                    bigNumberColor: .driftCoral,
+                    label: "\(totalHits) hit\(totalHits == 1 ? "" : "s")"
+                )
+                StatCard(
+                    title: "avg gap",
+                    bigNumberParts: avgGap.map { formatGapParts($0) } ?? [.number("—")],
+                    bigNumberColor: .driftSageDeep,
+                    label: "between sessions"
+                )
+            }
+
+            // Stretches chart, full-width like home's chart cards.
+            if !stretches.isEmpty {
+                ChartCard(
+                    title: "stretches",
+                    subtitle: "minutes between sessions",
+                    chartHeight: 140
+                ) {
+                    DayStretchesChart(stretches: stretches)
+                }
+            }
+
+            // Detail list of sessions for the day, in its own card.
+            if !sessions.isEmpty {
+                sessionListCard(sessions: sessions)
+            }
+        }
+    }
+
+    private func sessionListCard(sessions: [Session]) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text.caveat("sessions")
                 .font(.driftCardTitle)
                 .foregroundStyle(.driftInk)
 
-            if sessions.isEmpty {
-                Text("no hits this day.")
-                    .font(.driftLabel)
-                    .foregroundStyle(.driftInkSoft)
-                    .padding(.vertical, 12)
-            } else {
-                statStrip(
-                    sessionCount: sessions.count,
-                    hitCount: totalHits,
-                    avgGapSec: avgGap
-                )
-
-                if stretches.count >= 1 {
-                    DayStretchesChart(stretches: stretches)
-                        .frame(height: 90)
-                        .padding(.top, 4)
-                }
-
-                Divider().opacity(0.3)
-
-                VStack(spacing: 10) {
-                    ForEach(sessions, id: \.id) { session in
-                        sessionRow(session)
-                    }
+            VStack(spacing: 10) {
+                ForEach(sessions, id: \.id) { session in
+                    sessionRow(session)
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .driftCard()
-    }
-
-    private func statStrip(sessionCount: Int, hitCount: Int, avgGapSec: TimeInterval?) -> some View {
-        HStack(spacing: 18) {
-            stat(value: "\(sessionCount)", label: sessionCount == 1 ? "session" : "sessions", color: .driftCoral)
-            divider
-            stat(value: "\(hitCount)", label: hitCount == 1 ? "hit" : "hits", color: .driftInk)
-            divider
-            stat(
-                value: avgGapSec.map { formatGap($0) } ?? "—",
-                label: "avg gap",
-                color: .driftSageDeep
-            )
-        }
-    }
-
-    private var divider: some View {
-        Rectangle()
-            .fill(Color.driftInkFade.opacity(0.25))
-            .frame(width: 1, height: 26)
-    }
-
-    private func stat(value: String, label: String, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(value)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(color)
-            Text(label)
-                .font(.driftSub)
-                .foregroundStyle(.driftInkSoft)
-        }
     }
 
     @ViewBuilder

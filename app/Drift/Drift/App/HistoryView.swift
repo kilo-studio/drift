@@ -6,7 +6,6 @@ import SwiftData
 /// button in the toolbar for "add a forgotten hit."
 struct HistoryView: View {
     @Environment(HitStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
 
     @State private var expandedSessions: Set<Date> = []
     @State private var hitToEdit: Hit?
@@ -19,9 +18,6 @@ struct HistoryView: View {
                 .navigationTitle("history")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button("Done") { dismiss() }
-                    }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
                             showAddSheet = true

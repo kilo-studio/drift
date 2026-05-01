@@ -14,40 +14,78 @@ struct ContentView: View {
     private let spiritSize: CGFloat = 96
 
     /// Spirit is "stuck" in the top-right corner whenever we're on history or
-    /// when home is scrolled past the threshold. Otherwise it sits at rest in
-    /// the home hero. Same swoop animation either way.
+    /// when home is scrolled past the threshold.
     private var spiritIsStuck: Bool {
         currentTab == .history || homeScrolled
     }
 
     var body: some View {
-        GeometryReader { geo in
-            ZStack {
-                TabView(selection: $currentTab) {
-                    Tab("home", systemImage: "house.fill", value: .home) {
-                        HomeView(homeScrolled: $homeScrolled, spiritSize: spiritSize)
-                    }
-                    Tab("history", systemImage: "clock", value: .history) {
-                        HistoryView()
-                    }
+        NavigationStack {
+            GeometryReader { geo in
+                ZStack {
+                    page
+                    spiritOverlay(in: geo.size)
                 }
+            }
+            .toolbar {
+                ToolbarItem(placement: .bottomBar) {
+                    tabButton(.home, systemImage: "house.fill")
+                }
+                ToolbarItem(placement: .bottomBar) {
+                    tabButton(.history, systemImage: "clock")
+                }
+                ToolbarSpacer(.flexible, placement: .bottomBar)
+                ToolbarItem(placement: .bottomBar) {
+                    plusMenu
+                }
+            }
+        }
+        .sheet(isPresented: $showAddSheet) {
+            AddHitSheet()
+        }
+    }
 
-                spiritOverlay(in: geo.size)
+    @ViewBuilder
+    private var page: some View {
+        switch currentTab {
+        case .home:    HomeView(homeScrolled: $homeScrolled, spiritSize: spiritSize)
+        case .history: HistoryView()
+        }
+    }
+
+    private func tabButton(_ tab: AppTab, systemImage: String) -> some View {
+        Button {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                currentTab = tab
             }
-            .overlay(alignment: .bottomTrailing) {
-                plusMenu
-                    .padding(.trailing, 16)
-                    .padding(.bottom, 8)
+        } label: {
+            Image(systemName: systemImage)
+                .symbolVariant(currentTab == tab ? .fill : .none)
+                .foregroundStyle(currentTab == tab ? .driftInk : .driftInkSoft)
+        }
+    }
+
+    private var plusMenu: some View {
+        Menu {
+            Button {
+                try? store.append()
+            } label: {
+                Label("Log hit now", systemImage: "plus.circle.fill")
             }
-            .sheet(isPresented: $showAddSheet) {
-                AddHitSheet()
+            Button {
+                showAddSheet = true
+            } label: {
+                Label("Choose time", systemImage: "clock")
             }
+        } label: {
+            Image(systemName: "plus")
+                .foregroundStyle(.driftCoral)
         }
     }
 
     /// Spirit lives in the global ZStack so it persists across tab switches.
     /// Position interpolates between rest (home, at top) and sticky (everywhere
-    /// else) with the same bouncy spring as before.
+    /// else) with a bouncy spring.
     @ViewBuilder
     private func spiritOverlay(in size: CGSize) -> some View {
         let rest = restCenter(in: size)
@@ -74,7 +112,7 @@ struct ContentView: View {
         )
     }
 
-    /// Top-right corner of safe area, scaled-down anchor pinned at the corner.
+    /// Top-right corner; scaled-down anchor pinned at the corner.
     private func stickyCenter(in size: CGSize) -> CGPoint {
         let xinset: CGFloat = 8
         let yinset: CGFloat = 0
@@ -82,28 +120,5 @@ struct ContentView: View {
             x: size.width - xinset - spiritSize / 2,
             y: yinset + spiritSize / 2
         )
-    }
-
-    /// Floating + button above the iOS 26 tab bar. Liquid-glass Menu pop-up.
-    private var plusMenu: some View {
-        Menu {
-            Button {
-                try? store.append()
-            } label: {
-                Label("Log hit now", systemImage: "plus.circle.fill")
-            }
-            Button {
-                showAddSheet = true
-            } label: {
-                Label("Choose time", systemImage: "clock")
-            }
-        } label: {
-            Image(systemName: "plus")
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 56, height: 56)
-                .background(Color.driftCoral, in: Circle())
-                .shadow(color: .black.opacity(0.18), radius: 12, x: 0, y: 6)
-        }
     }
 }

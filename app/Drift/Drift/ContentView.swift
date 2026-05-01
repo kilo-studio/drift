@@ -1,14 +1,20 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var currentTab: AppTab = .home
+    @State private var showAddSheet: Bool = false
+
     var body: some View {
-        TabView {
-            Tab("home", systemImage: "house.fill") {
-                HomeView()
+        ZStack(alignment: .bottom) {
+            switch currentTab {
+            case .home:    HomeView()
+            case .history: HistoryView()
             }
-            Tab("history", systemImage: "list.bullet") {
-                HistoryView()
-            }
+
+            BottomBar(currentTab: $currentTab, showAddSheet: $showAddSheet)
+        }
+        .sheet(isPresented: $showAddSheet) {
+            AddHitSheet()
         }
     }
 }

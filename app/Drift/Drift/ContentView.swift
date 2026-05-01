@@ -20,47 +20,26 @@ struct ContentView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            // Stable ZStack parent for the toolbar — page swaps happen via the
-            // inner if/else so the toolbar doesn't re-bind to a different type.
-            ZStack {
-                if currentTab == .home {
-                    HomeView(homeScrolled: $homeScrolled, spiritSize: spiritSize)
-                } else {
-                    HistoryView()
-                }
+        // Native iOS 26 TabView — the selected tab gets the tinted glass pill
+        // for free, no manual styling. Plus a floating + Menu above the bar
+        // for global logging on either tab.
+        TabView(selection: $currentTab) {
+            Tab("home", systemImage: "house.fill", value: .home) {
+                HomeView(homeScrolled: $homeScrolled, spiritSize: spiritSize)
             }
-            .overlay { spiritOverlay }
-            .toolbar {
-                ToolbarItem(placement: .bottomBar) {
-                    tabButton(.home, systemImage: "house.fill")
-                }
-                ToolbarItem(placement: .bottomBar) {
-                    tabButton(.history, systemImage: "clock")
-                }
-                ToolbarSpacer(.flexible, placement: .bottomBar)
-                ToolbarItem(placement: .bottomBar) {
-                    plusMenu
-                }
+            Tab("history", systemImage: "clock", value: .history) {
+                HistoryView()
             }
+        }
+        .overlay { spiritOverlay }
+        .overlay(alignment: .bottomTrailing) {
+            plusMenu
+                .padding(.trailing, 16)
+                .padding(.bottom, 8)
         }
         .sheet(isPresented: $showAddSheet) {
             AddHitSheet()
         }
-    }
-
-    private func tabButton(_ tab: AppTab, systemImage: String) -> some View {
-        Button {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                currentTab = tab
-            }
-        } label: {
-            Image(systemName: systemImage)
-                .symbolVariant(currentTab == tab ? .fill : .none)
-                .font(.system(size: 22, weight: .medium))
-                .foregroundStyle(currentTab == tab ? .driftInk : .driftInkSoft)
-        }
-        .controlSize(.large)
     }
 
     private var plusMenu: some View {
@@ -78,9 +57,11 @@ struct ContentView: View {
         } label: {
             Image(systemName: "plus")
                 .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(.driftCoral)
+                .foregroundStyle(.white)
+                .frame(width: 56, height: 56)
+                .background(Color.driftCoral, in: Circle())
+                .shadow(color: .black.opacity(0.18), radius: 12, x: 0, y: 6)
         }
-        .controlSize(.large)
     }
 
     /// Spirit lives in an overlay so it persists across tab switches.

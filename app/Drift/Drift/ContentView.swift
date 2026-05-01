@@ -34,12 +34,11 @@ struct ContentView: View {
             Tab("history", systemImage: "clock", value: AppTab.history) {
                 HistoryView()
             }
-            Tab(value: AppTab.addAction, role: .search) {
+            Tab("add", systemImage: "plus", value: AppTab.addAction, role: .search) {
                 // Never actually navigated to — we revert in the binding setter
                 // below before the user sees this view.
                 Color.clear
             }
-            .customizationID("addAction")
         }
         .overlay { spiritOverlay }
         .sheet(isPresented: $showAddSheet) {

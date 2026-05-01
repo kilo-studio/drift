@@ -57,8 +57,10 @@ struct ContentView: View {
         } label: {
             Image(systemName: systemImage)
                 .symbolVariant(currentTab == tab ? .fill : .none)
+                .font(.system(size: 22, weight: .medium))
                 .foregroundStyle(currentTab == tab ? .driftInk : .driftInkSoft)
         }
+        .controlSize(.large)
     }
 
     private var plusMenu: some View {
@@ -75,8 +77,10 @@ struct ContentView: View {
             }
         } label: {
             Image(systemName: "plus")
+                .font(.system(size: 22, weight: .semibold))
                 .foregroundStyle(.driftCoral)
         }
+        .controlSize(.large)
     }
 
     /// Spirit lives in an overlay so it persists across tab switches.

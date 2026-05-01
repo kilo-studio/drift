@@ -245,62 +245,59 @@ private struct CalendarCard: View {
     }
 
     private var header: some View {
-        HStack {
-            Button {
+        let canPrev = canGoPrev
+        let canNext = canGoNext
+        return HStack {
+            chevron(.left, enabled: canPrev) {
                 displayedMonth = cal.date(byAdding: .month, value: -1, to: displayedMonth)!
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.driftInk)
-                    .frame(width: 32, height: 32)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            Spacer()
-
-            Menu {
-                ForEach(monthYearOptions, id: \.self) { date in
-                    Button(monthYearLabel(date)) {
-                        displayedMonth = date
-                    }
-                }
-            } label: {
-                HStack(spacing: 4) {
-                    Text.caveat(monthYearLabel(displayedMonth))
-                        .font(.driftCardTitle)
-                        .foregroundStyle(.driftInk)
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.driftInkSoft)
-                }
             }
 
             Spacer()
 
-            Button {
+            Text.caveat(monthYearLabel(displayedMonth))
+                .font(.driftCardTitle)
+                .foregroundStyle(.driftInk)
+
+            Spacer()
+
+            chevron(.right, enabled: canNext) {
                 displayedMonth = cal.date(byAdding: .month, value: 1, to: displayedMonth)!
-            } label: {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.driftInk)
-                    .frame(width: 32, height: 32)
-                    .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
         }
     }
 
-    private var monthYearOptions: [Date] {
-        let now = Date()
-        let start = cal.date(byAdding: .month, value: -12, to: now)!
-        var options: [Date] = []
-        for i in 0..<25 {
-            if let d = cal.date(byAdding: .month, value: i, to: cal.startOfMonth(start)) {
-                options.append(d)
-            }
+    private enum ChevronDirection { case left, right }
+
+    private func chevron(_ dir: ChevronDirection, enabled: Bool, action: @escaping () -> Void) -> some View {
+        let symbol = dir == .left ? "chevron.left" : "chevron.right"
+        return Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(enabled ? .driftInk : .driftInkFade.opacity(0.4))
+                .frame(width: 32, height: 32)
+                .contentShape(Rectangle())
         }
-        return options.reversed()
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+    }
+
+    /// Allow going back as long as the previous month contains the user's first
+    /// session, or any session — no point browsing pre-history months.
+    private var canGoPrev: Bool {
+        guard let oldestKey = countsByDay.keys.min() else { return false }
+        let prevMonthStart = cal.date(byAdding: .month, value: -1, to: cal.startOfMonth(displayedMonth))!
+        let prevMonthEndKey = String(
+            format: "%04d-%02d-31",
+            cal.component(.year, from: prevMonthStart),
+            cal.component(.month, from: prevMonthStart)
+        )
+        return oldestKey <= prevMonthEndKey
+    }
+
+    /// Don't browse forward past the current month — no data there yet.
+    private var canGoNext: Bool {
+        let nowMonthStart = cal.startOfMonth(Date())
+        return cal.startOfMonth(displayedMonth) < nowMonthStart
     }
 
     private func monthYearLabel(_ date: Date) -> String {

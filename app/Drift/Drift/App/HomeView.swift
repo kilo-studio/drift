@@ -8,6 +8,8 @@ struct HomeView: View {
     /// the spirit's screen-space position over a curved path.
     @State private var isStuck: Bool = false
 
+    @State private var showHistory: Bool = false
+
     private let spiritSize: CGFloat = 96
 
     var body: some View {
@@ -92,9 +94,40 @@ struct HomeView: View {
                     layer: .front
                 )
 
+                historyButton
+
                 #if DEBUG
                 debugHitButton
                 #endif
+            }
+            .sheet(isPresented: $showHistory) {
+                HistoryView()
+                    .environment(store)
+            }
+        }
+    }
+
+    /// Small floating list-icon button, bottom-leading. Mirror of the debug + button
+    /// in DEBUG builds; the only floating button in production. Opens the History
+    /// view as a sheet.
+    private var historyButton: some View {
+        VStack {
+            Spacer()
+            HStack {
+                Button {
+                    showHistory = true
+                } label: {
+                    Image(systemName: "list.bullet")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(.driftInk)
+                        .frame(width: 48, height: 48)
+                        .background(.ultraThinMaterial, in: Circle())
+                        .overlay(Circle().strokeBorder(Color.white.opacity(0.4), lineWidth: 0.5))
+                        .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
+                }
+                .padding(.leading, 24)
+                .padding(.bottom, 32)
+                Spacer()
             }
         }
     }

@@ -80,6 +80,61 @@ final class HitStore {
         context.delete(hit)
         try context.save()
         try reload()
+        recomputeRecords()
+    }
+
+    /// Inserts a hit at an arbitrary past date — used by the "add forgotten hit"
+    /// flow. Walks the same record path as `remove` so longest-gap records reflect
+    /// the new neighbor relationships rather than the simple-append rule.
+    func addPast(at date: Date) throws {
+        let hit = Hit(
+            t: date,
+            tzOffsetMinutes: TimeZone.current.secondsFromGMT() / 60
+        )
+        context.insert(hit)
+        try context.save()
+        try reload()
+        recomputeRecords()
+    }
+
+    /// Reassigns a hit's timestamp. The session and bucket it belongs to are
+    /// derived on read, so they automatically recompute.
+    func editHit(_ hit: Hit, to newDate: Date) throws {
+        hit.t = newDate
+        hit.tzOffsetMinutes = TimeZone.current.secondsFromGMT() / 60
+        try context.save()
+        try reload()
+        recomputeRecords()
+    }
+
+    /// Records are persisted but per Issue 17 they describe what's true *now* in
+    /// the data. After any edit/delete/add we recompute from current sessions
+    /// rather than relying on the simple-append rule used by `append`.
+    private func recomputeRecords() {
+        let threshold = sessionThresholdSec
+        let allSessions = hits.sessions(threshold: threshold)
+
+        var longestGap: TimeInterval = 0
+        if allSessions.count >= 2 {
+            for i in 1..<allSessions.count {
+                let gap = allSessions[i].start.timeIntervalSince(allSessions[i-1].end)
+                if gap > longestGap { longestGap = gap }
+            }
+        }
+
+        var longestWaking: TimeInterval = 0
+        let byDay = Dictionary(grouping: allSessions, by: \.wakingDayKey)
+        for (_, daySessions) in byDay where daySessions.count >= 2 {
+            let sorted = daySessions.sorted { $0.start < $1.start }
+            for i in 1..<sorted.count {
+                let gap = sorted[i].start.timeIntervalSince(sorted[i-1].end)
+                if gap > longestWaking { longestWaking = gap }
+            }
+        }
+
+        records.longestGapSec = longestGap
+        records.longestWakingGapSec = longestWaking
+        try? context.save()
         publishToWidget()
     }
 

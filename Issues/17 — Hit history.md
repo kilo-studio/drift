@@ -1,8 +1,19 @@
 ---
-status: todo
+status: done
 priority: medium
 tags: [feature, data, v1]
 ---
+
+> **Implementation:** `HistoryView` reachable from the bottom-leading list-icon
+> button on the dashboard. Sessions grouped by waking day with chevron-toggle
+> expansion to individual hits. Swipe a hit for Edit / Delete. + button in the
+> toolbar opens an Add-hit sheet (date picker + "5 / 15 min ago / 1 hour ago"
+> presets). Edit + Add reject future timestamps. Delete confirms with an alert.
+> `HitStore` gains `addPast`, `editHit`, and `recomputeRecords` so the persisted
+> longestGap / longestWakingGap rebuild from current sessions after any edit
+> rather than relying on the simple-append rule. Multi-select / bulk delete and
+> the achievement-immutability rules deferred to v1.x (achievement system isn't
+> in yet).
 
 # Hit history — view, add, edit, delete
 

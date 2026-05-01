@@ -21,31 +21,33 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            page
-                .overlay { spiritOverlay }
-                .toolbar {
-                    ToolbarItem(placement: .bottomBar) {
-                        tabButton(.home, systemImage: "house.fill")
-                    }
-                    ToolbarItem(placement: .bottomBar) {
-                        tabButton(.history, systemImage: "clock")
-                    }
-                    ToolbarSpacer(.flexible, placement: .bottomBar)
-                    ToolbarItem(placement: .bottomBar) {
-                        plusMenu
-                    }
+            // Wrap the tab switch in a stable container so .toolbar attaches to
+            // a single parent view rather than re-binding on every page swap —
+            // that re-bind is what triggers the
+            // "UIKitToolbar as a subview of UIHostingController.view" warning.
+            ZStack {
+                if currentTab == .home {
+                    HomeView(homeScrolled: $homeScrolled, spiritSize: spiritSize)
+                } else {
+                    HistoryView()
                 }
+            }
+            .overlay { spiritOverlay }
+            .toolbar {
+                ToolbarItem(placement: .bottomBar) {
+                    tabButton(.home, systemImage: "house.fill")
+                }
+                ToolbarItem(placement: .bottomBar) {
+                    tabButton(.history, systemImage: "clock")
+                }
+                ToolbarSpacer(.flexible, placement: .bottomBar)
+                ToolbarItem(placement: .bottomBar) {
+                    plusMenu
+                }
+            }
         }
         .sheet(isPresented: $showAddSheet) {
             AddHitSheet()
-        }
-    }
-
-    @ViewBuilder
-    private var page: some View {
-        switch currentTab {
-        case .home:    HomeView(homeScrolled: $homeScrolled, spiritSize: spiritSize)
-        case .history: HistoryView()
         }
     }
 

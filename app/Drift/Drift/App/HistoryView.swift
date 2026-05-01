@@ -27,7 +27,7 @@ struct HistoryView: View {
                         .padding(.top, 36)
 
                     CalendarCard(
-                        sessions: allSessions,
+                        countsByDay: countsByDay,
                         displayedMonth: $displayedMonth,
                         selectedDay: $selectedDay
                     )
@@ -59,6 +59,13 @@ struct HistoryView: View {
     /// day card aren't both invoking `hits.sessions(threshold:)` independently.
     private var allSessions: [Session] {
         store.hits.sessions(threshold: store.sessionThresholdSec)
+    }
+
+    /// Per-device-local-day session counts. Built once for the calendar to read
+    /// — calendar cells just do an O(1) dictionary lookup per day instead of
+    /// re-grouping all sessions on every render.
+    private var countsByDay: [String: Int] {
+        Dictionary(grouping: allSessions, by: \.logLocalDateKey).mapValues(\.count)
     }
 
     @ViewBuilder
@@ -206,7 +213,10 @@ struct HistoryView: View {
 // MARK: - Calendar card
 
 private struct CalendarCard: View {
-    let sessions: [Session]
+    /// Pre-grouped session counts by device-local "yyyy-MM-dd" key. Built once
+    /// at HistoryView level so a tab swap or store change doesn't redo the
+    /// grouping work for every day cell.
+    let countsByDay: [String: Int]
     @Binding var displayedMonth: Date
     @Binding var selectedDay: Date
 
@@ -299,52 +309,59 @@ private struct CalendarCard: View {
         return f.string(from: date).lowercased()
     }
 
+    /// Manual VStack of HStacks instead of LazyVGrid — for a fixed 7-column
+    /// month grid this is simpler and lays out faster. `.drawingGroup()`
+    /// rasterizes the whole grid into a single Metal layer so 35-42 day cells
+    /// don't compose as separate sublayers.
     private var grid: some View {
-        let cells = buildCells()
-        let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
-        return LazyVGrid(columns: columns, spacing: 8) {
-            ForEach(cells.indices, id: \.self) { i in
-                let cell = cells[i]
-                if let date = cell.date {
-                    dayCircle(date: date, count: cell.count, inMonth: cell.inMonth)
-                } else {
-                    Color.clear
-                        .aspectRatio(1, contentMode: .fit)
+        let rows = monthRows
+        return VStack(spacing: 8) {
+            ForEach(rows.indices, id: \.self) { r in
+                HStack(spacing: 6) {
+                    ForEach(0..<7, id: \.self) { c in
+                        let cell = rows[r][c]
+                        if let date = cell.date {
+                            dayCircle(date: date, count: cell.count, inMonth: cell.inMonth)
+                        } else {
+                            Color.clear
+                                .frame(maxWidth: .infinity)
+                                .aspectRatio(1, contentMode: .fit)
+                        }
+                    }
                 }
             }
         }
+        .drawingGroup()
     }
 
     @ViewBuilder
     private func dayCircle(date: Date, count: Int, inMonth: Bool) -> some View {
         let isSelected = cal.isDate(date, inSameDayAs: selectedDay)
         let isToday = cal.isDateInToday(date)
-        let opacity = bucketedOpacity(count: count)
         let dayNumber = cal.component(.day, from: date)
 
-        Button {
-            selectedDay = cal.startOfDay(for: date)
-        } label: {
-            ZStack {
-                if count > 0 {
-                    Circle().fill(Color.driftSageDeep.opacity(opacity))
-                } else {
-                    Circle().strokeBorder(Color.driftSageDeep.opacity(0.25), lineWidth: 1)
-                }
-                if isToday {
-                    Circle().strokeBorder(Color.driftCoral, lineWidth: 1.5)
-                }
-                if isSelected {
-                    Circle().strokeBorder(Color.driftInk, lineWidth: 2).padding(-2)
-                }
-                Text("\(dayNumber)")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(textColor(filled: count > 0, inMonth: inMonth))
+        ZStack {
+            if count > 0 {
+                Circle().fill(Color.driftSageDeep.opacity(bucketedOpacity(count: count)))
+            } else {
+                Circle().strokeBorder(Color.driftSageDeep.opacity(0.25), lineWidth: 1)
             }
-            .aspectRatio(1, contentMode: .fit)
-            .opacity(inMonth ? 1 : 0.35)
+            if isToday {
+                Circle().strokeBorder(Color.driftCoral, lineWidth: 1.5)
+            }
+            if isSelected {
+                Circle().strokeBorder(Color.driftInk, lineWidth: 2).padding(-2)
+            }
+            Text("\(dayNumber)")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(textColor(filled: count > 0, inMonth: inMonth))
         }
-        .buttonStyle(.plain)
+        .aspectRatio(1, contentMode: .fit)
+        .opacity(inMonth ? 1 : 0.35)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            selectedDay = cal.startOfDay(for: date)
+        }
     }
 
     private func textColor(filled: Bool, inMonth: Bool) -> Color {
@@ -370,16 +387,16 @@ private struct CalendarCard: View {
         let inMonth: Bool
     }
 
-    private func buildCells() -> [Cell] {
+    /// Row-major 7-cell rows; only as many rows as the month actually needs
+    /// (5 or 6 typically). Trailing padding kept so the last row is always 7.
+    private var monthRows: [[Cell]] {
         let monthStart = cal.startOfMonth(displayedMonth)
         let range = cal.range(of: .day, in: .month, for: monthStart) ?? 1..<31
         let daysInMonth = range.count
-
         let firstWeekday = cal.component(.weekday, from: monthStart) - 1
 
-        let countsByKey = Dictionary(grouping: sessions, by: \.logLocalDateKey).mapValues(\.count)
-
         var cells: [Cell] = []
+        cells.reserveCapacity(42)
         for _ in 0..<firstWeekday {
             cells.append(Cell(date: nil, count: 0, inMonth: false))
         }
@@ -388,13 +405,16 @@ private struct CalendarCard: View {
             comps.day = d
             let date = cal.date(from: comps)!
             let key = String(format: "%04d-%02d-%02d", comps.year!, comps.month!, d)
-            cells.append(Cell(date: date, count: countsByKey[key, default: 0], inMonth: true))
+            cells.append(Cell(date: date, count: countsByDay[key, default: 0], inMonth: true))
         }
         let trailing = (7 - cells.count % 7) % 7
         for _ in 0..<trailing {
             cells.append(Cell(date: nil, count: 0, inMonth: false))
         }
-        return cells
+
+        return stride(from: 0, to: cells.count, by: 7).map {
+            Array(cells[$0..<min($0 + 7, cells.count)])
+        }
     }
 }
 

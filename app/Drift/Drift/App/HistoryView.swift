@@ -161,19 +161,19 @@ struct HistoryView: View {
                 Label("Delete", systemImage: "trash")
             }
         } label: {
-            HStack {
+            HStack(spacing: 12) {
                 Circle()
                     .fill(Color.driftCoral.opacity(0.7))
-                    .frame(width: 6, height: 6)
+                    .frame(width: 8, height: 8)
                 Text(timeOfDay(hit.t))
-                    .font(.driftLabel)
+                    .font(.system(size: 17, weight: .medium))
                     .foregroundStyle(.driftInk)
                 Spacer()
                 Image(systemName: "ellipsis")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(.driftInkFade)
             }
-            .padding(.vertical, 10)
+            .padding(.vertical, 16)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

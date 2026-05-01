@@ -226,8 +226,11 @@ private struct CalendarCard: View {
             header
 
             HStack(spacing: 0) {
-                ForEach(["s", "m", "t", "w", "t", "f", "s"], id: \.self) { dow in
-                    Text(dow)
+                // Indices as IDs since "s" and "t" each appear twice — duplicate
+                // \.self IDs cause SwiftUI to thrash diffing and burn CPU.
+                let labels = ["s", "m", "t", "w", "t", "f", "s"]
+                ForEach(labels.indices, id: \.self) { i in
+                    Text(labels[i])
                         .font(.driftSub)
                         .foregroundStyle(.driftInkFade)
                         .frame(maxWidth: .infinity)

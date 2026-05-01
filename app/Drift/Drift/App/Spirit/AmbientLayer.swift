@@ -10,10 +10,7 @@ struct AmbientLayer: View {
 
     var body: some View {
         GeometryReader { geo in
-            // 15fps — clouds drift at 90+ second cycles, stars twinkle at
-            // multi-second periods. 15Hz is more than enough to look smooth and
-            // it keeps the device cool during long sessions on either tab.
-            TimelineView(.animation(minimumInterval: 1.0 / 15.0)) { ctx in
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { ctx in
                 Canvas { gc, size in
                     let t = reduceMotion ? 0 : ctx.date.timeIntervalSinceReferenceDate
                     if colorScheme == .dark {

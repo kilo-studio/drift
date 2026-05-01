@@ -40,7 +40,7 @@ struct SparkleField: View {
 
     var body: some View {
         GeometryReader { geo in
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { ctx in
+            TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { ctx in
                 Canvas { gc, size in
                     guard !sparkles.isEmpty else { return }
                     let now = ctx.date

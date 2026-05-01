@@ -20,70 +20,86 @@ struct ContentView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            // Wrap the tab switch in a stable container so .toolbar attaches to
-            // a single parent view rather than re-binding on every page swap —
-            // that re-bind is what triggers the
-            // "UIKitToolbar as a subview of UIHostingController.view" warning.
-            ZStack {
-                if currentTab == .home {
-                    HomeView(homeScrolled: $homeScrolled, spiritSize: spiritSize)
-                } else {
-                    HistoryView()
-                }
+        ZStack {
+            if currentTab == .home {
+                HomeView(homeScrolled: $homeScrolled, spiritSize: spiritSize)
+            } else {
+                HistoryView()
             }
-            .overlay { spiritOverlay }
-            .toolbar {
-                ToolbarItem(placement: .bottomBar) {
-                    tabButton(.home, systemImage: "house.fill")
-                }
-                ToolbarItem(placement: .bottomBar) {
-                    tabButton(.history, systemImage: "clock")
-                }
-                ToolbarSpacer(.flexible, placement: .bottomBar)
-                ToolbarItem(placement: .bottomBar) {
-                    plusMenu
-                }
-            }
+        }
+        .overlay { spiritOverlay }
+        .safeAreaInset(edge: .bottom) {
+            bottomBar
         }
         .sheet(isPresented: $showAddSheet) {
             AddHitSheet()
         }
     }
 
+    /// iOS 26 liquid glass via `glassEffect` modifiers. The nav-button group
+    /// gets its own glass capsule on the leading edge; the + button gets its
+    /// own glass circle on the trailing edge — same visual as Apple's
+    /// canonical bottom toolbar pattern, without the
+    /// "UIKitToolbar as subview of UIHostingController" warning that the
+    /// .toolbar(.bottomBar) API kept producing on top of our ignoresSafeArea
+    /// + overlay setup.
+    private var bottomBar: some View {
+        HStack(spacing: 12) {
+            HStack(spacing: 4) {
+                tabButton(.home, systemImage: "house.fill")
+                tabButton(.history, systemImage: "clock")
+            }
+            .padding(6)
+            .glassEffect(.regular, in: Capsule())
+
+            Spacer()
+
+            Menu {
+                Button {
+                    try? store.append()
+                } label: {
+                    Label("Log hit now", systemImage: "plus.circle.fill")
+                }
+                Button {
+                    showAddSheet = true
+                } label: {
+                    Label("Choose time", systemImage: "clock")
+                }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.driftCoral)
+                    .frame(width: 48, height: 48)
+            }
+            .glassEffect(.regular, in: Circle())
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+    }
+
     private func tabButton(_ tab: AppTab, systemImage: String) -> some View {
-        Button {
+        let isActive = tab == currentTab
+        return Button {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
                 currentTab = tab
             }
         } label: {
             Image(systemName: systemImage)
-                .symbolVariant(currentTab == tab ? .fill : .none)
-                .foregroundStyle(currentTab == tab ? .driftInk : .driftInkSoft)
+                .symbolVariant(isActive ? .fill : .none)
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(isActive ? .driftInk : .driftInkSoft)
+                .frame(width: 44, height: 36)
+                .background {
+                    if isActive {
+                        Capsule().fill(Color.white.opacity(0.4))
+                    }
+                }
         }
+        .buttonStyle(.plain)
     }
 
-    private var plusMenu: some View {
-        Menu {
-            Button {
-                try? store.append()
-            } label: {
-                Label("Log hit now", systemImage: "plus.circle.fill")
-            }
-            Button {
-                showAddSheet = true
-            } label: {
-                Label("Choose time", systemImage: "clock")
-            }
-        } label: {
-            Image(systemName: "plus")
-                .foregroundStyle(.driftCoral)
-        }
-    }
-
-    /// Spirit lives in an overlay so it persists across tab switches without
-    /// disturbing the toolbar layout. Inner GeometryReader gives the spirit
-    /// the page's size for rest/sticky position math.
+    /// Spirit overlay — same swoop animation between rest (home, at top) and
+    /// sticky (history or scrolled).
     private var spiritOverlay: some View {
         GeometryReader { geo in
             let rest = restCenter(in: geo.size)

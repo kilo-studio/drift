@@ -21,24 +21,20 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            GeometryReader { geo in
-                ZStack {
-                    page
-                    spiritOverlay(in: geo.size)
+            page
+                .overlay { spiritOverlay }
+                .toolbar {
+                    ToolbarItem(placement: .bottomBar) {
+                        tabButton(.home, systemImage: "house.fill")
+                    }
+                    ToolbarItem(placement: .bottomBar) {
+                        tabButton(.history, systemImage: "clock")
+                    }
+                    ToolbarSpacer(.flexible, placement: .bottomBar)
+                    ToolbarItem(placement: .bottomBar) {
+                        plusMenu
+                    }
                 }
-            }
-            .toolbar {
-                ToolbarItem(placement: .bottomBar) {
-                    tabButton(.home, systemImage: "house.fill")
-                }
-                ToolbarItem(placement: .bottomBar) {
-                    tabButton(.history, systemImage: "clock")
-                }
-                ToolbarSpacer(.flexible, placement: .bottomBar)
-                ToolbarItem(placement: .bottomBar) {
-                    plusMenu
-                }
-            }
         }
         .sheet(isPresented: $showAddSheet) {
             AddHitSheet()
@@ -83,28 +79,29 @@ struct ContentView: View {
         }
     }
 
-    /// Spirit lives in the global ZStack so it persists across tab switches.
-    /// Position interpolates between rest (home, at top) and sticky (everywhere
-    /// else) with a bouncy spring.
-    @ViewBuilder
-    private func spiritOverlay(in size: CGSize) -> some View {
-        let rest = restCenter(in: size)
-        let sticky = stickyCenter(in: size)
-        let target = spiritIsStuck ? sticky : rest
+    /// Spirit lives in an overlay so it persists across tab switches without
+    /// disturbing the toolbar layout. Inner GeometryReader gives the spirit
+    /// the page's size for rest/sticky position math.
+    private var spiritOverlay: some View {
+        GeometryReader { geo in
+            let rest = restCenter(in: geo.size)
+            let sticky = stickyCenter(in: geo.size)
+            let target = spiritIsStuck ? sticky : rest
 
-        SpiritView(
-            lastSessionEnd: store.lastSessionEnd(),
-            wakingAvgSec: store.wakingAvgSec(),
-            longestWakingGapSec: store.longestWakingGapSec,
-            longestGapSec: store.longestGapSec
-        )
-        .frame(width: spiritSize, height: spiritSize)
-        .scaleEffect(spiritIsStuck ? 0.7 : 1.0, anchor: .topTrailing)
-        .position(x: target.x, y: target.y)
-        .animation(.spring(response: 0.55, dampingFraction: 0.7), value: spiritIsStuck)
+            SpiritView(
+                lastSessionEnd: store.lastSessionEnd(),
+                wakingAvgSec: store.wakingAvgSec(),
+                longestWakingGapSec: store.longestWakingGapSec,
+                longestGapSec: store.longestGapSec
+            )
+            .frame(width: spiritSize, height: spiritSize)
+            .scaleEffect(spiritIsStuck ? 0.7 : 1.0, anchor: .topTrailing)
+            .position(x: target.x, y: target.y)
+            .animation(.spring(response: 0.55, dampingFraction: 0.7), value: spiritIsStuck)
+        }
+        .allowsHitTesting(false)
     }
 
-    /// Matches the placeholder position in HomeView's hero row.
     private func restCenter(in size: CGSize) -> CGPoint {
         CGPoint(
             x: size.width - 16 - spiritSize / 2 - 16,
@@ -112,7 +109,6 @@ struct ContentView: View {
         )
     }
 
-    /// Top-right corner; scaled-down anchor pinned at the corner.
     private func stickyCenter(in size: CGSize) -> CGPoint {
         let xinset: CGFloat = 8
         let yinset: CGFloat = 0

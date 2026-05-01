@@ -151,15 +151,22 @@ extension Array where Element == Hit {
     /// Gaps BETWEEN sessions within today's waking-day bucket.
     /// Each entry is (next session's start, gap from previous session's end).
     func todayStretches(now: Date = .now, threshold: TimeInterval = defaultSessionThresholdSec) -> [(Date, TimeInterval)] {
-        let todayKey = currentWakingDayKey(now)
-        let todaySessions = sessions(threshold: threshold)
-            .filter { $0.wakingDayKey == todayKey }
+        stretches(forWakingDayKey: currentWakingDayKey(now), threshold: threshold)
+    }
+
+    /// Stretches for an arbitrary device-local day. The `dayKey` should be the
+    /// "yyyy-MM-dd" of that day in device-local time (matching how
+    /// `Session.wakingDayKey` is computed for hits in the same waking day).
+    func stretches(forWakingDayKey dayKey: String,
+                   threshold: TimeInterval = defaultSessionThresholdSec) -> [(Date, TimeInterval)] {
+        let daySessions = sessions(threshold: threshold)
+            .filter { $0.wakingDayKey == dayKey }
             .sorted { $0.start < $1.start }
-        guard todaySessions.count >= 2 else { return [] }
+        guard daySessions.count >= 2 else { return [] }
         var result: [(Date, TimeInterval)] = []
-        for i in 1..<todaySessions.count {
-            let gap = todaySessions[i].start.timeIntervalSince(todaySessions[i-1].end)
-            result.append((todaySessions[i].start, gap))
+        for i in 1..<daySessions.count {
+            let gap = daySessions[i].start.timeIntervalSince(daySessions[i-1].end)
+            result.append((daySessions[i].start, gap))
         }
         return result
     }

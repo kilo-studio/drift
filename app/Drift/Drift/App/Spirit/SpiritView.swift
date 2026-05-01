@@ -13,7 +13,10 @@ struct SpiritView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        TimelineView(.animation) { context in
+        // ~30fps — the float curve and blink don't benefit from 120Hz updates
+        // and keeping it low keeps the device from heating up when the spirit
+        // is rendered globally across both tabs.
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
             let frame = SpiritFrame(
                 now: context.date,
                 lastSessionEnd: lastSessionEnd,

@@ -1,9 +1,10 @@
 import SwiftUI
 import SwiftData
+import Charts
 
 /// History page: a month calendar with day circles whose fill ramps with the
-/// session count, and a section below showing the selected day's sessions.
-/// Tap a day in the calendar to drill in.
+/// session count, and a card below showing the selected day's count + avg gap
+/// + stretches chart + sessions.
 struct HistoryView: View {
     @Environment(HitStore.self) private var store
 
@@ -26,7 +27,7 @@ struct HistoryView: View {
                         .padding(.top, 36)
 
                     CalendarCard(
-                        store: store,
+                        sessions: allSessions,
                         displayedMonth: $displayedMonth,
                         selectedDay: $selectedDay
                     )
@@ -54,9 +55,25 @@ struct HistoryView: View {
         }
     }
 
+    /// Computed once per body render and passed down so the calendar and the
+    /// day card aren't both invoking `hits.sessions(threshold:)` independently.
+    private var allSessions: [Session] {
+        store.hits.sessions(threshold: store.sessionThresholdSec)
+    }
+
     @ViewBuilder
     private var selectedDayCard: some View {
-        let sessions = sessionsForSelectedDay
+        let key = wakingDayKey(for: selectedDay)
+        let sessions = allSessions
+            .filter { $0.wakingDayKey == key }
+            .sorted { $0.start > $1.start }
+        let totalHits = sessions.reduce(0) { $0 + $1.count }
+        let avgGap = avgGapBetweenSessions(sessions: sessions)
+        let stretches = store.hits.stretches(
+            forWakingDayKey: key,
+            threshold: store.sessionThresholdSec
+        )
+
         VStack(alignment: .leading, spacing: 14) {
             Text.caveat(dayTitle(for: selectedDay))
                 .font(.driftCardTitle)
@@ -68,6 +85,20 @@ struct HistoryView: View {
                     .foregroundStyle(.driftInkSoft)
                     .padding(.vertical, 12)
             } else {
+                statStrip(
+                    sessionCount: sessions.count,
+                    hitCount: totalHits,
+                    avgGapSec: avgGap
+                )
+
+                if stretches.count >= 1 {
+                    DayStretchesChart(stretches: stretches)
+                        .frame(height: 90)
+                        .padding(.top, 4)
+                }
+
+                Divider().opacity(0.3)
+
                 VStack(spacing: 10) {
                     ForEach(sessions, id: \.id) { session in
                         sessionRow(session)
@@ -79,12 +110,35 @@ struct HistoryView: View {
         .driftCard()
     }
 
-    private var sessionsForSelectedDay: [Session] {
-        let key = wakingDayKey(for: selectedDay)
-        return store.hits
-            .sessions(threshold: store.sessionThresholdSec)
-            .filter { $0.wakingDayKey == key }
-            .sorted { $0.start > $1.start }
+    private func statStrip(sessionCount: Int, hitCount: Int, avgGapSec: TimeInterval?) -> some View {
+        HStack(spacing: 18) {
+            stat(value: "\(sessionCount)", label: sessionCount == 1 ? "session" : "sessions", color: .driftCoral)
+            divider
+            stat(value: "\(hitCount)", label: hitCount == 1 ? "hit" : "hits", color: .driftInk)
+            divider
+            stat(
+                value: avgGapSec.map { formatGap($0) } ?? "—",
+                label: "avg gap",
+                color: .driftSageDeep
+            )
+        }
+    }
+
+    private var divider: some View {
+        Rectangle()
+            .fill(Color.driftInkFade.opacity(0.25))
+            .frame(width: 1, height: 26)
+    }
+
+    private func stat(value: String, label: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(color)
+            Text(label)
+                .font(.driftSub)
+                .foregroundStyle(.driftInkSoft)
+        }
     }
 
     @ViewBuilder
@@ -100,7 +154,7 @@ struct HistoryView: View {
                     .foregroundStyle(.driftInkSoft)
             }
             if session.count > 1 {
-                HStack(spacing: 6) {
+                FlowLayout(spacing: 6, runSpacing: 6) {
                     ForEach(session.hits, id: \.persistentModelID) { hit in
                         hitChip(hit)
                     }
@@ -132,6 +186,16 @@ struct HistoryView: View {
 
     // MARK: - Helpers
 
+    private func avgGapBetweenSessions(sessions: [Session]) -> TimeInterval? {
+        guard sessions.count >= 2 else { return nil }
+        let sorted = sessions.sorted { $0.start < $1.start }
+        var totalGap: TimeInterval = 0
+        for i in 1..<sorted.count {
+            totalGap += sorted[i].start.timeIntervalSince(sorted[i-1].end)
+        }
+        return totalGap / Double(sorted.count - 1)
+    }
+
     private func dayTitle(for date: Date) -> String {
         let cal = Calendar(identifier: .gregorian)
         if cal.isDateInToday(date) { return "today" }
@@ -142,8 +206,6 @@ struct HistoryView: View {
     }
 
     private func wakingDayKey(for date: Date) -> String {
-        // For the selected day in calendar, treat the day boundaries as device-local.
-        // (The hits' own wakingDayKey already rolls 0–4am to the previous day.)
         let cal = Calendar(identifier: .gregorian)
         let comps = cal.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", comps.year!, comps.month!, comps.day!)
@@ -153,7 +215,7 @@ struct HistoryView: View {
 // MARK: - Calendar card
 
 private struct CalendarCard: View {
-    let store: HitStore
+    let sessions: [Session]
     @Binding var displayedMonth: Date
     @Binding var selectedDay: Date
 
@@ -163,7 +225,6 @@ private struct CalendarCard: View {
         VStack(spacing: 14) {
             header
 
-            // Day-of-week labels
             HStack(spacing: 0) {
                 ForEach(["s", "m", "t", "w", "t", "f", "s"], id: \.self) { dow in
                     Text(dow)
@@ -194,7 +255,6 @@ private struct CalendarCard: View {
 
             Spacer()
 
-            // Tap month/year label to open a year-month picker.
             Menu {
                 ForEach(monthYearOptions, id: \.self) { date in
                     Button(monthYearLabel(date)) {
@@ -227,8 +287,6 @@ private struct CalendarCard: View {
         }
     }
 
-    /// 24 months of dropdown options (12 back, 12 forward) so the user can jump
-    /// directly to a given month.
     private var monthYearOptions: [Date] {
         let now = Date()
         let start = cal.date(byAdding: .month, value: -12, to: now)!
@@ -246,8 +304,6 @@ private struct CalendarCard: View {
         f.dateFormat = "MMMM yyyy"
         return f.string(from: date).lowercased()
     }
-
-    // MARK: - Grid
 
     private var grid: some View {
         let cells = buildCells()
@@ -277,20 +333,15 @@ private struct CalendarCard: View {
         } label: {
             ZStack {
                 if count > 0 {
-                    Circle()
-                        .fill(Color.driftSageDeep.opacity(opacity))
+                    Circle().fill(Color.driftSageDeep.opacity(opacity))
                 } else {
-                    Circle()
-                        .strokeBorder(Color.driftSageDeep.opacity(0.25), lineWidth: 1)
+                    Circle().strokeBorder(Color.driftSageDeep.opacity(0.25), lineWidth: 1)
                 }
                 if isToday {
-                    Circle()
-                        .strokeBorder(Color.driftCoral, lineWidth: 1.5)
+                    Circle().strokeBorder(Color.driftCoral, lineWidth: 1.5)
                 }
                 if isSelected {
-                    Circle()
-                        .strokeBorder(Color.driftInk, lineWidth: 2)
-                        .padding(-2)
+                    Circle().strokeBorder(Color.driftInk, lineWidth: 2).padding(-2)
                 }
                 Text("\(dayNumber)")
                     .font(.system(size: 11, weight: .medium))
@@ -308,8 +359,6 @@ private struct CalendarCard: View {
         return .driftInkSoft
     }
 
-    /// 6-step bucket so heavy days clearly differ from light days. Empty cells
-    /// are handled separately as outline-only.
     private func bucketedOpacity(count: Int) -> Double {
         switch count {
         case 0:        return 0
@@ -321,10 +370,8 @@ private struct CalendarCard: View {
         }
     }
 
-    // MARK: - Cells
-
     private struct Cell {
-        let date: Date?    // nil = padding before first day / after last
+        let date: Date?
         let count: Int
         let inMonth: Bool
     }
@@ -334,20 +381,14 @@ private struct CalendarCard: View {
         let range = cal.range(of: .day, in: .month, for: monthStart) ?? 1..<31
         let daysInMonth = range.count
 
-        // First weekday of month (1 = Sun)
-        let firstWeekday = cal.component(.weekday, from: monthStart) - 1   // 0..6
+        let firstWeekday = cal.component(.weekday, from: monthStart) - 1
 
-        // Counts by device-local date key
-        let allSessions = store.hits.sessions(threshold: store.sessionThresholdSec)
-        let countsByKey = Dictionary(grouping: allSessions, by: \.logLocalDateKey).mapValues(\.count)
+        let countsByKey = Dictionary(grouping: sessions, by: \.logLocalDateKey).mapValues(\.count)
 
         var cells: [Cell] = []
-
-        // Leading padding
         for _ in 0..<firstWeekday {
             cells.append(Cell(date: nil, count: 0, inMonth: false))
         }
-        // Days of this month
         for d in 1...daysInMonth {
             var comps = cal.dateComponents([.year, .month], from: monthStart)
             comps.day = d
@@ -355,12 +396,126 @@ private struct CalendarCard: View {
             let key = String(format: "%04d-%02d-%02d", comps.year!, comps.month!, d)
             cells.append(Cell(date: date, count: countsByKey[key, default: 0], inMonth: true))
         }
-        // Trailing padding to round out the row
         let trailing = (7 - cells.count % 7) % 7
         for _ in 0..<trailing {
             cells.append(Cell(date: nil, count: 0, inMonth: false))
         }
         return cells
+    }
+}
+
+// MARK: - Day stretches mini chart
+
+private struct DayStretchesChart: View {
+    let stretches: [(Date, TimeInterval)]
+
+    private struct Point: Identifiable {
+        let id = UUID()
+        let index: Int
+        let minutes: Double
+    }
+
+    private var points: [Point] {
+        stretches.enumerated().map { i, s in Point(index: i, minutes: s.1 / 60) }
+    }
+
+    var body: some View {
+        Chart(points) { p in
+            AreaMark(
+                x: .value("step", p.index),
+                y: .value("min", p.minutes)
+            )
+            .foregroundStyle(LinearGradient(
+                colors: [Color.driftCoral.opacity(0.35), Color.driftCoral.opacity(0.04)],
+                startPoint: .top, endPoint: .bottom
+            ))
+            .interpolationMethod(.catmullRom)
+
+            LineMark(
+                x: .value("step", p.index),
+                y: .value("min", p.minutes)
+            )
+            .foregroundStyle(Color.driftCoral)
+            .lineStyle(StrokeStyle(lineWidth: 2))
+            .interpolationMethod(.catmullRom)
+
+            PointMark(
+                x: .value("step", p.index),
+                y: .value("min", p.minutes)
+            )
+            .foregroundStyle(Color.driftCoral)
+            .symbolSize(40)
+        }
+        .chartXAxis(.hidden)
+        .chartYAxis {
+            AxisMarks(position: .leading, values: .automatic(desiredCount: 2)) { _ in
+                AxisGridLine().foregroundStyle(Color.driftInkFade.opacity(0.15))
+                AxisValueLabel()
+                    .font(.driftSub)
+                    .foregroundStyle(.driftInkSoft)
+            }
+        }
+    }
+}
+
+// MARK: - FlowLayout (wrap row of chips)
+
+private struct FlowLayout: Layout {
+    var spacing: CGFloat
+    var runSpacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        let rows = layout(subviews: subviews, maxWidth: maxWidth)
+        let height = rows.last?.maxY ?? 0
+        let width = rows.flatMap { $0.frames }.map { $0.maxX }.max() ?? 0
+        return CGSize(width: width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let rows = layout(subviews: subviews, maxWidth: bounds.width)
+        for row in rows {
+            for (idx, frame) in row.frames.enumerated() {
+                let i = row.startIndex + idx
+                subviews[i].place(
+                    at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY),
+                    proposal: ProposedViewSize(width: frame.width, height: frame.height)
+                )
+            }
+        }
+    }
+
+    private struct Row {
+        let startIndex: Int
+        let frames: [CGRect]
+        var maxY: CGFloat { frames.map { $0.maxY }.max() ?? 0 }
+    }
+
+    private func layout(subviews: Subviews, maxWidth: CGFloat) -> [Row] {
+        var rows: [Row] = []
+        var current: [CGRect] = []
+        var startIdx = 0
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        for (idx, sv) in subviews.enumerated() {
+            let size = sv.sizeThatFits(.unspecified)
+            if x + size.width > maxWidth, !current.isEmpty {
+                rows.append(Row(startIndex: startIdx, frames: current))
+                startIdx = idx
+                current = []
+                x = 0
+                y += rowHeight + runSpacing
+                rowHeight = 0
+            }
+            current.append(CGRect(x: x, y: y, width: size.width, height: size.height))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+        if !current.isEmpty {
+            rows.append(Row(startIndex: startIdx, frames: current))
+        }
+        return rows
     }
 }
 

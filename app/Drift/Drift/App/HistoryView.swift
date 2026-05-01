@@ -116,22 +116,31 @@ struct HistoryView: View {
                 }
             }
 
-            // Detail list of sessions for the day, in its own card.
+            // Flat hits list — each row is a tap-to-open Menu with Edit/Delete.
+            // Replaces the prior session-with-chips layout that ran a custom
+            // FlowLayout per multi-hit session and chugged with many hits.
             if !sessions.isEmpty {
-                sessionListCard(sessions: sessions)
+                hitsListCard(hits: dayHits(in: sessions))
             }
         }
     }
 
-    private func sessionListCard(sessions: [Session]) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text.caveat("sessions")
+    private func dayHits(in sessions: [Session]) -> [Hit] {
+        sessions.flatMap { $0.hits }.sorted { $0.t > $1.t }
+    }
+
+    private func hitsListCard(hits: [Hit]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text.caveat("hits")
                 .font(.driftCardTitle)
                 .foregroundStyle(.driftInk)
 
-            VStack(spacing: 10) {
-                ForEach(sessions, id: \.id) { session in
-                    sessionRow(session)
+            VStack(spacing: 0) {
+                ForEach(hits, id: \.persistentModelID) { hit in
+                    hitRow(hit)
+                    if hit.persistentModelID != hits.last?.persistentModelID {
+                        Divider().opacity(0.25)
+                    }
                 }
             }
         }
@@ -139,47 +148,35 @@ struct HistoryView: View {
         .driftCard()
     }
 
-    @ViewBuilder
-    private func sessionRow(_ session: Session) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
-                Text(timeOfDay(session.start))
+    private func hitRow(_ hit: Hit) -> some View {
+        Menu {
+            Button {
+                hitToEdit = hit
+            } label: {
+                Label("Edit time", systemImage: "pencil")
+            }
+            Button(role: .destructive) {
+                hitToDelete = hit
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        } label: {
+            HStack {
+                Circle()
+                    .fill(Color.driftCoral.opacity(0.7))
+                    .frame(width: 6, height: 6)
+                Text(timeOfDay(hit.t))
                     .font(.driftLabel)
                     .foregroundStyle(.driftInk)
                 Spacer()
-                Text(session.count == 1 ? "solo hit" : "session of \(session.count) hits")
-                    .font(.driftSub)
-                    .foregroundStyle(.driftInkSoft)
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.driftInkFade)
             }
-            if session.count > 1 {
-                FlowLayout(spacing: 6, runSpacing: 6) {
-                    ForEach(session.hits, id: \.persistentModelID) { hit in
-                        hitChip(hit)
-                    }
-                }
-            }
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
         }
-    }
-
-    private func hitChip(_ hit: Hit) -> some View {
-        Text(timeOfDay(hit.t))
-            .font(.system(size: 11, weight: .medium))
-            .foregroundStyle(.driftInkSoft)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(Color.driftCoral.opacity(0.15), in: Capsule())
-            .contextMenu {
-                Button {
-                    hitToEdit = hit
-                } label: {
-                    Label("Edit time", systemImage: "pencil")
-                }
-                Button(role: .destructive) {
-                    hitToDelete = hit
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-            }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Helpers
@@ -347,7 +344,9 @@ private struct CalendarCard: View {
                 Circle().strokeBorder(Color.driftCoral, lineWidth: 1.5)
             }
             if isSelected {
-                Circle().strokeBorder(Color.driftInk, lineWidth: 2).padding(-2)
+                // No negative padding — drawingGroup clips outside the cell's
+                // bounds, which would chop the selection ring on the bottom row.
+                Circle().strokeBorder(Color.driftInk, lineWidth: 2)
             }
             Text("\(dayNumber)")
                 .font(.system(size: 11, weight: .medium))
@@ -466,67 +465,6 @@ private struct DayStretchesChart: View {
                     .foregroundStyle(.driftInkSoft)
             }
         }
-    }
-}
-
-// MARK: - FlowLayout (wrap row of chips)
-
-private struct FlowLayout: Layout {
-    var spacing: CGFloat
-    var runSpacing: CGFloat
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let maxWidth = proposal.width ?? .infinity
-        let rows = layout(subviews: subviews, maxWidth: maxWidth)
-        let height = rows.last?.maxY ?? 0
-        let width = rows.flatMap { $0.frames }.map { $0.maxX }.max() ?? 0
-        return CGSize(width: width, height: height)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let rows = layout(subviews: subviews, maxWidth: bounds.width)
-        for row in rows {
-            for (idx, frame) in row.frames.enumerated() {
-                let i = row.startIndex + idx
-                subviews[i].place(
-                    at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY),
-                    proposal: ProposedViewSize(width: frame.width, height: frame.height)
-                )
-            }
-        }
-    }
-
-    private struct Row {
-        let startIndex: Int
-        let frames: [CGRect]
-        var maxY: CGFloat { frames.map { $0.maxY }.max() ?? 0 }
-    }
-
-    private func layout(subviews: Subviews, maxWidth: CGFloat) -> [Row] {
-        var rows: [Row] = []
-        var current: [CGRect] = []
-        var startIdx = 0
-        var x: CGFloat = 0
-        var y: CGFloat = 0
-        var rowHeight: CGFloat = 0
-        for (idx, sv) in subviews.enumerated() {
-            let size = sv.sizeThatFits(.unspecified)
-            if x + size.width > maxWidth, !current.isEmpty {
-                rows.append(Row(startIndex: startIdx, frames: current))
-                startIdx = idx
-                current = []
-                x = 0
-                y += rowHeight + runSpacing
-                rowHeight = 0
-            }
-            current.append(CGRect(x: x, y: y, width: size.width, height: size.height))
-            x += size.width + spacing
-            rowHeight = max(rowHeight, size.height)
-        }
-        if !current.isEmpty {
-            rows.append(Row(startIndex: startIdx, frames: current))
-        }
-        return rows
     }
 }
 

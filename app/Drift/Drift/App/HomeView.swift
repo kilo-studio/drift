@@ -135,10 +135,11 @@ struct HomeView: View {
     /// With anchor .topTrailing, the unscaled bbox's top-right corner stays at
     /// the position we compute, and the rest of the body shrinks toward it.
     private func stickyCenter(in size: CGSize) -> CGPoint {
-        let inset: CGFloat = 4
+        let xinset: CGFloat = 16
+        let yinset: CGFloat = 0
         return CGPoint(
-            x: size.width - inset - spiritSize / 2,
-            y: inset + spiritSize / 2
+            x: size.width - xinset - spiritSize / 2,
+            y: yinset + spiritSize / 2
         )
     }
 

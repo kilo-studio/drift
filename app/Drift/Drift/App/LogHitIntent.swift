@@ -3,22 +3,22 @@ import SwiftData
 import WidgetKit
 
 /// "Log a hit" — surfaces in Shortcuts, Siri, the Action Button, Spotlight, and the
-/// widget tap target. Phase A: opens Drift on run so we can reuse the app's
-/// `ModelContainer` without an App Group. Phase B will flip `openAppWhenRun = false`
-/// once shared SwiftData is wired through.
+/// widget tap target.
+///
+/// `openAppWhenRun = false` so the intent runs silently while the phone is locked
+/// (the Action Button can't unlock the device). The static `DriftApp.container`
+/// auto-initializes on first access so a cold trigger spins up SwiftData in the
+/// background, mutates the store, and returns. When the app IS running, we reuse
+/// the live `sharedStore` so the dashboard's `@Observable` broadcasts the update.
 struct LogHitIntent: AppIntent {
     static var title: LocalizedStringResource = "Log a hit"
     static var description = IntentDescription(
         "Log a hit. Drift records the time and updates your stats."
     )
-    static var openAppWhenRun: Bool = true
+    static var openAppWhenRun: Bool = false
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        // Prefer the running app's live store so the dashboard sees the new hit
-        // immediately (the @Observable on the running HitStore broadcasts the
-        // change to HomeView). Fall back to a fresh store when the app isn't
-        // already running yet.
         let store = try DriftApp.sharedStore ?? HitStore(context: DriftApp.container.mainContext)
         let prevLast = store.lastHitDate
         try store.append()

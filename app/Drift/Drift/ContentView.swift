@@ -20,9 +20,10 @@ struct ContentView: View {
     }
 
     var body: some View {
-        // Native iOS 26 TabView — the selected tab gets the tinted glass pill
-        // for free, no manual styling. Plus a floating + Menu above the bar
-        // for global logging on either tab.
+        // Native iOS 26 TabView with selected-tab pill, plus a
+        // tabViewBottomAccessory for the + Menu — same pattern Apple Music
+        // uses for its now-playing bar. The accessory sits in its own glass
+        // row above the tab bar, with native iOS 26 styling.
         TabView(selection: $currentTab) {
             Tab("home", systemImage: "house.fill", value: .home) {
                 HomeView(homeScrolled: $homeScrolled, spiritSize: spiritSize)
@@ -31,12 +32,13 @@ struct ContentView: View {
                 HistoryView()
             }
         }
-        .overlay { spiritOverlay }
-        .overlay(alignment: .bottomTrailing) {
-            plusMenu
-                .padding(.trailing, 16)
-                .padding(.bottom, 8)
+        .tabViewBottomAccessory {
+            HStack {
+                Spacer()
+                plusMenu
+            }
         }
+        .overlay { spiritOverlay }
         .sheet(isPresented: $showAddSheet) {
             AddHitSheet()
         }
@@ -56,11 +58,9 @@ struct ContentView: View {
             }
         } label: {
             Image(systemName: "plus")
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 56, height: 56)
-                .background(Color.driftCoral, in: Circle())
-                .shadow(color: .black.opacity(0.18), radius: 12, x: 0, y: 6)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(.driftCoral)
+                .frame(width: 36, height: 36)
         }
     }
 

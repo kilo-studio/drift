@@ -108,18 +108,17 @@ private func drawSpirit(ctx: GraphicsContext, size: CGSize, frame: SpiritFrame) 
 }
 
 private func drawSideWisps(ctx: inout GraphicsContext) {
-    // Use the body's gradient parameters (center + radius) so the wisps
-    // are colored as a continuation of the body's gradient rather than
-    // each having their own bright center. Result: the wisps read as a
-    // smooth extension of the cloud silhouette instead of two small
-    // separate clouds glued to its sides.
+    // Each wisp has its own radial gradient with its own bright center,
+    // so the spirit reads as three distinct cloud shapes (body + two
+    // wisps) rather than a single elongated silhouette.
+    let gradient = bodyGradient
     for cx in [14.0, 86.0] {
         let path = Path(ellipseIn: CGRect(x: cx - 9, y: 58 - 6.5, width: 18, height: 13))
         ctx.fill(path, with: .radialGradient(
-            bodyGradient,
-            center: CGPoint(x: 42, y: 41),
+            gradient,
+            center: CGPoint(x: cx - 9 + 6.84, y: 58 - 6.5 + 4.16),
             startRadius: 0,
-            endRadius: 50
+            endRadius: 18
         ))
     }
 }

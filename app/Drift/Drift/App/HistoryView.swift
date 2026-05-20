@@ -58,7 +58,7 @@ struct HistoryView: View {
     /// Computed once per body render and passed down so the calendar and the
     /// day card aren't both invoking `hits.sessions(threshold:)` independently.
     private var allSessions: [Session] {
-        store.hits.sessions(threshold: store.sessionThresholdSec)
+        store.hits.sessions(threshold: store.effectiveSessionThreshold)
     }
 
     /// Per-device-local-day session counts. Built once for the calendar to read
@@ -78,7 +78,7 @@ struct HistoryView: View {
         let avgGap = avgGapBetweenSessions(sessions: sessions)
         let stretches = store.hits.stretches(
             forWakingDayKey: key,
-            threshold: store.sessionThresholdSec
+            threshold: store.effectiveSessionThreshold
         )
 
         VStack(spacing: 16) {
@@ -92,16 +92,16 @@ struct HistoryView: View {
             // Two stat cards side-by-side, matching home's hero stat row.
             HStack(spacing: 16) {
                 StatCard(
-                    title: "sessions",
-                    bigNumber: "\(sessions.count)",
+                    title: store.useSessions ? "sessions" : "hits",
+                    bigNumber: "\(store.useSessions ? sessions.count : totalHits)",
                     bigNumberColor: .driftCoral,
-                    label: "\(totalHits) hit\(totalHits == 1 ? "" : "s")"
+                    label: store.useSessions ? "\(totalHits) hit\(totalHits == 1 ? "" : "s")" : "this day"
                 )
                 StatCard(
                     title: "avg gap",
                     bigNumberParts: avgGap.map { formatGapParts($0) } ?? [.number("—")],
                     bigNumberColor: .driftSageDeep,
-                    label: "between sessions"
+                    label: store.useSessions ? "between sessions" : "between hits"
                 )
             }
 

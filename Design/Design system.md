@@ -76,6 +76,8 @@ Sizes:
 - Card title (Caveat): 24px
 - Card subtitle: 12px / weight 500 / `var(--ink-fade)` / centered, sits directly under title
 - Stat label: 13px / weight 500 / `var(--ink-soft)`
+- Settings row label (Quicksand): 16px / weight 600 / `var(--ink)` (`driftRowLabel`)
+- Settings row description (Quicksand): 14px / weight 500 / `var(--ink-soft)` (`driftRowDescription`)
 
 ## Layout
 
@@ -83,13 +85,31 @@ Sizes:
 
 ```
 border-radius: 28px
-padding: 22px 20px 24px
-background: rgba(255, 251, 244, 0.75)
-backdrop-filter: blur(8px)
-border: 1px solid rgba(255, 255, 255, 0.6)
-box-shadow: 0 12px 32px -16px rgba(75, 60, 45, 0.18),
-            0 2px 8px -4px rgba(75, 60, 45, 0.08)
+padding: 20px (uniform)
+chrome: .glassEffect(.regular.tint(.driftSkyLowerMid.opacity(0.4)),
+                     in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+border: none (glass effect carries its own rim)
+box-shadow: none
 ```
+
+**Why so spare.** Cards are glass over the sky bg, tinted to the sky color. The
+tint pulls cards toward the same color family as the bg so they read as a
+*lifted region of the sky* rather than a separate bright panel. `driftSkyLowerMid`
+is already an adaptive color (pale blue in light mode, deep navy in dark) so the
+tint matches both modes for free.
+
+**Why iOS 26 Liquid Glass over `.ultraThinMaterial`.** An earlier version stacked
+material + tint fill + stroke + two near-zero shadows. Each was a separate
+offscreen render pass; with ~10 cards on Home plus continuous TimelineView
+animations driving spirit/sparkles/clouds, Instruments measured 170–370
+offscreen passes per frame and made scrolling unusably hitchy. `.glassEffect`
+composes blur + tint into a single render pass, which is structurally cheaper
+than `material + custom tint`. It also bypasses material's system vibrancy
+(which fights any tint you put on top of it).
+
+**Render budget.** One offscreen pass per card. Don't stack additional fills,
+shadows, or blur modifiers on top of `.glassEffect` — that's exactly the
+compound-offscreen-pass trap the old design fell into.
 
 ### Card title alignment
 

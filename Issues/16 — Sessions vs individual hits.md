@@ -6,8 +6,8 @@ tags: [foundation, data, design]
 
 > **Implementation status:** session derivation, threshold gating in `HitStore.append`,
 > and session-aware metric semantics landed alongside the Issue 05 data layer.
-> Spirit's ratio uses session-end as drift anchor (Issue 10). Settings UI for the
-> threshold picker is part of [[Issues/12 — Onboarding, settings, app icon|Issue 12]].
+> Spirit's ratio uses session-end as drift anchor (Issue 10). Threshold picker and
+> the "Use sessions" master toggle are wired in settings (see [[Issues/12 — Onboarding, settings, app icon|Issue 12]]) — the toggle works via `HitStore.useSessions` + `effectiveSessionThreshold`, which routes every metric through `threshold: 0` when off so `sessions(threshold: 0)` yields one-hit sessions. Records recompute on toggle flip; HomeView and HistoryView labels branch on `store.useSessions` (sessions/hits, between sessions/between hits, etc.).
 
 # Sessions vs individual hits
 
@@ -74,8 +74,34 @@ Why the spirit only reflects frequency: the spirit is a *present-moment visualiz
 
 ### Settings
 
-- **Session threshold** — picker: 1 / 3 / 5 / 10 / 15 / 30 minutes. Default 5.
+- **Use sessions** — master toggle. Default **on**. See [[#The "Use sessions" toggle]] below.
+- **Session threshold** — picker: 1 / 3 / 5 / 10 / 15 / 30 minutes. Default 5. Only visible when "Use sessions" is on.
 - *(Maybe)* **Show hits alongside sessions** — toggle to show secondary "Y hits" label on the today card. Default on.
+
+### The "Use sessions" toggle
+
+The implicit-session model above is a recommendation, not a forced philosophy. Some users may genuinely want every tap to count as its own event — they're solo-hitters, or they prefer the spirit to react to every input, or they think "session" is a manufactured concept that hides their real behavior. The toggle is the escape hatch.
+
+**When OFF**, every session-aware metric falls back to its hit-based equivalent:
+
+| Metric | Sessions ON | Sessions OFF |
+|---|---|---|
+| Spirit drift anchor | `now - lastSessionEnd` | `now - lastHit.t` |
+| `wakingAvgSec` | Avg gap between sessions in a waking day | Avg gap between hits in a waking day |
+| `longestWakingGap` | Longest intra-day gap between sessions | Longest intra-day gap between hits |
+| `longestGap` | Longest gap between sessions | Longest gap between hits |
+| Today card | "X sessions · Y hits" | "X hits" (no secondary label) |
+| Daily fortnight chart | Sessions per day | Hits per day |
+| Hours chart | Sessions by hour (start time) | Hits by hour |
+| Today's stretches chart | Gaps between sessions | Gaps between hits |
+| Rolling avg chart | Avg gap between sessions, rolling window | Avg gap between hits, rolling window |
+
+**Resolved implementation details:**
+
+1. **Records recompute on toggle change.** The persisted `longestGap` / `longestWakingGap` are recomputed from history under the new mode whenever the toggle flips, mirroring how `HitStore.recomputeRecords()` already runs after edit/delete (per [[Issues/17 — Hit history]]). Records always describe what's true *now* in the data.
+2. **Persistence.** `drift.useSessions: Bool` in `UserDefaults`, default `true` so existing installs keep current behavior on upgrade.
+3. **Threshold visibility.** When sessions are off, the session-threshold row is **hidden entirely** (not disabled). The value is meaningless in hit-mode, so taking up screen space would be misleading.
+4. **Notification copy.** Bodies already say "since last hit" — works in both modes. "avg Ym" just reflects the new average. No copy changes needed.
 
 ## Open questions
 

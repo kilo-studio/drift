@@ -62,8 +62,8 @@ NotificationScheduler.rescheduleAll(metrics)  ← cancels + re-schedules
 `HitStore` exposes:
 - `lastHit: Hit?` (for `lastHitMs` in the timer)
 - `todayCount: Int`
-- `avgPerDay: Double` (rolling 30-day, excludes today)
-- `wakingAvgSec: TimeInterval?` (rolling 30-day, includes today)
+- `avgPerDay: Double` (rolling window from settings, default 7 days, excludes today)
+- `wakingAvgSec: TimeInterval?` (rolling window from settings, default 7 days, includes today)
 - `longestWakingGap: TimeInterval`
 - `longestGap: TimeInterval`
 - `hitsByHour: [Int]` (24 buckets, all-time)
@@ -94,10 +94,16 @@ Control Center entry (iOS 18+): a control that runs the same App Intent.
 
 ## Settings (small, focused)
 
-- **Sync iCloud** — toggle, off by default
-- **Rolling window** — slider, 7 / 14 / 30 / 60 days, default 30
-- **Sleep window for hedging** — two time pickers, default 23:00–06:00
-- **Notifications** — master toggle, plus per-type toggles (immediate / beat-average / beat-record)
+Implemented in `SettingsView.swift` as a fourth `TabView` tab. See [[Issues/12 — Onboarding, settings, app icon|Issue 12]] for the full per-row spec and current status.
+
+- **Use sessions** — toggle, default on (Issue 16's master switch; routes metrics through `effectiveSessionThreshold`)
+- **Session threshold** — picker, 1 / 3 / 5 / 10 / 15 / 30 min, default 5 (hidden when use-sessions is off)
+- **Rolling window** — picker, 7 / 14 / 30 / 60 days, default 7
+- **Sleep window** — two hour pickers (bedtime + wake up), default 23 and 6; drives waking-day cutoff and notification hedge
+- **Notifications** — master toggle + per-type toggles (immediate / beat-average / beat-record) + timing offset pickers (right-at / +1 / +5 / +10 / +15 min)
+- **Reset all data** — destructive, confirms via alert, calls `HitStore.resetEverything()`
+- **About** — version, privacy policy link, github link
+- *(Pending)* **Sync iCloud** — toggle, off by default
 - **Reduce motion** — automatically respects iOS setting (no per-app toggle needed)
 
 No accent color picker, no theme variants. The Ghibli sky is the design.

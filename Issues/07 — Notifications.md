@@ -19,13 +19,22 @@ Port the prototype's three-notification system to `UNUserNotificationCenter`. So
   - [x] Unique identifier per immediate notification so two quick hits both surface
 - [x] Scheduled "beat your average" (`drift-beat-average`)
   - [x] Only when `totalHits >= 10` and `wakingAvgSec > 0`
-  - [x] Trigger: `wakingAvgSec + 60` from now
-  - [x] Overnight hedge body when trigger lands in 23:00–05:59 local
+  - [x] Trigger: `wakingAvgSec + notifsBeatAverageOffsetSec` from now (configurable picker; default 60s)
+  - [x] Overnight hedge body when trigger lands inside the configured sleep window
 - [x] Scheduled "beat your record" (`drift-beat-record`)
-  - [x] Trigger: `longestWakingGapSec + 1` from now
-  - [x] Skipped if trigger lands past `endOfWakingDay(now)` (next 4am cutoff)
+  - [x] Trigger: `longestWakingGapSec + notifsBeatRecordOffsetSec` from now (configurable picker; default 0s = "right at")
+  - [x] Skipped if trigger lands past `endOfWakingDay(now)` (next sleep-end cutoff, default 6am)
   - [x] Overnight hedge body, same window
   - [x] Skipped when `longestWakingGapSec == 0` or `totalHits < 2`
+
+## Settings hooks (from [[Issues/12 — Onboarding, settings, app icon]])
+
+- [x] Master notifications toggle (`notifsEnabled`) — short-circuits `reschedule(after:)` when off, cancels pending requests, and skips the permission prompt.
+- [x] Per-type toggles — immediate (`notifsImmediateEnabled`) / beat-average (`notifsBeatAverageEnabled`) / beat-record (`notifsBeatRecordEnabled`). When off, that type is skipped during reschedule.
+- [x] **Beat-average timing offset** picker: *right at / +1 min / +5 min / +10 min / +15 min*. Default **+1 min**. Replaces the hard-coded `+60` constant.
+- [x] **Beat-record timing offset** picker: same options. Default **right at** (0). Replaces the hard-coded `+1`.
+- [x] Settings flips trigger `NotificationScheduler.cancelPending()` so stale schedules don't fire under new prefs; next hit reschedules with current settings.
+- [x] `isOvernight` reads `driftSleepStartHour()` / `driftSleepEndHour()` from settings (default 23 / 6) instead of hard-coded 23–6 — handles wraps-midnight (typical) and inverted (start < end) schedules.
 - [x] `HitStore.append` captures `prevLast` + `prevWakingRecord`, computes `isNewWakingBest`, fires `Task { NotificationScheduler.reschedule(after:) }` after the SwiftData save
 
 ## Tests

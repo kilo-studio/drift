@@ -11,6 +11,9 @@
 Notes.md
 private/
 
+# Claude Code session-local state (scheduled tasks, local settings)
+.claude/
+
 # Personal prototype data bundled for one-time import on the dev device.
 # Real users would use a UIDocumentPicker flow instead (see Issue 05).
 **/Resources/vape-log-bundle.json

@@ -3,54 +3,35 @@ import UIKit
 
 private let cardCornerRadius: CGFloat = 28
 
-/// Light: very faint warm cream tint over the ultra-thin material.
-/// Dark: fully clear — ultraThinMaterial alone is enough.
-/// Both pulled down further per user — let more of the bg show through.
-private let cardSurface: Color = Color(uiColor: UIColor { trait in
-    trait.userInterfaceStyle == .dark
-        ? UIColor.clear
-        : UIColor(red: 1.0, green: 251/255, blue: 244/255, alpha: 0.10)
-})
-
-/// Light: warm brown for shadow. Dark: black, very subtle (most of the depth comes
-/// from the bg/card brightness contrast).
-private let cardShadow: Color = Color(uiColor: UIColor { trait in
-    trait.userInterfaceStyle == .dark
-        ? UIColor.black
-        : UIColor(red: 75/255, green: 60/255, blue: 45/255, alpha: 1)
-})
-
-/// Light: white inner highlight on the rounded edge. Dark: subtle white for glass rim.
-private let cardStroke: Color = Color(uiColor: UIColor { trait in
-    trait.userInterfaceStyle == .dark
-        ? UIColor.white.withAlphaComponent(0.10)
-        : UIColor.white.withAlphaComponent(0.6)
-})
-
+/// iOS 26 Liquid Glass via `.glassEffect(.regular.tint(...))` tinted to the
+/// dashboard's sky background. The tint pulls cards toward the same color family
+/// as the bg so they feel like a lifted region of the sky rather than a separate
+/// bright panel — the `.clear` variant on its own read as too bright.
+///
+/// `driftSkyLowerMid` already adapts (pale blue in light, deep navy in dark), so
+/// tinting with it at low alpha gives the right cast in both modes for free.
+/// One offscreen pass per card.
+///
+/// Card design history:
+/// 1. Original — `.ultraThinMaterial` + cream-tint fill + stroke + two shadows
+///    = five offscreen passes per card. Instruments measured 170–370 passes/frame
+///    on Home with continuous TimelineView animations; scrolling unusable.
+/// 2. Stroke-only — zero passes but cards felt too floaty.
+/// 3. Material + stroke — two passes; system vibrancy gave a bluish cast in light
+///    and a gray-panel feel in dark.
+/// 4. Material + flat tint + stroke — three passes; right look but extra cost.
+/// 5. `.glassEffect(.regular.tint(white/black @ 0.05))` — one pass; too neutral.
+/// 6. `.glassEffect(.clear)` — one pass; cards read too bright.
+/// 7. This — `.glassEffect(.regular.tint(.driftSkyLowerMid))` — cards lean the
+///    same color family as the sky behind them.
 struct DriftCardModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .padding(.top, 22)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 24)
-            .background {
-                RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
-                    .fill(cardSurface)
-                    .background(
-                        RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
-                            .fill(.ultraThinMaterial)
-                    )
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
-                    .strokeBorder(cardStroke, lineWidth: 1)
-            }
-            // Near-zero shadows — the soft darkening around card edges was the
-            // remaining thing that made cards read as opaque "objects" rather
-            // than translucent panes. Just enough lift to disambiguate the
-            // edge from the bg.
-            .shadow(color: cardShadow.opacity(0.025), radius: 12, x: 0, y: 8)
-            .shadow(color: cardShadow.opacity(0.015), radius: 3, x: 0, y: 1)
+            .padding(20)
+            .glassEffect(
+                .regular.tint(.driftSkyLowerMid.opacity(0.4)),
+                in: RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
+            )
     }
 }
 

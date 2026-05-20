@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AppTab: Hashable {
-    case home, history
+    case home, history, settings
     /// Pseudo-tab — selected briefly when the user taps the trailing + slot,
     /// intercepted to present the add-hit sheet without actually navigating.
     case addAction
@@ -16,10 +16,10 @@ struct ContentView: View {
 
     private let spiritSize: CGFloat = 96
 
-    /// Spirit is "stuck" in the top-right corner whenever we're on history or
+    /// Spirit is "stuck" in the top-right corner whenever we're off home, or
     /// when home is scrolled past the threshold.
     private var spiritIsStuck: Bool {
-        currentTab == .history || homeScrolled
+        currentTab != .home || homeScrolled
     }
 
     var body: some View {
@@ -34,13 +34,17 @@ struct ContentView: View {
             Tab("history", systemImage: "clock", value: AppTab.history) {
                 HistoryView()
             }
+            Tab("settings", systemImage: "gearshape", value: AppTab.settings) {
+                SettingsView()
+            }
             Tab("add", systemImage: "plus", value: AppTab.addAction, role: .search) {
                 // Never actually navigated to — we revert in the binding setter
                 // below before the user sees this view.
                 Color.clear
             }
         }
-        .tint(.white)
+        .tint(.primary)
+        .tabBarMinimizeBehavior(.onScrollDown)
         .overlay { spiritOverlay }
         .sheet(isPresented: $showAddSheet) {
             AddHitSheet()

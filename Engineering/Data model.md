@@ -26,9 +26,9 @@ func localOf(_ hit: Hit) -> Date {
 
 Returns a `Date` whose UTC components yield the wall-clock the user saw. Use for all date-keying.
 
-## Waking-day grouping (4am cutoff)
+## Waking-day grouping (configurable cutoff)
 
-Hits between midnight and 4am roll back to the previous "waking day." A hit at 2am Wednesday belongs to Tuesday's bucket. This excludes overnight sleep gaps from gap calculations.
+Hits before the user's configured wake-up hour (default **6am**, set via the sleep-window pickers in settings) roll back to the previous "waking day." With defaults, a hit at 2am Wednesday belongs to Tuesday's bucket. This excludes overnight sleep gaps from gap calculations. The wake-up hour is read from `UserDefaults` via `driftSleepEndHour()` so the date-key free functions stay decoupled from `HitStore`. Code samples below use `4` as a historical placeholder; in current code it's `driftSleepEndHour()`.
 
 ```swift
 func wakingDayKey(_ hit: Hit) -> String {
@@ -42,9 +42,11 @@ func wakingDayKey(_ hit: Hit) -> String {
 }
 ```
 
-## Rolling 30-day window
+## Rolling window (default 7 days, configurable)
 
-The two displayed averages (per-day count + waking-gap interval) use a 30-day window, but with **different inclusion rules for today**:
+The two displayed averages (per-day count + waking-gap interval) use a rolling window. **Default is 7 days** as of the settings work in [[Issues/12 — Onboarding, settings, app icon]]; user can pick 7 / 14 / 30 / 60. The `30` constant in the code samples below predates that change — read it as `windowDays` driven by the setting.
+
+The two metrics use the same window length but **different inclusion rules for today**:
 
 | Metric | Today included? | Why |
 |---|---|---|
@@ -110,9 +112,15 @@ var wakingAvgSec: TimeInterval? {
 ### Sessions (derived)
 
 Per [[Issues/16 — Sessions vs individual hits]], all gap-based metrics operate on
-**sessions**, not raw hits. A session is a maximal cluster of consecutive hits
-where every inter-hit gap is ≤ the session threshold (default 5 min, configurable).
-Sessions are derived on read, never persisted; raw hits are still the only stored data.
+**sessions**, not raw hits — *unless* the user has turned off the "Use sessions"
+toggle in settings, in which case every metric falls back to its hit-based
+equivalent (spirit ratio uses `now - lastHit`, `wakingAvgSec` averages hit-to-hit
+gaps within a waking day, etc.). See [[Issues/16 — Sessions vs individual hits#The "Use sessions" toggle]]
+for the full mapping.
+
+A session is a maximal cluster of consecutive hits where every inter-hit gap is ≤
+the session threshold (default 5 min, configurable). Sessions are derived on read,
+never persisted; raw hits are still the only stored data.
 
 ```swift
 struct Session {
@@ -188,4 +196,4 @@ No format conversion needed — same shape on both sides.
 
 For a heavy user logging every 30 seconds over months: ~2,880/day × 365 = ~1M hits/year. That's a non-trivial dataset but well within SwiftData's comfort. For lighter users (every 30 min) it's ~17,500/year. Any aggregation that touches all hits should be cached and invalidated on append.
 
-In practice, the rolling-30-day window means most queries only touch ~30 days of hits, which caps the working set even for heavy users.
+In practice, the rolling window (default 7, max 60 via settings) means most queries only touch a small slice of hits, which caps the working set even for heavy users.

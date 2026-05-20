@@ -23,9 +23,19 @@ extension Font {
     static let driftTimerUnit = Font.custom("Quicksand-SemiBold", size: 32)
     static let driftCardTitle = Font.custom("Caveat", size: 24).weight(.semibold)
     static let driftHeroLabel = Font.custom("Caveat", size: 26).weight(.semibold)
-    static let driftBestLabel = Font.custom("Caveat", size: 16).weight(.semibold)
+    /// Hero "bests" row labels ("longest gap while awake", "all time longest gap").
+    /// Uses Quicksand instead of Caveat — the handwritten face read as decorative
+    /// when sat next to the big number, hurting scanability of what's actually a
+    /// utility label. 15pt is one notch above `driftLabel` so it carries weight
+    /// against the 22pt `driftBestNum` it sits beside.
+    static let driftBestLabel = Font.custom("Quicksand-Medium", size: 15)
     static let driftLabel     = Font.custom("Quicksand-Medium", size: 13)
     static let driftSub       = Font.custom("Quicksand-Medium", size: 12)
+
+    /// Settings-style row label — clearer, more prominent than `driftLabel`.
+    static let driftRowLabel       = Font.custom("Quicksand-SemiBold", size: 16)
+    /// Settings-style row description — sits below the label, readable but subordinate.
+    static let driftRowDescription = Font.custom("Quicksand-Medium", size: 14)
 }
 
 extension Text {

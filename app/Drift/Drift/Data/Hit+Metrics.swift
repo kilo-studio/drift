@@ -108,7 +108,7 @@ extension Array where Element == Hit {
 
     /// Average gap BETWEEN sessions within waking-day buckets, across the last `window`
     /// days INCLUDING today. nil if no waking-day bucket has 2+ sessions.
-    func wakingAvgSec(now: Date = .now, window: Int = 30, threshold: TimeInterval = defaultSessionThresholdSec) -> TimeInterval? {
+    func wakingAvgSec(now: Date = .now, window: Int = 7, threshold: TimeInterval = defaultSessionThresholdSec) -> TimeInterval? {
         let inWindow = hitsInRollingWindow(includeToday: true, now: now, window: window)
         let allSessions = inWindow.sessions(threshold: threshold)
         let buckets = Dictionary(grouping: allSessions, by: \.wakingDayKey)
@@ -152,6 +152,15 @@ extension Array where Element == Hit {
     /// Each entry is (next session's start, gap from previous session's end).
     func todayStretches(now: Date = .now, threshold: TimeInterval = defaultSessionThresholdSec) -> [(Date, TimeInterval)] {
         stretches(forWakingDayKey: currentWakingDayKey(now), threshold: threshold)
+    }
+
+    /// Average gap BETWEEN sessions within today's waking-day bucket. nil if today
+    /// has fewer than 2 sessions.
+    func todayWakingAvgSec(now: Date = .now, threshold: TimeInterval = defaultSessionThresholdSec) -> TimeInterval? {
+        let gaps = todayStretches(now: now, threshold: threshold)
+        guard !gaps.isEmpty else { return nil }
+        let total = gaps.reduce(0.0) { $0 + $1.1 }
+        return total / Double(gaps.count)
     }
 
     /// Stretches for an arbitrary device-local day. The `dayKey` should be the

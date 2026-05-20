@@ -1,6 +1,6 @@
 # The spirit
 
-The cloud character at the top of the dashboard. Its appearance is fully driven by **one input**: the ratio of time-since-last-hit to the rolling-30-day waking-gap average.
+The cloud character at the top of the dashboard. Its appearance is fully driven by **one input**: the ratio of time-since-last-session-end to the rolling waking-gap average (window configurable in settings, default 7 days). When the "Use sessions" toggle is off the ratio uses time-since-last-hit instead — see [[Issues/16 — Sessions vs individual hits#The "Use sessions" toggle]].
 
 ```
 ratio = ms / avgMs

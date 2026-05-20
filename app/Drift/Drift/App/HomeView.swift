@@ -46,22 +46,22 @@ struct HomeView: View {
 
                     statCardsRow
 
-                    wakingGapCard
+                    wakingGapRow
 
-                    ChartCard(title: "today's stretches", subtitle: "minutes between sessions today") {
+                    ChartCard(title: "today's stretches", subtitle: "minutes between \(unit.plural) today") {
                         TodayStretchesChart(stretches: store.todayStretches())
                     }
 
-                    ChartCard(title: "the last fortnight", subtitle: "sessions per day · last 14 days") {
+                    ChartCard(title: "the last fortnight", subtitle: "\(unit.plural) per day · last 14 days") {
                         FortnightChart(counts: store.dailySessionCounts(lastN: 14))
                     }
 
-                    ChartCard(title: "when the cravings hit", subtitle: "sessions by hour of day") {
+                    ChartCard(title: "when the cravings hit", subtitle: "\(unit.plural) by hour of day") {
                         HoursChart(counts: store.sessionsByHour())
                     }
 
-                    ChartCard(title: "stretching the gaps", subtitle: "minutes between sessions\n7-day rolling average") {
-                        RollingAvgChart(series: store.rollingAvg(window: 7, lastN: 30))
+                    ChartCard(title: "stretching the gaps", subtitle: "minutes between \(unit.plural)\n\(store.rollingWindowDays)-day rolling average") {
+                        RollingAvgChart(series: store.rollingAvg(lastN: 30))
                     }
                 }
                 .padding(.horizontal, 16)
@@ -86,34 +86,51 @@ struct HomeView: View {
         }
     }
 
+    /// Whether the user is in session-mode (default) or hit-mode (Issue 16's "use
+    /// sessions" toggle off). Drives the singular/plural unit nouns sprinkled
+    /// across labels and chart subtitles, and toggles the secondary "Y hits"
+    /// line on the today card (redundant when every event is a hit).
+    private var unit: (singular: String, plural: String) {
+        store.useSessions ? ("session", "sessions") : ("hit", "hits")
+    }
+
     private var statCardsRow: some View {
-        let sessions = store.todaySessionCount()
+        let primary = store.useSessions ? store.todaySessionCount() : store.todayHitCount()
         let hits = store.todayHitCount()
         let avg = store.avgSessionsPerDay()
         return HStack(spacing: 16) {
             StatCard(
-                title: "sessions today",
-                bigNumber: "\(sessions)",
+                title: "\(unit.plural) today",
+                bigNumber: "\(primary)",
                 bigNumberColor: .driftCoral,
-                label: "\(hits) hit\(hits == 1 ? "" : "s")"
+                label: store.useSessions ? "\(hits) hit\(hits == 1 ? "" : "s")" : "today"
             )
             StatCard(
                 title: "avg / day",
                 bigNumber: formatAvg(avg),
                 bigNumberColor: .driftSageDeep,
-                label: "\(Int(store.avgHitsPerDay().rounded())) hits"
+                label: store.useSessions ? "\(Int(store.avgHitsPerDay().rounded())) hits" : "per day"
             )
         }
     }
 
-    private var wakingGapCard: some View {
-        let avg = store.wakingAvgSec()
-        return StatCard(
-            title: "waking gap",
-            bigNumberParts: avg.map { formatGapParts($0) } ?? [.number("—")],
-            bigNumberColor: .driftSageDeep,
-            label: "average between sessions · 30d"
-        )
+    private var wakingGapRow: some View {
+        let today = store.todayWakingAvgSec()
+        let rolling = store.wakingAvgSec()
+        return HStack(spacing: 16) {
+            StatCard(
+                title: "today's avg",
+                bigNumberParts: today.map { formatGapParts($0) } ?? [.number("—")],
+                bigNumberColor: .driftSageDeep,
+                label: "between \(unit.plural)"
+            )
+            StatCard(
+                title: "\(store.rollingWindowDays)-day avg",
+                bigNumberParts: rolling.map { formatGapParts($0) } ?? [.number("—")],
+                bigNumberColor: .driftSageDeep,
+                label: "between \(unit.plural)"
+            )
+        }
     }
 }
 

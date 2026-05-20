@@ -17,7 +17,7 @@ Fired immediately. No scheduling. Title: `Drift`.
 
 Identifier: `drift-beat-average`
 
-Trigger time: `now + wakingAvgSec + 60` (60s of grace so it doesn't fire while still mid-action).
+Trigger time: `now + wakingAvgSec + beatAvgOffset`. `beatAvgOffset` is configurable in settings — picker exposes *right at / +1 min / +5 min / +10 min / +15 min*. Historically a hard-coded 60s, kept as a grace period so the notification didn't fire while still mid-action; with sessions in place that grace is less load-bearing, which is part of why the offset is now user-controlled.
 
 Body:
 - Daytime (06:00–22:59): `Don't hit it — you're past your average of Ym`
@@ -33,7 +33,7 @@ Skipped entirely if hit count < 10 (baseline).
 
 Identifier: `drift-beat-record`
 
-Trigger time: `now + longestWakingGap + 1`. Only scheduled if that timestamp falls **before** the next 4am cutoff — sleep gaps shouldn't be celebrated as a "waking best."
+Trigger time: `now + longestWakingGap + beatRecordOffset`. `beatRecordOffset` is the same picker as `beatAvgOffset` (right-at / +1m / +5m / +10m / +15m); historically `+1s` so the trigger landed an instant past the record. Only scheduled if that timestamp falls **before** the next 4am cutoff — sleep gaps shouldn't be celebrated as a "waking best."
 
 Body:
 - Daytime: `You just beat your longest waking stretch of Ym. Keep drifting.`
@@ -45,7 +45,7 @@ Skipped if `longestWakingGap == 0` (no record set yet) or `hits.count < 2`.
 
 ## Overnight hedge
 
-Both scheduled notifications check whether the trigger time's hour-of-day falls in the typical sleep window (23:00–05:59 local). If yes, the body is hedged ("If you're still awake..."). If no, the body is confident.
+Both scheduled notifications check whether the trigger time's hour-of-day falls in the user-configured sleep window (default 23:00–05:59 local; see the bedtime/wake-up pickers in settings). If yes, the body is hedged ("If you're still awake..."). If no, the body is confident. `isOvernight` reads `driftSleepStartHour()` / `driftSleepEndHour()` and handles both wraps-midnight (start > end, the typical case) and inverted (start < end) schedules.
 
 This is option 4 of the alternatives we considered. Other options:
 - Drop the scheduled record-beat notification entirely

@@ -6,7 +6,7 @@ A small, beautiful iOS app that helps you notice the gaps. Currently a Scriptabl
 
 ## Status
 
-Prototype still in daily personal use. Native iOS rebuild well underway: dashboard, spirit, sparkles, logging via App Intent, notifications, ambient cloud/star layer, dark mode, the prototype-data migration, hit history with calendar + edit/delete, and the bottom-bar nav between Home and History are all in. What's left before submission: settings + onboarding + app icon (Issue 12), milestone glows (Issue 14), privacy doc (Issue 02), and App Store metadata (Issue 13). Distribution: free on the App Store, source on GitHub, case study on portfolio.
+Prototype still in daily personal use. Native iOS rebuild well underway: dashboard, spirit, sparkles, logging via App Intent, notifications, ambient cloud/star layer, dark mode, the prototype-data migration, hit history with calendar + edit/delete, four-tab nav (home / history / settings / +) with a scroll-minimizing bottom bar, and the settings tab itself (use-sessions toggle, session threshold, rolling window, sleep window, notification master + per-type toggles + timing offsets, reset, about) are all in. What's left before submission: iCloud sync + onboarding + app icon (the rest of Issue 12), milestone glows (Issue 14), privacy doc (Issue 02), and App Store metadata (Issue 13). Distribution: free on the App Store, source on GitHub, case study on portfolio.
 
 ## Where things live
 

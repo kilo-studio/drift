@@ -1,10 +1,20 @@
 ---
-status: todo
+status: doing
 priority: low
 tags: [feature, dashboard, v1.x]
 ---
 
 # Achievement system
+
+> **Implementation status:** Initial cut shipped. SwiftData models (`AchievementState`,
+> `MilestoneUnlock`), the `AchievementID` catalog, and an evaluation engine that
+> runs after every append/edit/delete and on launch are in. Achievements tab lives
+> between History and Settings in the bottom bar (`rosette` glyph). View groups
+> achievements by category (frequency / intensity / cumulative) into `driftCard`-style
+> sections, each row showing icon + title + detail + current value + unlock date.
+> Silent unlocks per the philosophy — no notifications, no badges. Painted-style
+> Ghibli icons, "new since last visit" coral dot, and the longer milestone list
+> are all viable follow-ups.
 
 A small, growing collection of personal records and cumulative milestones. Designed around a single rule: **every achievement only grows, none reset on a bad day**. The framing is positive reinforcement, never "you broke it."
 

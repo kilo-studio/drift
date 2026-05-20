@@ -55,7 +55,7 @@ struct HeroBestsView: View {
                 .font(.driftBestNum)
                 .tracking(-0.2)
                 .foregroundStyle(.driftInk)
-            Text.caveatLeading(label)
+            Text(label)
                 .font(.driftBestLabel)
                 .foregroundStyle(.driftInkSoft)
         }

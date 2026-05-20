@@ -111,7 +111,6 @@ private func drawSideWisps(ctx: inout GraphicsContext) {
     let gradient = bodyGradient
     for cx in [14.0, 86.0] {
         let path = Path(ellipseIn: CGRect(x: cx - 9, y: 58 - 6.5, width: 18, height: 13))
-        ctx.opacity = 0.7
         ctx.fill(path, with: .radialGradient(
             gradient,
             center: CGPoint(x: cx - 9 + 6.84, y: 58 - 6.5 + 4.16),
@@ -119,7 +118,6 @@ private func drawSideWisps(ctx: inout GraphicsContext) {
             endRadius: 18
         ))
     }
-    ctx.opacity = 1.0
 }
 
 private func drawBody(ctx: inout GraphicsContext) {

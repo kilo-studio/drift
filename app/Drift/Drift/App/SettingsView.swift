@@ -148,6 +148,21 @@ struct SettingsView: View {
                     .foregroundStyle(.driftInkSoft)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 SettingsDivider()
+                ShareLink(item: store.makeHitsExport(), preview: SharePreview("Drift hits")) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("export hits")
+                            .font(.driftRowLabel)
+                            .foregroundStyle(.driftInk)
+                        Text("Save every logged hit as a JSON file you can keep in Files or share elsewhere.")
+                            .font(.driftRowDescription)
+                            .foregroundStyle(.driftInkSoft)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                SettingsDivider()
                 Button {
                     showResetConfirm = true
                 } label: {

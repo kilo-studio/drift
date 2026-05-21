@@ -1,5 +1,20 @@
 import Foundation
 import SwiftData
+import CoreTransferable
+import UniformTypeIdentifiers
+
+/// JSON snapshot of every logged hit, shaped like the Scriptable prototype
+/// payload so it round-trips through `PrototypeImport.parse`. Carried via
+/// `ShareLink` from Settings → Data → "export hits".
+struct HitsExport: Transferable {
+    let data: Data
+    let filename: String
+
+    static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(exportedContentType: .json) { $0.data }
+            .suggestedFileName { $0.filename }
+    }
+}
 
 @Observable
 @MainActor
@@ -298,6 +313,32 @@ final class HitStore {
         }
         try context.save()
         publishToWidget()
+    }
+
+    /// Snapshot every hit + records into a JSON file matching the prototype
+    /// payload shape (`{ hits: [{t, tz}], longestGap, longestWakingGap }`) so the
+    /// export round-trips through `PrototypeImport.parse` if it ever needs to
+    /// be re-imported. Filename is timestamped so multiple exports don't collide.
+    func makeHitsExport() -> HitsExport {
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+        let hitDicts: [[String: Any]] = hits.map { hit in
+            ["t": iso.string(from: hit.t), "tz": hit.tzOffsetMinutes]
+        }
+        let root: [String: Any] = [
+            "hits": hitDicts,
+            "longestGap": records.longestGapSec,
+            "longestWakingGap": records.longestWakingGapSec
+        ]
+        let data = (try? JSONSerialization.data(
+            withJSONObject: root,
+            options: [.prettyPrinted, .sortedKeys]
+        )) ?? Data()
+
+        let stamp = DateFormatter()
+        stamp.dateFormat = "yyyy-MM-dd-HHmmss"
+        return HitsExport(data: data, filename: "drift-export-\(stamp.string(from: Date())).json")
     }
 
     /// Mirrors the slice of state the widget renders from.

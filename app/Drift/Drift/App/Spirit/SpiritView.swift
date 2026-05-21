@@ -9,6 +9,13 @@ struct SpiritView: View {
     let wakingAvgSec: TimeInterval?
     let longestWakingGapSec: TimeInterval
     let longestGapSec: TimeInterval
+    /// Suppress the state-driven float amplitude/period change at record
+    /// thresholds. Used in onboarding's spirit-preview where the ratio cycles
+    /// through thresholds repeatedly — without this, the sin-wave frequency
+    /// shifts every crossing and the spirit visibly "jumps" because the wave's
+    /// value at that moment changes discontinuously. Cheek color still
+    /// transitions at thresholds; only the float behavior is stabilized.
+    var stableFloat: Bool = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -28,6 +35,7 @@ struct SpiritView: View {
                 longestWakingGapSec: longestWakingGapSec,
                 longestGapSec: longestGapSec,
                 reduceMotion: reduceMotion,
+                stableFloat: stableFloat,
                 snapStartedAt: snapStartedAt,
                 preSnapRatio: preSnapRatio
             )
@@ -68,6 +76,7 @@ private struct SpiritFrame {
         longestWakingGapSec: TimeInterval,
         longestGapSec: TimeInterval,
         reduceMotion: Bool,
+        stableFloat: Bool,
         snapStartedAt: Date?,
         preSnapRatio: Double
     ) {
@@ -102,6 +111,12 @@ private struct SpiritFrame {
         if reduceMotion {
             amplitude = 0
             period = 0
+        } else if stableFloat {
+            // Stable float: same baseline regardless of state. Used in the
+            // onboarding preview where rapid threshold crossings would otherwise
+            // shift the sin frequency mid-wave and snap the spirit's Y position.
+            amplitude = 3
+            period = 5.0
         } else if oA {
             amplitude = 4   // wobble at overall — visually softer than waking
             period = 3.0

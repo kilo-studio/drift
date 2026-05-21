@@ -10,6 +10,10 @@ struct OnboardingView: View {
     @AppStorage(driftOnboardingCompleteKey) private var complete: Bool = false
 
     @State private var page: Int = 0
+    /// Reported by each card's ScrollView. When true, the global spirit
+    /// overlay swoops into the top-right corner — matches the home page's
+    /// scroll-driven swoop behavior. Resets when the page changes.
+    @State private var cardScrolled = false
 
     /// 7 slides: intro, spirit preview, sessions, sleep, notifications, logging
     /// shortcuts, conclusion. Keep `spiritPreviewPage` in sync when reordering.
@@ -22,7 +26,7 @@ struct OnboardingView: View {
     private let demoAvgSec: TimeInterval = 3600
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottom) {
             Color.driftSkyLowerMid.ignoresSafeArea()
             AmbientLayer()
 
@@ -43,44 +47,53 @@ struct OnboardingView: View {
                 .transition(.opacity.animation(.easeInOut(duration: 0.4)))
             }
 
-            VStack(spacing: 0) {
-                topSpirit
-                    .frame(width: spiritSize, height: spiritSize)
-                    .padding(.top, 60)
-                    .padding(.bottom, 24)
-
-                TabView(selection: $page) {
-                    IntroCard().tag(0)
-                    SpiritPreviewCard().tag(1)
-                    SessionsCard(store: store).tag(2)
-                    SleepCard(store: store).tag(3)
-                    NotificationsCard(store: store).tag(4)
-                    LoggingCard().tag(5)
-                    ConclusionCard().tag(6)
-                }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                .frame(maxHeight: .infinity)
-
-                ctaButton
-                    .padding(.horizontal, 32)
-                    .padding(.bottom, 16)
-
-                pageDots
-                    .padding(.bottom, 36)
+            TabView(selection: $page) {
+                IntroCard(scrolled: $cardScrolled).tag(0)
+                SpiritPreviewCard(scrolled: $cardScrolled).tag(1)
+                SessionsCard(store: store, scrolled: $cardScrolled).tag(2)
+                SleepCard(store: store, scrolled: $cardScrolled).tag(3)
+                NotificationsCard(store: store, scrolled: $cardScrolled).tag(4)
+                LoggingCard(scrolled: $cardScrolled).tag(5)
+                ConclusionCard(scrolled: $cardScrolled).tag(6)
             }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .ignoresSafeArea(edges: .bottom)
+
+            stickyBottom
+
+            spiritOverlay
+                .allowsHitTesting(false)
+        }
+        .onChange(of: page) { _, _ in
+            // Each card has its own scroll state; resetting on page change
+            // avoids carrying over a stuck spirit from the previous card.
+            cardScrolled = false
         }
         .animation(.easeOut(duration: 0.25), value: page)
     }
 
-    // MARK: - Top spirit
+    // MARK: - Spirit overlay
+
+    /// Global spirit overlay positioned in screen coordinates. Rest = centered
+    /// horizontally near the top of the carousel area; sticky = top-right
+    /// corner at a smaller scale, matching the home page's swoop.
+    private var spiritOverlay: some View {
+        GeometryReader { geo in
+            let rest = CGPoint(x: geo.size.width / 2, y: 60 + spiritSize / 2)
+            let sticky = CGPoint(x: geo.size.width - 8 - spiritSize / 2, y: spiritSize / 2)
+            let target = cardScrolled ? sticky : rest
+
+            topSpirit
+                .frame(width: spiritSize, height: spiritSize)
+                .scaleEffect(cardScrolled ? 0.7 : 1.0, anchor: .topTrailing)
+                .position(x: target.x, y: target.y)
+                .animation(.spring(response: 0.55, dampingFraction: 0.7), value: cardScrolled)
+        }
+    }
 
     /// Top spirit. During the spirit-preview card it animates through a cosine-
-    /// eased ratio range; on other cards it sits at a moderate ratio so the
-    /// character is alive but not celebrating yet.
-    ///
-    /// Synthetic `longestWakingGapSec` and `longestGapSec` are non-zero on the
-    /// preview card so the cheek-color thresholds (waking-record → peach,
-    /// overall-record → coral) actually get crossed during the cycle.
+    /// eased ratio range with `stableFloat: true` so the spirit doesn't visibly
+    /// "jump" at threshold crossings — only cheek color transitions remain.
     @ViewBuilder
     private var topSpirit: some View {
         if page == spiritPreviewPage {
@@ -90,7 +103,8 @@ struct OnboardingView: View {
                     lastSessionEnd: ctx.date.addingTimeInterval(-ratio * demoAvgSec),
                     wakingAvgSec: demoAvgSec,
                     longestWakingGapSec: demoAvgSec * 2,
-                    longestGapSec: demoAvgSec * 3.5
+                    longestGapSec: demoAvgSec * 3.5,
+                    stableFloat: true
                 )
             }
         } else {
@@ -103,8 +117,7 @@ struct OnboardingView: View {
         }
     }
 
-    /// Cosine-eased loop between ratio 0.3 and 5 over 12s. Slow enough that the
-    /// viewer can register each stage; cosine boundaries avoid snap-decay.
+    /// Cosine-eased loop between ratio 0.3 and 5 over 12s.
     private func demoRatio(at date: Date) -> Double {
         let cycleSec: Double = 12
         let cyclePos = date.timeIntervalSinceReferenceDate
@@ -113,21 +126,36 @@ struct OnboardingView: View {
         return 0.3 + (5 - 0.3) * t
     }
 
-    // MARK: - CTA + dots
+    // MARK: - Sticky bottom
 
-    private var ctaButton: some View {
-        Button(action: advance) {
-            Text(ctaLabel)
-                .font(.driftRowLabel)
-                .foregroundStyle(.driftCoral)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .glassEffect(
-                    .regular.tint(.driftSkyLowerMid.opacity(0.4)),
-                    in: Capsule()
-                )
+    /// Cream-tinted bottom strip with an arced top edge separating it from the
+    /// scrollable carousel content above. Holds the primary CTA (full card
+    /// width, solid coral) and the page dots.
+    private var stickyBottom: some View {
+        VStack(spacing: 18) {
+            Button(action: advance) {
+                Text(ctaLabel)
+                    .font(.driftRowLabel)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background {
+                        Capsule().fill(Color.driftCoral)
+                    }
+            }
+            .buttonStyle(.plain)
+
+            pageDots
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 20)
+        .padding(.top, 24)
+        .padding(.bottom, 12)
+        .frame(maxWidth: .infinity)
+        .background(
+            ArcedTop(archHeight: 14)
+                .fill(Color.driftCream)
+                .ignoresSafeArea(edges: .bottom)
+        )
     }
 
     private var pageDots: some View {
@@ -161,20 +189,75 @@ struct OnboardingView: View {
     }
 }
 
+// MARK: - Sticky bottom shape
+
+/// Bottom strip with an arc rising into the middle of its top edge — soft,
+/// hand-drawn-looking separator between the scrollable carousel and the
+/// sticky CTA area beneath. Height of the arc is the offset of the side
+/// endpoints below the rect's top edge; the curve peaks at y = 0 in the middle.
+private struct ArcedTop: Shape {
+    let archHeight: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: 0, y: archHeight))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.width, y: archHeight),
+            control: CGPoint(x: rect.width / 2, y: 0)
+        )
+        path.addLine(to: CGPoint(x: rect.width, y: rect.height))
+        path.addLine(to: CGPoint(x: 0, y: rect.height))
+        path.closeSubpath()
+        return path
+    }
+}
+
+// MARK: - Card chrome
+
+/// Shared layout for every onboarding card. Wraps content in a ScrollView so
+/// long settings stacks remain reachable on smaller devices, reports the
+/// scroll state back to OnboardingView so the global spirit can react, and
+/// pads enough top/bottom space to clear the spirit and sticky bottom.
+private struct OnboardingCardChrome<Content: View>: View {
+    @Binding var scrolled: Bool
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                content()
+                    .frame(maxWidth: .infinity)
+            }
+            .padding(.top, 180)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 200)
+        }
+        .scrollIndicators(.hidden)
+        .onScrollGeometryChange(for: Bool.self) { geom in
+            geom.contentOffset.y > 8
+        } action: { _, newValue in
+            if newValue != scrolled {
+                scrolled = newValue
+            }
+        }
+    }
+}
+
 // MARK: - Cards
 
 private struct IntroCard: View {
+    @Binding var scrolled: Bool
+
     var body: some View {
-        OnboardingCardChrome {
-            VStack(spacing: 20) {
-                // Extra-padded thin-spaces so the Caveat "t" swash at this size
-                // (64pt) doesn't get clipped by the Text frame. `Text.caveat`'s
-                // default thin-space pair is calibrated for 24pt usage.
+        OnboardingCardChrome(scrolled: $scrolled) {
+            VStack(spacing: 12) {
+                // Extra trailing thin-space so the Caveat "t" swash at this size
+                // doesn't get clipped by the Text frame.
                 Text("\u{2009}\u{2009}drift\u{2009}\u{2009}\u{2009}")
                     .font(.custom("Caveat", size: 72).weight(.semibold))
                     .foregroundStyle(.driftInk)
 
-                Text("Wean off vaping.")
+                Text("wean off vaping")
                     .font(.onboardingSubtitle)
                     .foregroundStyle(.driftInkSoft)
                     .multilineTextAlignment(.center)
@@ -184,7 +267,7 @@ private struct IntroCard: View {
                     factLine("No ads, no tracking.")
                     factLine("Completely free.")
                 }
-                .padding(.top, 12)
+                .padding(.top, 28)
             }
         }
     }
@@ -197,8 +280,10 @@ private struct IntroCard: View {
 }
 
 private struct SpiritPreviewCard: View {
+    @Binding var scrolled: Bool
+
     var body: some View {
-        OnboardingCardChrome {
+        OnboardingCardChrome(scrolled: $scrolled) {
             VStack(spacing: 16) {
                 Text("make your spirit happy")
                     .font(.onboardingTitle)
@@ -216,15 +301,21 @@ private struct SpiritPreviewCard: View {
 
 private struct SessionsCard: View {
     @Bindable var store: HitStore
+    @Binding var scrolled: Bool
 
     private static let thresholdOptions: [TimeInterval] = [60, 180, 300, 600, 900, 1800]
 
     var body: some View {
-        OnboardingCardChrome {
-            VStack(spacing: 24) {
-                Text("Use sessions")
+        OnboardingCardChrome(scrolled: $scrolled) {
+            VStack(spacing: 20) {
+                Text("use sessions?")
                     .font(.onboardingTitle)
                     .foregroundStyle(.driftInk)
+                    .multilineTextAlignment(.center)
+
+                Text("Sessions group multiple hits in rapid succession into a single session and Drift will measure time between sessions instead of time between hits.")
+                    .font(.onboardingSubtitle)
+                    .foregroundStyle(.driftInkSoft)
                     .multilineTextAlignment(.center)
 
                 VStack(spacing: 0) {
@@ -257,18 +348,19 @@ private struct SessionsCard: View {
 
 private struct SleepCard: View {
     @Bindable var store: HitStore
+    @Binding var scrolled: Bool
 
     private static let hourOptions: [Int] = Array(0...23)
 
     var body: some View {
-        OnboardingCardChrome {
+        OnboardingCardChrome(scrolled: $scrolled) {
             VStack(spacing: 20) {
-                Text("Sleep window")
+                Text("sleep window")
                     .font(.onboardingTitle)
                     .foregroundStyle(.driftInk)
                     .multilineTextAlignment(.center)
 
-                Text("Hits before your wake hour roll into the previous day's stats. Drift won't send notifications during your sleep window.")
+                Text("Drift won't send notifications during your sleep window. Hits before your wake hour roll into the previous day's stats.")
                     .font(.onboardingSubtitle)
                     .foregroundStyle(.driftInkSoft)
                     .multilineTextAlignment(.center)
@@ -305,13 +397,23 @@ private struct SleepCard: View {
 
 private struct NotificationsCard: View {
     @Bindable var store: HitStore
+    @Binding var scrolled: Bool
+
+    /// Offset picker options for the "beat your average" timing. Stored in
+    /// seconds (0, 1m, 5m, 10m, 15m). Matches `NotificationsView`'s shape.
+    private static let offsetOptions: [TimeInterval] = [0, 60, 300, 600, 900]
 
     var body: some View {
-        OnboardingCardChrome {
-            VStack(spacing: 24) {
-                Text("Notifications")
+        OnboardingCardChrome(scrolled: $scrolled) {
+            VStack(spacing: 20) {
+                Text("notifications")
                     .font(.onboardingTitle)
                     .foregroundStyle(.driftInk)
+                    .multilineTextAlignment(.center)
+
+                Text("Wait at least until you're notified you're beating your average before the next hit and you'll be drifting!")
+                    .font(.onboardingSubtitle)
+                    .foregroundStyle(.driftInkSoft)
                     .multilineTextAlignment(.center)
 
                 VStack(spacing: 0) {
@@ -333,6 +435,16 @@ private struct NotificationsCard: View {
                             description: "Nudge when you pass your rolling-average gap.",
                             isOn: $store.notifsBeatAverageEnabled
                         )
+                        if store.notifsBeatAverageEnabled {
+                            SettingsDivider()
+                            SettingsPickerRow(
+                                label: "gap after average",
+                                description: "How long past your average before the nudge fires.",
+                                selection: $store.notifsBeatAverageOffsetSec,
+                                options: Self.offsetOptions,
+                                formatted: { formatOffset($0) }
+                            )
+                        }
                         SettingsDivider()
                         SettingsToggleRow(
                             label: "beat your record",
@@ -351,6 +463,12 @@ private struct NotificationsCard: View {
         }
     }
 
+    private func formatOffset(_ sec: TimeInterval) -> String {
+        if sec == 0 { return "right at" }
+        let m = Int(sec / 60)
+        return m == 1 ? "+1 min" : "+\(m) min"
+    }
+
     private func requestNotificationPermission() async {
         let center = UNUserNotificationCenter.current()
         _ = try? await center.requestAuthorization(options: [.alert, .sound, .badge])
@@ -358,12 +476,19 @@ private struct NotificationsCard: View {
 }
 
 private struct LoggingCard: View {
+    @Binding var scrolled: Bool
+
     var body: some View {
-        OnboardingCardChrome {
+        OnboardingCardChrome(scrolled: $scrolled) {
             VStack(spacing: 20) {
-                Text("Quick ways to log")
+                Text("quick ways to log")
                     .font(.onboardingTitle)
                     .foregroundStyle(.driftInk)
+                    .multilineTextAlignment(.center)
+
+                Text("Make it easy to log hits. The easier it is, the more likely you'll stay honest.")
+                    .font(.onboardingSubtitle)
+                    .foregroundStyle(.driftInkSoft)
                     .multilineTextAlignment(.center)
 
                 LoggingMethodCard(
@@ -421,22 +546,38 @@ private struct LoggingMethodCard: View {
                 .foregroundStyle(.driftInkSoft)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            OnboardingActionButton(label: buttonLabel, action: action)
-                .padding(.top, 4)
+            // Secondary button — soft glass with coral text. The prominent
+            // solid-coral CTA lives at the bottom of the carousel; these
+            // shouldn't compete with it.
+            Button(action: action) {
+                Text(buttonLabel)
+                    .font(.driftRowLabel)
+                    .foregroundStyle(.driftCoral)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 11)
+                    .glassEffect(
+                        .regular.tint(.driftSkyLowerMid.opacity(0.4)),
+                        in: Capsule()
+                    )
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 4)
         }
         .driftCard()
     }
 }
 
 private struct ConclusionCard: View {
+    @Binding var scrolled: Bool
+
     /// Tip-jar destination. Swap to the real Buy Me a Coffee URL once the
     /// page is live; this placeholder reads OK in the meantime.
     private let tipJarURL = "https://buymeacoffee.com/griffinmullins"
 
     var body: some View {
-        OnboardingCardChrome {
+        OnboardingCardChrome(scrolled: $scrolled) {
             VStack(spacing: 20) {
-                Text("You're all set")
+                Text("you got this")
                     .font(.onboardingTitle)
                     .foregroundStyle(.driftInk)
                     .multilineTextAlignment(.center)
@@ -446,9 +587,10 @@ private struct ConclusionCard: View {
                     .foregroundStyle(.driftInkSoft)
                     .multilineTextAlignment(.center)
 
-                // Inline markdown link instead of a button so support reads as
-                // a soft invitation, not a CTA competing with "start drifting".
-                Text("Drift is completely free, but if you'd like to show your support, you can [buy me a coffee](\(tipJarURL)).")
+                // Inline markdown link inside a soft invitation. The link text
+                // is bold via combined ** + [] markdown so it visually pops
+                // without becoming a full CTA button.
+                Text("Drift is completely free forever, but if you'd like to show your support, you can [**buy me a coffee**](\(tipJarURL)).")
                     .font(.onboardingSubtitle)
                     .foregroundStyle(.driftInkSoft)
                     .tint(.driftCoral)
@@ -456,49 +598,6 @@ private struct ConclusionCard: View {
                     .padding(.top, 8)
             }
         }
-    }
-}
-
-// MARK: - Shared chrome
-
-/// Shared layout for every onboarding card: content centered in a scroll
-/// container so long settings stacks remain reachable on small devices, with
-/// uniform horizontal padding to keep titles centered without clipping.
-private struct OnboardingCardChrome<Content: View>: View {
-    @ViewBuilder let content: () -> Content
-
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                content()
-                    .frame(maxWidth: .infinity)
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 24)
-        }
-        .scrollIndicators(.hidden)
-    }
-}
-
-/// Tertiary action button used inside the logging-shortcuts cards. Solid coral
-/// fill with white text so the buttons read as actionable against the soft
-/// driftCard surface — earlier the ultraThinMaterial capsule had no contrast.
-private struct OnboardingActionButton: View {
-    let label: String
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(label)
-                .font(.driftRowLabel)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 11)
-                .background {
-                    Capsule().fill(Color.driftCoral)
-                }
-        }
-        .buttonStyle(.plain)
     }
 }
 

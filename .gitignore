@@ -18,6 +18,12 @@ private/
 # Real users would use a UIDocumentPicker flow instead (see Issue 05).
 **/Resources/vape-log-bundle.json
 
+# Local rescue / backup data — recovered SQLite stores, JSON exports of
+# personal hits, etc. Never goes public; lives alongside the repo for
+# convenience only.
+/Resources/
+**/Resources/rescue/
+
 # Xcode (will apply once app/ exists)
 **/xcuserdata/
 **/build/

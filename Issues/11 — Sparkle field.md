@@ -6,7 +6,7 @@ tags: [dashboard, spirit]
 
 # Sparkle field
 
-200-particle viewport-fill rendered in a SwiftUI Canvas. Source of truth: [[Spirit#Sparkles — viewport-fill halo]].
+200-particle viewport-fill rendered in a SwiftUI Canvas. Source of truth: [Spirit](../Design/Spirit.md#sparkles--viewport-fill-halo).
 
 ## Tasks
 

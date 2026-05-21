@@ -1,12 +1,12 @@
 # The spirit
 
-The cloud character at the top of the dashboard. Its appearance is fully driven by **one input**: the ratio of time-since-last-session-end to the rolling waking-gap average (window configurable in settings, default 7 days). When the "Use sessions" toggle is off the ratio uses time-since-last-hit instead — see [[Issues/16 — Sessions vs individual hits#The "Use sessions" toggle]].
+The cloud character at the top of the dashboard. Its appearance is fully driven by **one input**: the ratio of time-since-last-session-end to the rolling waking-gap average (window configurable in settings, default 7 days). When the "Use sessions" toggle is off the ratio uses time-since-last-hit instead — see [Issues/16 — Sessions vs individual hits](../Issues/16%20%E2%80%94%20Sessions%20vs%20individual%20hits.md#the-use-sessions-toggle).
 
 ```
 ratio = ms / avgMs
 ```
 
-Below 1 you're under your typical gap; at 1 you've matched it; above 1 you're past it. Everything visual derives continuously from this number. No discrete levels — the joy ladder we tried in the prototype was abandoned because levels create plateaus and don't read as smooth growth. See [[Issues]] for the iteration history.
+Below 1 you're under your typical gap; at 1 you've matched it; above 1 you're past it. Everything visual derives continuously from this number. No discrete levels — the joy ladder we tried in the prototype was abandoned because levels create plateaus and don't read as smooth growth. See [Issues](../Issues/) for the iteration history.
 
 ## What scales
 

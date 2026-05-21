@@ -6,7 +6,7 @@ tags: [logging]
 
 # Notifications
 
-Port the prototype's three-notification system to `UNUserNotificationCenter`. Source of truth: [[Notifications]].
+Port the prototype's three-notification system to `UNUserNotificationCenter`. Source of truth: [Notifications](../Engineering/Notifications.md).
 
 ## Tasks
 
@@ -27,7 +27,7 @@ Port the prototype's three-notification system to `UNUserNotificationCenter`. So
   - [x] Overnight hedge body, same window
   - [x] Skipped when `longestWakingGapSec == 0` or `totalHits < 2`
 
-## Settings hooks (from [[Issues/12 — Onboarding, settings, app icon]])
+## Settings hooks (from [Issues/12 — Onboarding, settings, app icon](12%20%E2%80%94%20Onboarding%2C%20settings%2C%20app%20icon.md))
 
 - [x] Master notifications toggle (`notifsEnabled`) — short-circuits `reschedule(after:)` when off, cancels pending requests, and skips the permission prompt.
 - [x] Per-type toggles — immediate (`notifsImmediateEnabled`) / beat-average (`notifsBeatAverageEnabled`) / beat-record (`notifsBeatRecordEnabled`). When off, that type is skipped during reschedule.

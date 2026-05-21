@@ -8,7 +8,7 @@ tags: [performance, spirit, sparkles]
 
 When the ratio is high enough that most of the field is revealed, the app starts chugging. The front + back sparkle pools plus `AmbientLayer` clouds/stars add up — somewhere around "fully revealed" we cross a threshold where frame pacing breaks down on real hardware.
 
-[[Issues/11 — Sparkle field]] already noted "If profiling shows issues, reduce frame rate" as a deferred mitigation. This is that issue, coming due.
+[Issues/11 — Sparkle field](11%20%E2%80%94%20Sparkle%20field.md) already noted "If profiling shows issues, reduce frame rate" as a deferred mitigation. This is that issue, coming due.
 
 ## Two axes — do at least one, ideally both
 

@@ -6,7 +6,7 @@ tags: [dashboard, spirit]
 
 # Spirit character
 
-Native SwiftUI Canvas implementation of the cloud spirit. Source of truth: [[Spirit]].
+Native SwiftUI Canvas implementation of the cloud spirit. Source of truth: [Spirit](../Design/Spirit.md).
 
 ## Tasks
 

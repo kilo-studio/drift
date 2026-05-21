@@ -32,7 +32,7 @@ Both erode trust in the metrics. Trust in the data is everything for a tracker.
 
 A **History screen** accessed from a small button in the top-right of the dashboard hero (or via Settings).
 
-Layout: scrollable list grouped by day, newest first. Sessions are visible as the unit (per [[Issues/16 — Sessions vs individual hits]]):
+Layout: scrollable list grouped by day, newest first. Sessions are visible as the unit (per [Issues/16 — Sessions vs individual hits](16%20%E2%80%94%20Sessions%20vs%20individual%20hits.md)):
 
 ```
 Today
@@ -105,7 +105,7 @@ The same edit/delete tools that allow legitimate cleanup also allow gaming the s
 - **CSV import / export.** Maybe v1.x, not now.
 - **Undo with snackbar.** Nice but adds complexity. Confirmation alerts cover the main risk for v1.
 - **Edit audit log.** "Show me what I edited last week" — not needed.
-- **Per-hit notes / tags** (stress / social / boredom). Separate scope, see [[Plan]] open questions.
+- **Per-hit notes / tags** (stress / social / boredom). Separate scope, see **Plan** open questions.
 
 ## Sequencing
 

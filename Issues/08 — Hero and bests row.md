@@ -6,7 +6,7 @@ tags: [dashboard]
 
 # Hero and bests row
 
-The top of the dashboard. Source of truth: [[Design system]].
+The top of the dashboard. Source of truth: [Design system](../Design/Design%20system.md).
 
 ## Tasks
 

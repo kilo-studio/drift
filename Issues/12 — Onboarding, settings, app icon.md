@@ -8,24 +8,17 @@ tags: [polish]
 
 Polish layer. Pre-launch.
 
-> **Implementation status:** Settings tab + Behavior, Notifications, About, and Reset
-> rows are in. App icon is in (Drift.icon Icon Composer bundle dropped into the
-> Xcode target, App Icon build setting set to `Drift`). iCloud sync and the
-> onboarding flow remain.
+> **Implementation status:** Settings tab + Behavior, Notifications, About, Reset, and Export rows are in. App icon is in (Drift.icon Icon Composer bundle dropped into the Xcode target, App Icon build setting set to `Drift`). iCloud sync toggle and the first-launch experience still remain.
 
-## Onboarding
+## First-launch experience
 
-**Scope grew during planning.** The original single-screen spec wasn't enough — the highest-leverage thing onboarding has to do is teach users how to bind "Log a hit" to the iOS Action Button, because users who don't bind it don't actually log. So onboarding becomes a multi-screen pager:
+The earlier plan grew into a multi-screen pager (welcome → Action Button setup → widget → notifications permission → privacy → tip jar → hand-off). That was pulled back — it added scope and friction for what's fundamentally a quiet app. The current direction is much lighter:
 
-1. **Welcome**: spirit hero, "Drift" wordmark, one-paragraph what-it-is.
-2. **Action Button setup**: animated walkthrough showing how to bind "Log a hit" in iOS Settings → Action Button. This is the critical screen. Show the actual iOS Settings UI as illustration with arrows / highlights. Include a "Skip — I'll set this up later" affordance.
-3. **Widget (optional)**: a one-pager explaining the Drift home-screen widget and how to add it. Skippable.
-4. **Notifications**: explains the three notification types in one paragraph, then "Enable notifications" / "Not now."
-5. **Privacy line**: "Everything stays on your device. iCloud sync is off by default."
-6. **Tip jar (optional)**: "Drift is free, no ads, no data. If you'd like to support it…" with a clear skip path. See *Tip jar* section below for the implementation question. Always skippable; never gates the hand-off.
-7. **Hand-off**: "Tap the + tab when you take a hit. Drift takes it from there." Drops the user on an empty-state home (see follow-up: dashboard empty state).
+- Lean on the **dashboard empty state** as the first-launch surface — a centered spirit, the "drift" wordmark, and a single line of copy telling the user how to log their first hit. No pager, no skipping through screens.
+- The Action Button is still the highest-leverage logging surface, but instead of an animated walkthrough we expose it via a "Set up the Action Button" row inside Settings that links directly into the iOS Settings → Action Button page (or shows brief instructions if deep-linking isn't possible).
+- Notifications permission is requested lazily — the first time `NotificationScheduler` actually tries to schedule one, not at launch.
 
-A persisted `drift.onboarding.complete` UserDefaults flag gates the flow. Skipped entirely on subsequent launches.
+Not v1: the persisted `drift.onboarding.complete` flag, multi-screen flows, animated walkthroughs.
 
 ## Settings screen
 
@@ -37,7 +30,7 @@ A persisted `drift.onboarding.complete` UserDefaults flag gates the flow. Skippe
 
 ### Behavior
 
-- [x] **Use sessions** — toggle, default **on**. Implemented via `useSessions: Bool` on `HitStore` plus `effectiveSessionThreshold`, which collapses to `0` when sessions are off so `sessions(threshold: 0)` yields one-hit sessions and every metric becomes hit-based without parallel implementations. See [[Issues/16 — Sessions vs individual hits#The "Use sessions" toggle]].
+- [x] **Use sessions** — toggle, default **on**. Implemented via `useSessions: Bool` on `HitStore` plus `effectiveSessionThreshold`, which collapses to `0` when sessions are off so `sessions(threshold: 0)` yields one-hit sessions and every metric becomes hit-based without parallel implementations. See [Issues/16 — Sessions vs individual hits](16%20%E2%80%94%20Sessions%20vs%20individual%20hits.md#the-use-sessions-toggle).
 - [x] **Session threshold** — picker: 1 / 3 / 5 / 10 / 15 / 30 minutes, default 5. **Hidden when "Use sessions" is off.** Persisted as `drift.session.thresholdSec`.
 - [x] **Rolling window length** — picker: 7 / 14 / 30 / 60 days, **default 7**. Drives the "X-day avg" stat card, `wakingAvgSec`, `avgSessionsPerDay`, `avgHitsPerDay`, and the rolling-avg chart's smoothing window.
 - [x] **Sleep window** — two hour pickers (*bedtime* + *wake up*), default 23 and 6. `sleepEndHour` drives the waking-day cutoff in `wakingDayKey` / `currentWakingDayKey` / `endOfWakingDay`. Both drive the notification overnight hedge in `NotificationScheduler.isOvernight`. Changing `sleepEndHour` recomputes records since waking-day buckets shift. Hour-only granularity (DatePicker minute precision deferred — comparisons only need hours).

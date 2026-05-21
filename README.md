@@ -43,7 +43,7 @@ Native iOS rebuild is feature-complete for v1's core; the Scriptable prototype i
 - Polish punch list: sparkle-field render performance at high ratio, the add-hit sheet's visual treatment, the icon's Tinted appearance variant
 - App Store metadata, screenshots, TestFlight, submission
 
-See [Plan.md](Plan.md) for the roadmap and [Issues/](Issues/) for individual work items.
+See [Issues/](Issues/) for individual work items.
 
 ## Built with
 
@@ -80,7 +80,6 @@ Drift/
 ├── README.md                 ← you are here
 ├── Privacy.md                ← privacy policy
 ├── LICENSE                   ← MIT
-├── Plan.md                   ← roadmap
 ├── Design/                   ← philosophy, the spirit, design system
 ├── Engineering/              ← architecture, data model, notifications, migration
 ├── Issues/                   ← per-feature work items with status frontmatter
@@ -103,10 +102,6 @@ If you're curious about the why behind the visual language, three docs are worth
 - [Design/Philosophy.md](Design/Philosophy.md) — what Drift is and isn't, the streaks vs achievements vs visualization distinction
 - [Design/Spirit.md](Design/Spirit.md) — the cloud character: continuous ratio model, eye scaling, sparkle field, milestones
 - [Design/Design system.md](Design/Design%20system.md) — colors, type, color logic
-
-## Related projects
-
-[Linger](https://github.com/kilo-studio/linger) — a sibling app for **on/off duration tracking** (Invisalign-style: track time the tray is in vs out). Started as Drift's `duration-mode` branch and was split into its own repo so each app could have a focused identity. Same spirit cloud, same design system, inverted polarity (celebrating sustained presence instead of stretching gaps). _(If the Linger repo isn't public yet, the link 404s — repo may be private during early development.)_
 
 ## Contributing
 

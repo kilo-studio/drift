@@ -23,7 +23,7 @@ Body:
 - Daytime (06:00–22:59): `Don't hit it — you're past your average of Ym`
 - Overnight (23:00–05:59 local): `If you're still awake, you're past your average of Ym`
 
-The hedge exists because we can't tell if the user is actually awake when the notification fires — the same logic on the [[Notifications#Overnight hedge|record notification]] applies.
+The hedge exists because we can't tell if the user is actually awake when the notification fires — the same logic on the [record notification](Notifications.md#overnight-hedge) applies.
 
 Cancelled via `UNUserNotificationCenter.removePendingNotificationRequests(withIdentifiers:)` on every new hit, then re-scheduled with the new `wakingAvgSec`.
 

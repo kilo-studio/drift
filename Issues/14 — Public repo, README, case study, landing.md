@@ -1,5 +1,5 @@
 ---
-status: todo
+status: doing
 priority: medium
 tags: [portfolio]
 ---
@@ -10,54 +10,52 @@ The portfolio layer. Half the value of this project lives outside the app.
 
 ## Public GitHub repo
 
-- [ ] Make `Drift` repo public — kilo-studio/drift or griffinmullins/drift
-- [ ] License: **MIT** (most permissive, signals "feel free to fork")
-- [ ] Repo structure:
+- [x] **License: MIT** (`LICENSE` at repo root).
+- [x] **README rewritten for public audience** — what the app is, the spirit metaphor, features, privacy stance, status, tech stack, build instructions, project structure, design-philosophy links, contributing notes, license, acknowledgments, contact. Wikilinks replaced with relative markdown links so they resolve on GitHub.
+- [x] **Internal docs gitignored** — `CLAUDE.md`, `Plan.md`, `Case study.md` stay locally as planning artifacts but don't ship to public.
+- [x] **Repo structure** matches:
   ```
   drift/
-  ├── app/             ← Swift native source
-  ├── prototype/       ← copy of the Scriptable scripts (preserve the journey)
-  ├── docs/            ← case study, design notes (extracted from this folder)
+  ├── app/Drift/          ← Xcode project
+  ├── prototype/          ← Scriptable scripts (the journey)
+  ├── Design/             ← philosophy, spirit, design system
+  ├── Engineering/        ← architecture, data model, notifications, migration
+  ├── Issues/             ← per-feature work items
+  ├── docs/               ← GitHub Pages landing + privacy page
   ├── README.md
+  ├── Privacy.md
   └── LICENSE
   ```
-- [ ] Pin a couple of repo Topics: `swiftui`, `ios`, `harm-reduction`, `obsidian-friendly` (kidding on the last)
-- [ ] Issues enabled, public
+- [ ] **Flip repo visibility to public** (currently `kilo-studio/drift` is private; GitHub Pages on free plans requires public).
+- [ ] **Pin repo Topics**: `swiftui`, `swiftdata`, `ios`, `harm-reduction`, `mindfulness`.
+- [ ] **Issues enabled, public** — once repo is public.
 
-## README as designed artifact
+## Landing + privacy on GitHub Pages
 
-This is the front door of the portfolio piece. It's not a quickstart guide — it's a designed page on a public repo.
+- [x] `docs/index.html` + `docs/privacy.html` + `docs/styles.css` — Drift-styled supporting docs site under `docs/`. Mirrors the app's design tokens (sky gradient, sun haze, cream cards, Quicksand + Caveat, coral links). Dark mode mirror in CSS.
+- [ ] **Enable Pages in repo settings** → Source = `main` / `/docs` (after the visibility flip).
+- [ ] **Optional**: custom domain (e.g. `drift.kilo.studio` or `drift.app`) with DNS + Pages settings.
+- [ ] **Update `SettingsView`'s hardcoded privacy URL** to the live Pages URL once published.
 
-- [ ] Hero screenshot at the top (spirit + timer in a magical state)
-- [ ] One-line tagline
-- [ ] 3-paragraph "what + why"
-- [ ] Embedded video / GIF of the spirit scaling with ratio (record from simulator at the debug slider)
-- [ ] Section: "Design rationale" — link to the deeper case study, summarize the 3–4 most interesting decisions
-- [ ] Section: "Architecture" — the SwiftUI shape, native vs WebView decision, the data model in 1 paragraph
-- [ ] Section: "The journey from Scriptable" — embed a screenshot of the prototype next to the rebuild
-- [ ] App Store badge once shipped
-- [ ] Footer: links to landing, case study, personal site
+## README polish
+
+- [ ] **Hero screenshot or recorded GIF** at the top of the README. Currently text-only. The spirit + sparkles scaling with ratio is the visual story.
+- [ ] **App Store badge** once shipped (in the Status section).
+- [ ] **Screenshots gallery** — 3-4 well-composed shots (hero, history, settings, spirit at high ratio).
 
 ## Case study writeup
 
-A long-form piece on the personal portfolio site. Outline lives in [[Case study]].
+The long-form portfolio piece lives on the personal portfolio site, not in this repo. Outline + draft stay in the gitignored `Case study.md`. The README links out to it once published.
 
-- [ ] Convert that outline to a polished post
-- [ ] 6–10 carefully selected screenshots, captioned
-- [ ] Include the iteration history — the joy ladder → continuous ratio model is the best story
-- [ ] Include the notification false-positive bug + fix (the overnight hedge) — shows real product thinking, not just code
+Highest-leverage stories to tell in the case study:
 
-## Landing page
-
-GitHub Pages, single HTML file at `kilo.studio/drift` or similar.
-
-- [ ] Hero: large screenshot, name, tagline, App Store badge
-- [ ] 3 short feature blurbs with screenshots
-- [ ] Privacy section — the same sentence used in the App Store description
-- [ ] Footer: links to source, case study, portfolio, support email/issues
+- The iteration history — the joy-ladder design → continuous ratio model. Best single design story.
+- The notification overnight hedge — false praise is worse than no praise. Shows real product thinking, not just code.
+- The data-loss incident and the migration plan that came out of it. Engineering-side story.
+- The Drift → Linger split — what counted as enough difference to warrant a sibling app.
 
 ## Soft launch
 
-- [ ] Post once on personal Twitter/Bluesky linking the case study
-- [ ] Submit to one or two thoughtful indie-app newsletters (Indie iOS Devs, smol-software lists)
-- [ ] Don't push it; the portfolio piece is the durable artifact, not the launch
+- [ ] Post once on personal Twitter/Bluesky linking the case study.
+- [ ] Submit to one or two thoughtful indie-app newsletters (Indie iOS Devs, smol-software lists).
+- [ ] Don't push it; the portfolio piece is the durable artifact, not the launch moment.

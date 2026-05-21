@@ -6,7 +6,7 @@ tags: [foundation]
 
 # Data model and metrics
 
-Build the `Hit` SwiftData entity, the `HitStore` wrapper, and every computed metric. Mirror the prototype's logic exactly. Source of truth: [[Data model]].
+Build the `Hit` SwiftData entity, the `HitStore` wrapper, and every computed metric. Mirror the prototype's logic exactly. Source of truth: [Data model](../Engineering/Data%20model.md).
 
 ## Tasks
 

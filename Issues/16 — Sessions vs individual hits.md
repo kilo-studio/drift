@@ -7,7 +7,7 @@ tags: [foundation, data, design]
 > **Implementation status:** session derivation, threshold gating in `HitStore.append`,
 > and session-aware metric semantics landed alongside the Issue 05 data layer.
 > Spirit's ratio uses session-end as drift anchor (Issue 10). Threshold picker and
-> the "Use sessions" master toggle are wired in settings (see [[Issues/12 — Onboarding, settings, app icon|Issue 12]]) — the toggle works via `HitStore.useSessions` + `effectiveSessionThreshold`, which routes every metric through `threshold: 0` when off so `sessions(threshold: 0)` yields one-hit sessions. Records recompute on toggle flip; HomeView and HistoryView labels branch on `store.useSessions` (sessions/hits, between sessions/between hits, etc.).
+> the "Use sessions" master toggle are wired in settings (see [Issue 12](12%20%E2%80%94%20Onboarding%2C%20settings%2C%20app%20icon.md)) — the toggle works via `HitStore.useSessions` + `effectiveSessionThreshold`, which routes every metric through `threshold: 0` when off so `sessions(threshold: 0)` yields one-hit sessions. Records recompute on toggle flip; HomeView and HistoryView labels branch on `store.useSessions` (sessions/hits, between sessions/between hits, etc.).
 
 # Sessions vs individual hits
 
@@ -68,13 +68,13 @@ Once sessions exist as a derived concept, the data has two real axes of progress
 - **Frequency** — how often you have a session. Captured by inter-session gaps, sessions-per-day, longest waking gap. **This is what the spirit visualizes.**
 - **Intensity** — how much you hit per session (avg hits-per-session, biggest session of the day). **This is invisible to the spirit on purpose — it's a looking-back metric that lives in achievements.**
 
-A user who chains 5 hits per session 5×/day looks identical (5 sessions/day) to a user who solo-hits 5×/day at the frequency layer. The intensity axis is what distinguishes them, and improving on either axis is real progress. See [[Issues/15 — Achievement system]] for the personal records and milestone unlocks that capture the intensity axis.
+A user who chains 5 hits per session 5×/day looks identical (5 sessions/day) to a user who solo-hits 5×/day at the frequency layer. The intensity axis is what distinguishes them, and improving on either axis is real progress. See [Issues/15 — Achievement system](15%20%E2%80%94%20Achievement%20system.md) for the personal records and milestone unlocks that capture the intensity axis.
 
-Why the spirit only reflects frequency: the spirit is a *present-moment visualization* (per [[Philosophy]]), and the only meaningful present-moment quantity is "time since last session ended." Intensity is a looking-back property — you can only know your average hits-per-session by aggregating over time, which is achievement territory. Trying to encode both axes in one creature dilutes the "one number, one feeling" principle.
+Why the spirit only reflects frequency: the spirit is a *present-moment visualization* (per [Philosophy](../Design/Philosophy.md)), and the only meaningful present-moment quantity is "time since last session ended." Intensity is a looking-back property — you can only know your average hits-per-session by aggregating over time, which is achievement territory. Trying to encode both axes in one creature dilutes the "one number, one feeling" principle.
 
 ### Settings
 
-- **Use sessions** — master toggle. Default **on**. See [[#The "Use sessions" toggle]] below.
+- **Use sessions** — master toggle. Default **on**. See [The "Use sessions" toggle](#the-use-sessions-toggle) below.
 - **Session threshold** — picker: 1 / 3 / 5 / 10 / 15 / 30 minutes. Default 5. Only visible when "Use sessions" is on.
 - *(Maybe)* **Show hits alongside sessions** — toggle to show secondary "Y hits" label on the today card. Default on.
 
@@ -98,7 +98,7 @@ The implicit-session model above is a recommendation, not a forced philosophy. S
 
 **Resolved implementation details:**
 
-1. **Records recompute on toggle change.** The persisted `longestGap` / `longestWakingGap` are recomputed from history under the new mode whenever the toggle flips, mirroring how `HitStore.recomputeRecords()` already runs after edit/delete (per [[Issues/17 — Hit history]]). Records always describe what's true *now* in the data.
+1. **Records recompute on toggle change.** The persisted `longestGap` / `longestWakingGap` are recomputed from history under the new mode whenever the toggle flips, mirroring how `HitStore.recomputeRecords()` already runs after edit/delete (per [Issues/17 — Hit history](17%20%E2%80%94%20Hit%20history.md)). Records always describe what's true *now* in the data.
 2. **Persistence.** `drift.useSessions: Bool` in `UserDefaults`, default `true` so existing installs keep current behavior on upgrade.
 3. **Threshold visibility.** When sessions are off, the session-threshold row is **hidden entirely** (not disabled). The value is meaningless in hit-mode, so taking up screen space would be misleading.
 4. **Notification copy.** Bodies already say "since last hit" — works in both modes. "avg Ym" just reflects the new average. No copy changes needed.
@@ -153,12 +153,12 @@ Cache aggressively. Recompute only when `hits` array changes or threshold settin
 ## Cross-references
 
 When this lands, update:
-- [[Engineering/Data model]] — describe `Session` derivation, update metric formulas
-- [[Issues/05 — Data model and metrics]] — add session helpers to the task list
-- [[Issues/09 — Stat cards and charts]] — update labels and chart data sources
-- [[Issues/10 — Spirit character]] — `ratio` formula uses session end, not last hit
-- [[Spirit]] — note that "ratio" is session-based
+- [Engineering/Data model](../Engineering/Data%20model.md) — describe `Session` derivation, update metric formulas
+- [Issues/05 — Data model and metrics](05%20%E2%80%94%20Data%20model%20and%20metrics.md) — add session helpers to the task list
+- [Issues/09 — Stat cards and charts](09%20%E2%80%94%20Stat%20cards%20and%20charts.md) — update labels and chart data sources
+- [Issues/10 — Spirit character](10%20%E2%80%94%20Spirit%20character.md) — `ratio` formula uses session end, not last hit
+- [Spirit](../Design/Spirit.md) — note that "ratio" is session-based
 
 ## Sequencing
 
-**v1, foundation phase.** This affects the data model and every metric. Worth landing before the dashboard is built so we don't have to retrofit. Pairs naturally with [[Issues/05 — Data model and metrics]].
+**v1, foundation phase.** This affects the data model and every metric. Worth landing before the dashboard is built so we don't have to retrofit. Pairs naturally with [Issues/05 — Data model and metrics](05%20%E2%80%94%20Data%20model%20and%20metrics.md).

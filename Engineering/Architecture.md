@@ -71,7 +71,7 @@ NotificationScheduler.rescheduleAll(metrics)  ← cancels + re-schedules
 - `todayStretches: [(Date, TimeInterval)]`
 - `rollingAvg(window: 7, lastN: 30)`
 
-All derived. See [[Data model]] for the exact computations.
+All derived. See [Data model](Data%20model.md) for the exact computations.
 
 ## Sync (CloudKit)
 
@@ -90,11 +90,11 @@ Control Center entry (iOS 18+): a control that runs the same App Intent.
 
 ## Notifications
 
-`NotificationScheduler` reschedules on every hit. See [[Notifications]] for full logic. Same identifiers as the Scriptable version (`drift-beat-average`, `drift-beat-record`) so multiple in-flight notifications get cancelled/replaced cleanly.
+`NotificationScheduler` reschedules on every hit. See [Notifications](Notifications.md) for full logic. Same identifiers as the Scriptable version (`drift-beat-average`, `drift-beat-record`) so multiple in-flight notifications get cancelled/replaced cleanly.
 
 ## Settings (small, focused)
 
-Implemented in `SettingsView.swift` as a fourth `TabView` tab. See [[Issues/12 — Onboarding, settings, app icon|Issue 12]] for the full per-row spec and current status.
+Implemented in `SettingsView.swift` as a fourth `TabView` tab. See [Issue 12](../Issues/12%20%E2%80%94%20Onboarding%2C%20settings%2C%20app%20icon.md) for the full per-row spec and current status.
 
 - **Use sessions** — toggle, default on (Issue 16's master switch; routes metrics through `effectiveSessionThreshold`)
 - **Session threshold** — picker, 1 / 3 / 5 / 10 / 15 / 30 min, default 5 (hidden when use-sessions is off)

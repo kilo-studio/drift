@@ -34,7 +34,7 @@ The most important interaction in the app: log a hit fast, from anywhere, withou
 
 ## Edge cases
 
-- Logging while a previous hit's notification is queued: cancel + reschedule (see [[Issues/07 — Notifications|Notifications issue]])
+- Logging while a previous hit's notification is queued: cancel + reschedule (see [Notifications issue](07%20%E2%80%94%20Notifications.md))
 - Logging twice within 5 seconds: still log both (no debouncing — the user might genuinely take two hits in quick succession; it's their data)
 - Offline: no problem, all local
 

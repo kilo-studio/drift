@@ -44,7 +44,7 @@ func wakingDayKey(_ hit: Hit) -> String {
 
 ## Rolling window (default 7 days, configurable)
 
-The two displayed averages (per-day count + waking-gap interval) use a rolling window. **Default is 7 days** as of the settings work in [[Issues/12 — Onboarding, settings, app icon]]; user can pick 7 / 14 / 30 / 60. The `30` constant in the code samples below predates that change — read it as `windowDays` driven by the setting.
+The two displayed averages (per-day count + waking-gap interval) use a rolling window. **Default is 7 days** as of the settings work in [Issues/12 — Onboarding, settings, app icon](../Issues/12%20%E2%80%94%20Onboarding%2C%20settings%2C%20app%20icon.md); user can pick 7 / 14 / 30 / 60. The `30` constant in the code samples below predates that change — read it as `windowDays` driven by the setting.
 
 The two metrics use the same window length but **different inclusion rules for today**:
 
@@ -111,11 +111,11 @@ var wakingAvgSec: TimeInterval? {
 
 ### Sessions (derived)
 
-Per [[Issues/16 — Sessions vs individual hits]], all gap-based metrics operate on
+Per [Issues/16 — Sessions vs individual hits](../Issues/16%20%E2%80%94%20Sessions%20vs%20individual%20hits.md), all gap-based metrics operate on
 **sessions**, not raw hits — *unless* the user has turned off the "Use sessions"
 toggle in settings, in which case every metric falls back to its hit-based
 equivalent (spirit ratio uses `now - lastHit`, `wakingAvgSec` averages hit-to-hit
-gaps within a waking day, etc.). See [[Issues/16 — Sessions vs individual hits#The "Use sessions" toggle]]
+gaps within a waking day, etc.). See [Issues/16 — Sessions vs individual hits](../Issues/16%20%E2%80%94%20Sessions%20vs%20individual%20hits.md#the-use-sessions-toggle)
 for the full mapping.
 
 A session is a maximal cluster of consecutive hits where every inter-hit gap is ≤
@@ -179,7 +179,7 @@ counting from `lastSessionEnd` and the spirit drifts upward.
 `wakingAvgMs = wakingAvgSec * 1000`. If there isn't enough data, the spirit
 defaults to ratio 1.
 
-See [[Spirit]] for what the ratio drives.
+See [Spirit](../Design/Spirit.md) for what the ratio drives.
 
 ## Migration from prototype
 

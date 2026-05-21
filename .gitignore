@@ -11,6 +11,12 @@
 Notes.md
 private/
 
+# Internal planning + assistant-orientation docs — kept locally so day-to-day
+# work doesn't change, but not published when the repo goes public.
+CLAUDE.md
+Plan.md
+Case study.md
+
 # Claude Code session-local state (scheduled tasks, local settings)
 .claude/
 

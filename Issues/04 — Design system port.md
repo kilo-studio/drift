@@ -6,7 +6,7 @@ tags: [foundation]
 
 # Design system port
 
-Port the prototype's design tokens to a SwiftUI design system. Source of truth: [[Design system]].
+Port the prototype's design tokens to a SwiftUI design system. Source of truth: [Design system](../Design/Design%20system.md).
 
 ## Tasks
 

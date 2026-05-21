@@ -36,7 +36,7 @@ Why streaks specifically are the failure mode being avoided:
 - They bias toward dishonest logging — users skip hits to preserve the streak, polluting the data.
 - They frame data as morality. A hit becomes a "failure" instead of a thing that happened.
 
-There was a third concept on this list at one point — **achievements** (personal records that ratchet, milestone unlocks, cumulative counters that only grow). The thinking was that since they only grow, they don't have the failure-mode of streaks. An achievement system was actually built and shipped briefly before being pulled. Why: the spirit already does the visualization in real time (a "longest waking gap" record and the spirit's gold-halo milestone are the same fact surfaced twice), and the "earn this badge" tone tugs the app away from the gentleness it's built around. The decision: visualization is enough. See [[Issues/15 — Achievement system]] for the postmortem.
+There was a third concept on this list at one point — **achievements** (personal records that ratchet, milestone unlocks, cumulative counters that only grow). The thinking was that since they only grow, they don't have the failure-mode of streaks. An achievement system was actually built and shipped briefly before being pulled. Why: the spirit already does the visualization in real time (a "longest waking gap" record and the spirit's gold-halo milestone are the same fact surfaced twice), and the "earn this badge" tone tugs the app away from the gentleness it's built around. The decision: visualization is enough. See [Issues/15 — Achievement system](../Issues/15%20%E2%80%94%20Achievement%20system.md) for the postmortem.
 
 ### Honest celebrations
 
@@ -50,7 +50,7 @@ The aesthetic is hand-painted Ghibli, not iOS-default flat. Warm cream backgroun
 
 The headline number is meaningful but abstract. A character makes the meaning emotional. When the spirit's eyes are small and tired, you've just hit. When they're huge and the sky is full of sparkles, you've gone way past your typical interval. You feel it before you read the number.
 
-The spirit was originally trying to do too much (friends, rainbows, confetti, hats — see [[Issues]] for the iteration history). Stripping it back to *just* eye scaling + sparkles + milestone glow made it feel honest. The spirit doesn't need to perform; it just needs to react.
+The spirit was originally trying to do too much (friends, rainbows, confetti, hats — see [Issues](../Issues/) for the iteration history). Stripping it back to *just* eye scaling + sparkles + milestone glow made it feel honest. The spirit doesn't need to perform; it just needs to react.
 
 ## Source of the aesthetic
 

@@ -31,7 +31,7 @@ All four built with `import Charts`, wrapped in a shared `ChartCard` (centered C
 ## Visual iteration
 
 - Outer background simplified to solid `driftSkyLowerMid` (decorative sky/sun-haze gradients explored and removed — see commit history)
-- Card chrome moved to iOS 26 Liquid Glass: `.glassEffect(.regular.tint(.driftSkyLowerMid.opacity(0.4)), in: RoundedRectangle(...))`. One render pass per card; tint pulls cards toward the sky color so they feel like a lifted region of the bg. Earlier `.ultraThinMaterial` stack (material + tint fill + stroke + 2 shadows = 5 passes per card) was stripped after Instruments measured 170–370 offscreen passes per frame on Home and made scrolling hitchy. See [[#Card render budget]] below.
+- Card chrome moved to iOS 26 Liquid Glass: `.glassEffect(.regular.tint(.driftSkyLowerMid.opacity(0.4)), in: RoundedRectangle(...))`. One render pass per card; tint pulls cards toward the sky color so they feel like a lifted region of the bg. Earlier `.ultraThinMaterial` stack (material + tint fill + stroke + 2 shadows = 5 passes per card) was stripped after Instruments measured 170–370 offscreen passes per frame on Home and made scrolling hitchy. See [Card render budget](#card-render-budget) below.
 - Bests row labels + timer unit suffix bumped from `driftInkFade` → `driftInkSoft` for readability
 
 ## Card render budget

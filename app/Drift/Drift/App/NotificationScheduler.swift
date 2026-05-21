@@ -2,14 +2,16 @@ import Foundation
 import UserNotifications
 
 /// State captured at hit-append time, fed to the scheduler so it can reason
-/// about baseline / records / overnight hedge without coupling to HitStore.
+/// about baseline / records without coupling to HitStore.
 struct HitNotificationContext {
     let now: Date
     let previousHitDate: Date?
     let totalHits: Int
     let wakingAvgSec: TimeInterval?
     let longestWakingGapSec: TimeInterval
+    let longestGapSec: TimeInterval
     let isNewWakingBest: Bool
+    let isNewOverallBest: Bool
 }
 
 /// UserDefaults keys for notification preferences. Free constants so both the
@@ -24,9 +26,14 @@ let driftNotifsBeatRecordOffsetKey = "drift.notifs.beatRecordOffsetSec"
 
 @MainActor
 enum NotificationScheduler {
-    private static let beatAverageID = "drift-beat-average"
-    private static let beatRecordID  = "drift-beat-record"
+    private static let beatAverageID       = "drift-beat-average"
+    private static let beatWakingRecordID  = "drift-beat-waking-record"
+    private static let beatOverallRecordID = "drift-beat-overall-record"
     private static let center = UNUserNotificationCenter.current()
+
+    private static var scheduledIDs: [String] {
+        [beatAverageID, beatWakingRecordID, beatOverallRecordID]
+    }
 
     /// Request alert/sound/badge authorization. Idempotent — iOS only prompts on
     /// first call; later calls return the existing status. Per Issue 07, surface
@@ -39,11 +46,11 @@ enum NotificationScheduler {
         }
     }
 
-    /// Cancel both scheduled notifications, fire the immediate one, and re-add
-    /// the scheduled pair if the state warrants it. Call after every append.
-    /// Honors the user's notification preferences (master + per-type toggles).
+    /// Cancel all scheduled notifications, fire the immediate one, and re-add
+    /// the scheduled set if state warrants it. Call after every append. Honors
+    /// the user's notification preferences (master + per-type toggles).
     static func reschedule(after ctx: HitNotificationContext) async {
-        center.removePendingNotificationRequests(withIdentifiers: [beatAverageID, beatRecordID])
+        center.removePendingNotificationRequests(withIdentifiers: scheduledIDs)
 
         guard masterEnabled() else { return }
 
@@ -58,8 +65,16 @@ enum NotificationScheduler {
         if beatAverageEnabled(), ctx.totalHits >= 10, let avg = ctx.wakingAvgSec, avg > 0 {
             await scheduleBeatAverage(avgSec: avg)
         }
-        if beatRecordEnabled(), ctx.longestWakingGapSec > 0, ctx.totalHits >= 2 {
-            await scheduleBeatRecord(longestSec: ctx.longestWakingGapSec, now: ctx.now)
+        if beatRecordEnabled(), ctx.totalHits >= 2 {
+            if ctx.longestWakingGapSec > 0 {
+                await scheduleBeatWakingRecord(longestSec: ctx.longestWakingGapSec, now: ctx.now)
+            }
+            // Only schedule overall-best if it's actually distinct from the
+            // waking-best — otherwise both fire at the same moment and feel
+            // duplicative.
+            if ctx.longestGapSec > ctx.longestWakingGapSec {
+                await scheduleBeatOverallRecord(longestSec: ctx.longestGapSec, now: ctx.now)
+            }
         }
     }
 
@@ -67,7 +82,7 @@ enum NotificationScheduler {
     /// user changes notification preferences mid-day so prior schedules don't
     /// fire under stale settings. Already-delivered banners stay until dismissed.
     static func cancelPending() {
-        center.removePendingNotificationRequests(withIdentifiers: [beatAverageID, beatRecordID])
+        center.removePendingNotificationRequests(withIdentifiers: scheduledIDs)
     }
 
     // MARK: - Preference reads (defaults match Issue 12)
@@ -123,7 +138,11 @@ enum NotificationScheduler {
         }
         let avgMin = Int((ctx.wakingAvgSec ?? 0) / 60)
         var body = "⏱ \(deltaMin)m since last hit · avg \(avgMin)m"
-        if ctx.isNewWakingBest { body += " · 🥇 new waking best" }
+        if ctx.isNewOverallBest {
+            body += " · 🏆 new all-time best"
+        } else if ctx.isNewWakingBest {
+            body += " · 🥇 new waking best"
+        }
         return body
     }
 
@@ -132,13 +151,15 @@ enum NotificationScheduler {
     private static func scheduleBeatAverage(avgSec: TimeInterval) async {
         let triggerInterval = avgSec + beatAverageOffsetSec()
         let triggerDate = Date().addingTimeInterval(triggerInterval)
-        let avgMin = Int(avgSec / 60)
 
+        // No notifications during the user's sleep window — the original "if
+        // you're still awake" hedge was confusing on wake-up. Just don't fire.
+        guard !isOvernight(triggerDate) else { return }
+
+        let avgMin = Int(avgSec / 60)
         let content = UNMutableNotificationContent()
         content.title = "👏 You're beating your average"
-        content.body = isOvernight(triggerDate)
-            ? "If you're still awake, you're past your average of \(avgMin)m"
-            : "Don't hit it — you're past your average of \(avgMin)m"
+        content.body = "Don't hit it — you're past your average of \(avgMin)m"
 
         let req = UNNotificationRequest(
             identifier: beatAverageID,
@@ -148,25 +169,49 @@ enum NotificationScheduler {
         try? await center.add(req)
     }
 
-    // MARK: - Beat your record
+    // MARK: - Beat your waking record
 
-    private static func scheduleBeatRecord(longestSec: TimeInterval, now: Date) async {
+    private static func scheduleBeatWakingRecord(longestSec: TimeInterval, now: Date) async {
         let triggerInterval = longestSec + beatRecordOffsetSec()
         let triggerDate = now.addingTimeInterval(triggerInterval)
 
         // Skip if the trigger lands past the next 4am cutoff — sleep gaps shouldn't
         // be celebrated as a "waking best."
         guard triggerDate <= endOfWakingDay(now) else { return }
+        guard !isOvernight(triggerDate) else { return }
 
         let bestMin = Int(longestSec / 60)
         let content = UNMutableNotificationContent()
         content.title = "🥇 new waking best"
-        content.body = isOvernight(triggerDate)
-            ? "If you're still awake, you just beat your longest waking stretch of \(bestMin)m. Keep drifting."
-            : "You just beat your longest waking stretch of \(bestMin)m. Keep drifting."
+        content.body = "You just beat your longest waking stretch of \(bestMin)m. Keep drifting."
 
         let req = UNNotificationRequest(
-            identifier: beatRecordID,
+            identifier: beatWakingRecordID,
+            content: content,
+            trigger: UNTimeIntervalNotificationTrigger(timeInterval: triggerInterval, repeats: false)
+        )
+        try? await center.add(req)
+    }
+
+    // MARK: - Beat your overall record
+
+    /// All-time longest gap. Scheduled separately from the waking-best so that a
+    /// gap stretching across a sleep window can still be celebrated when the
+    /// user wakes up — but if the trigger lands during the configured sleep
+    /// window, skip it (no wake-up surprises).
+    private static func scheduleBeatOverallRecord(longestSec: TimeInterval, now: Date) async {
+        let triggerInterval = longestSec + beatRecordOffsetSec()
+        let triggerDate = now.addingTimeInterval(triggerInterval)
+
+        guard !isOvernight(triggerDate) else { return }
+
+        let bestMin = Int(longestSec / 60)
+        let content = UNMutableNotificationContent()
+        content.title = "🏆 new all-time best"
+        content.body = "You just beat your longest gap ever — \(bestMin)m. Keep drifting."
+
+        let req = UNNotificationRequest(
+            identifier: beatOverallRecordID,
             content: content,
             trigger: UNTimeIntervalNotificationTrigger(timeInterval: triggerInterval, repeats: false)
         )

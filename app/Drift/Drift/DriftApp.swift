@@ -33,7 +33,6 @@ struct DriftApp: App {
         store = MainActor.assumeIsolated {
             do {
                 let s = try HitStore(context: DriftApp.container.mainContext)
-                PrototypeMigration.runIfNeeded(s)
                 // Existing-hits skip: users restoring from backup or upgrading
                 // from a pre-onboarding build already have data and aren't new
                 // users — flip the flag so they go straight to the dashboard.

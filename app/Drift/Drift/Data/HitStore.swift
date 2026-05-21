@@ -187,12 +187,17 @@ final class HitStore {
         let threshold = effectiveSessionThreshold
         let prevLast = hits.last
         let prevWakingRecord = records.longestWakingGapSec
+        let prevOverallRecord = records.longestGapSec
         var isNewWakingBest = false
+        var isNewOverallBest = false
 
         if let last = prevLast {
             let delta = hit.t.timeIntervalSince(last.t)
             if delta > threshold {
-                if delta > records.longestGapSec { records.longestGapSec = delta }
+                if delta > records.longestGapSec {
+                    records.longestGapSec = delta
+                    isNewOverallBest = records.longestGapSec > prevOverallRecord
+                }
                 if last.wakingDayKey == hit.wakingDayKey, delta > records.longestWakingGapSec {
                     records.longestWakingGapSec = delta
                     isNewWakingBest = records.longestWakingGapSec > prevWakingRecord
@@ -210,7 +215,9 @@ final class HitStore {
             totalHits: hits.count,
             wakingAvgSec: hits.wakingAvgSec(threshold: threshold),
             longestWakingGapSec: records.longestWakingGapSec,
-            isNewWakingBest: isNewWakingBest
+            longestGapSec: records.longestGapSec,
+            isNewWakingBest: isNewWakingBest,
+            isNewOverallBest: isNewOverallBest
         )
         Task {
             await NotificationScheduler.reschedule(after: notifContext)

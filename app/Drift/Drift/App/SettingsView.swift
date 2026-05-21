@@ -164,6 +164,23 @@ struct SettingsView: View {
                 .buttonStyle(.plain)
                 SettingsDivider()
                 Button {
+                    UserDefaults.standard.removeObject(forKey: driftOnboardingCompleteKey)
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("re-run onboarding")
+                            .font(.driftRowLabel)
+                            .foregroundStyle(.driftInk)
+                        Text("Walk through the setup carousel again. Your hits stay where they are.")
+                            .font(.driftRowDescription)
+                            .foregroundStyle(.driftInkSoft)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                SettingsDivider()
+                Button {
                     showResetConfirm = true
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {

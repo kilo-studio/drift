@@ -36,7 +36,7 @@ Each card's setting writes to UserDefaults immediately, so by the time the user 
 
 6. **Meet the spirit.** A working mini-preview, not a description. The spirit + a small sparkle field render in the card; a slider or auto-advancing animation walks through ratio states from baseline-sad → wide-eyed → fully revealed with sparkles. Caption explains the rule once: "the longer it's been since your last hit, the bigger the spirit's eyes get and the more sparkles fill the sky." No numbers, no thresholds.
 
-7. **Conclusion.** "Happy drifting." Closes the carousel, sets `drift.onboarding.complete`, drops the user on Home.
+7. **Conclusion.** "Happy drifting." One closing line covering privacy + the tip jar — something like: "Everything stays on your device. Drift is free and ad-free; you can support it from Settings if you'd like." Then a single CTA that closes the carousel, sets `drift.onboarding.complete`, and drops the user on Home.
 
 ### Implementation considerations
 
@@ -46,12 +46,8 @@ Each card's setting writes to UserDefaults immediately, so by the time the user 
 - **Action Button deep link:** iOS has historically gated direct deep links to Settings pages (`App-prefs:` URL schemes are unreliable on recent iOS). Implement the deep-link button, but design the card to work without it (clear written/illustrated path through Settings).
 - **Notifications permission:** request via `UNUserNotificationCenter.requestAuthorization` only when the user toggles the master switch on card 4 — not at app launch, not before they've seen what the notifications do.
 - **Reset for testing:** the existing Settings → Data → Reset all data should also clear `drift.onboarding.complete` so a reset re-runs onboarding. (Confirm this is the current behavior — `HitStore.resetEverything` may need a small change.)
-
-### Open questions
-
-- Should each card have a "skip" affordance, or do we trust that defaults are good enough and just let the user swipe through quickly? Lean: no skip on individual cards — every card has a working default — but a single subtle "skip setup" link in the corner on card 2 onward (jumps straight to card 7) is worth considering for the user who already knows what they want.
-- Privacy + tip jar — leave out of the carousel entirely (Settings → About handles both) or insert a privacy line somewhere in the conclusion card?
-- For users restoring from a backup with existing hits, do they re-onboard or skip to the dashboard? Lean: skip — existing data means they're not a new user. Flip `drift.onboarding.complete = true` if hits already exist on first launch of this build.
+- **No skip affordance.** Every card has working defaults, and the carousel is swipe-driven — the user can move through fast if they want without an explicit skip control. Keeping it skip-free fits the tone better than adding a "skip setup" link.
+- **Existing-hits users skip onboarding.** On first launch of the build that introduces onboarding, if `HitStore.hits` is non-empty, flip `drift.onboarding.complete = true` immediately so users restoring from backup (or coming from the pre-onboarding build) don't get a setup carousel for an app they already know.
 
 ## Settings screen
 

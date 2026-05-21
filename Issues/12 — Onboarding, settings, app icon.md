@@ -22,7 +22,8 @@ Polish layer. Pre-launch.
 3. **Widget (optional)**: a one-pager explaining the Drift home-screen widget and how to add it. Skippable.
 4. **Notifications**: explains the three notification types in one paragraph, then "Enable notifications" / "Not now."
 5. **Privacy line**: "Everything stays on your device. iCloud sync is off by default."
-6. **Hand-off**: "Tap the + tab when you take a hit. Drift takes it from there." Drops the user on an empty-state home (see follow-up: dashboard empty state).
+6. **Tip jar (optional)**: "Drift is free, no ads, no data. If you'd like to support it…" with a clear skip path. See *Tip jar* section below for the implementation question. Always skippable; never gates the hand-off.
+7. **Hand-off**: "Tap the + tab when you take a hit. Drift takes it from there." Drops the user on an empty-state home (see follow-up: dashboard empty state).
 
 A persisted `drift.onboarding.complete` UserDefaults flag gates the flow. Skipped entirely on subsequent launches.
 
@@ -68,6 +69,20 @@ A persisted `drift.onboarding.complete` UserDefaults flag gates the flow. Skippe
 - [x] Authored in Icon Composer as a `Drift.icon` bundle (single source, all variants generated from it — including tinted and dark)
 - [x] Dropped into the Xcode target at the project root (alongside `DriftApp.swift`); App Icon build setting points to `Drift`
 - [x] Replaces the old `AppIcon.appiconset` (Xcode 16+ prefers the `.icon` file when both exist)
+
+## Tip jar
+
+Drift is free, no ads, no data collection. An optional "support Drift" CTA needs two homes:
+
+- **Onboarding**: penultimate screen, framed in keeping with the app's tone — "Drift is free, no ads, no data. If you'd like to support it, here's how." Always skippable; never gates the next screen.
+- **Settings → About card**: a permanent "Support Drift" row that lives alongside privacy / github / version. Users who want to come back to it later have an obvious home.
+
+**Open implementation question**: two viable paths.
+
+1. **IAP consumable tip jar.** Three or four preset amounts (e.g. $0.99 / $2.99 / $4.99). Each is a consumable In-App Purchase product set up in App Store Connect. StoreKit 2 inside the app. Apple takes 30% (15% for small developers). Standard pattern used by Overcast, Olivetti, Fenix, etc. Cleanest UX — stays in-app. Requires Apple Developer Program enrollment, App Store Connect product setup, and a few hours of StoreKit code.
+2. **External link to a sponsorship platform.** Buy Me a Coffee, GitHub Sponsors, Ko-fi, or a Stripe Payment Link. Settings row opens Safari. No Apple cut. Allowed for free apps that don't sell digital content. Trivially fast to ship — one button. Kicks the user out of the app, which feels slightly off for the tone.
+
+For v1 the external link is the pragmatic shortcut; IAP is the cleaner end-state and can replace the external link later without changing the UI shape (same row, different action).
 
 ## Out of scope
 

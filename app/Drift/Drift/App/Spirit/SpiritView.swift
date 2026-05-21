@@ -12,6 +12,13 @@ struct SpiritView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// When `lastSessionEnd` jumps forward (hit logged / interval closed), the
+    /// raw ratio drops to ~0 instantly and the spirit pops back to baseline in
+    /// a single frame. To smooth that, we capture the ratio at the moment of
+    /// the reset and ease-out blend down to the new real ratio over 1.5s.
+    @State private var snapStartedAt: Date? = nil
+    @State private var preSnapRatio: Double = 0
+
     var body: some View {
         TimelineView(.animation) { context in
             let frame = SpiritFrame(
@@ -20,13 +27,28 @@ struct SpiritView: View {
                 wakingAvgSec: wakingAvgSec,
                 longestWakingGapSec: longestWakingGapSec,
                 longestGapSec: longestGapSec,
-                reduceMotion: reduceMotion
+                reduceMotion: reduceMotion,
+                snapStartedAt: snapStartedAt,
+                preSnapRatio: preSnapRatio
             )
 
             Canvas { ctx, size in
                 drawSpirit(ctx: ctx, size: size, frame: frame)
             }
             .frame(width: 96, height: 96)
+        }
+        .onChange(of: lastSessionEnd) { oldValue, newValue in
+            // Only animate when the anchor moves forward (reset / new event).
+            // Edits to past hits shouldn't trigger the smooth-decay.
+            guard !reduceMotion,
+                  let old = oldValue,
+                  let new = newValue,
+                  new > old else {
+                return
+            }
+            let avg = wakingAvgSec ?? 0
+            preSnapRatio = avg > 0 ? new.timeIntervalSince(old) / avg : 0
+            snapStartedAt = .now
         }
     }
 }
@@ -47,11 +69,32 @@ private struct SpiritFrame {
         wakingAvgSec: TimeInterval?,
         longestWakingGapSec: TimeInterval,
         longestGapSec: TimeInterval,
-        reduceMotion: Bool
+        reduceMotion: Bool,
+        snapStartedAt: Date?,
+        preSnapRatio: Double
     ) {
         let secSince = lastSessionEnd.map { now.timeIntervalSince($0) } ?? 0
         let avg = wakingAvgSec ?? 0
-        let r = avg > 0 ? max(0.001, secSince / avg) : 1.0
+        let realRatio = avg > 0 ? max(0.001, secSince / avg) : 1.0
+
+        // If a reset just happened, blend from the pre-snap ratio down to
+        // the real ratio over ~1.5s using ease-out cubic. After the window
+        // we're on the real ratio.
+        let r: Double
+        if let snapStart = snapStartedAt {
+            let elapsed = now.timeIntervalSince(snapStart)
+            let snapDuration: Double = 1.5
+            if elapsed < snapDuration {
+                let t = elapsed / snapDuration
+                let easedT = 1 - pow(1 - t, 3)
+                r = preSnapRatio * (1 - easedT) + realRatio * easedT
+            } else {
+                r = realRatio
+            }
+        } else {
+            r = realRatio
+        }
+
         let wA = longestWakingGapSec > 0 && secSince >= longestWakingGapSec
         let oA = longestGapSec > 0 && secSince >= longestGapSec
         let e = now.timeIntervalSinceReferenceDate

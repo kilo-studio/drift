@@ -25,6 +25,12 @@ struct SparkleField: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var sparkles: [Sparkle]
 
+    /// Same animation state as SpiritView — captured on reset so the visible
+    /// sparkles shrink away uniformly over ~1.5s instead of vanishing in one
+    /// frame when the ratio drops.
+    @State private var snapStartedAt: Date? = nil
+    @State private var preSnapRatio: Double = 0
+
     init(
         lastSessionEnd: Date?,
         wakingAvgSec: TimeInterval?,
@@ -45,10 +51,11 @@ struct SparkleField: View {
                     guard !sparkles.isEmpty else { return }
                     let now = ctx.date
                     let elapsed = now.timeIntervalSinceReferenceDate
-                    let ratio = currentRatio(now: now)
+                    let realRatio = currentRatio(now: now)
+                    let (ratio, sparkleScale) = snapState(now: now, realRatio: realRatio)
                     for s in sparkles {
                         guard ratio >= s.revealAt else { continue }
-                        drawSparkle(s, in: gc, size: size, time: elapsed)
+                        drawSparkle(s, in: gc, size: size, time: elapsed, scale: sparkleScale)
                     }
                 }
                 .frame(width: geo.size.width, height: geo.size.height)
@@ -56,6 +63,17 @@ struct SparkleField: View {
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
+        .onChange(of: lastSessionEnd) { oldValue, newValue in
+            guard !reduceMotion,
+                  let old = oldValue,
+                  let new = newValue,
+                  new > old else {
+                return
+            }
+            let avg = wakingAvgSec ?? 0
+            preSnapRatio = avg > 0 ? new.timeIntervalSince(old) / avg : 0
+            snapStartedAt = .now
+        }
     }
 
     private func currentRatio(now: Date) -> Double {
@@ -64,7 +82,22 @@ struct SparkleField: View {
         return avg > 0 ? max(0.001, secSince / avg) : 1.0
     }
 
-    private func drawSparkle(_ s: Sparkle, in ctx: GraphicsContext, size: CGSize, time: Double) {
+    /// During the snap window, returns a blended ratio that decays from the
+    /// pre-snap value to the real ratio, plus a sparkle scale multiplier that
+    /// shrinks toward zero — so visible sparkles shrink uniformly as the
+    /// visible set itself decreases.
+    private func snapState(now: Date, realRatio: Double) -> (ratio: Double, scale: Double) {
+        guard let snapStart = snapStartedAt else { return (realRatio, 1.0) }
+        let elapsed = now.timeIntervalSince(snapStart)
+        let snapDuration: Double = 1.5
+        guard elapsed < snapDuration else { return (realRatio, 1.0) }
+        let t = elapsed / snapDuration
+        let easedT = 1 - pow(1 - t, 3)
+        let blendedRatio = preSnapRatio * (1 - easedT) + realRatio * easedT
+        return (blendedRatio, 1 - easedT)
+    }
+
+    private func drawSparkle(_ s: Sparkle, in ctx: GraphicsContext, size: CGSize, time: Double, scale: Double) {
         let (drift, opacity) = animState(for: s, time: time)
         let cx = (s.xPct / 100) * size.width + drift.x
         let cy = (s.yPct / 100) * size.height + drift.y
@@ -72,7 +105,7 @@ struct SparkleField: View {
         var ctx = ctx
         ctx.translateBy(x: cx, y: cy)
         ctx.opacity = opacity
-        ctx.fill(starPath(radius: s.size / 2), with: .color(s.color))
+        ctx.fill(starPath(radius: s.size / 2 * scale), with: .color(s.color))
     }
 
     private func animState(for s: Sparkle, time: Double) -> (drift: CGPoint, opacity: Double) {

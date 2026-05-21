@@ -290,6 +290,9 @@ final class HitStore {
         try context.save()
         try reload()
         publishToWidget()
+        // Re-run onboarding next launch — without this, a reset would leave
+        // the user on an empty dashboard with no path back through setup.
+        UserDefaults.standard.removeObject(forKey: driftOnboardingCompleteKey)
     }
 
     /// Inserts many hits in chronological order, walking the same record-update logic

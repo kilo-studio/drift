@@ -34,6 +34,13 @@ struct DriftApp: App {
             do {
                 let s = try HitStore(context: DriftApp.container.mainContext)
                 PrototypeMigration.runIfNeeded(s)
+                // Existing-hits skip: users restoring from backup or upgrading
+                // from a pre-onboarding build already have data and aren't new
+                // users — flip the flag so they go straight to the dashboard.
+                let defaults = UserDefaults.standard
+                if !s.hits.isEmpty && !defaults.bool(forKey: driftOnboardingCompleteKey) {
+                    defaults.set(true, forKey: driftOnboardingCompleteKey)
+                }
                 DriftApp.sharedStore = s
                 return s
             } catch {
@@ -44,9 +51,24 @@ struct DriftApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
                 .environment(store)
         }
         .modelContainer(DriftApp.container)
+    }
+}
+
+/// Gates between onboarding and the dashboard. Reads the persisted flag via
+/// `@AppStorage` so flipping it (from the conclusion card or a settings reset)
+/// triggers an automatic swap.
+private struct RootView: View {
+    @AppStorage(driftOnboardingCompleteKey) private var onboardingComplete: Bool = false
+
+    var body: some View {
+        if onboardingComplete {
+            ContentView()
+        } else {
+            OnboardingView()
+        }
     }
 }

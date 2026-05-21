@@ -38,7 +38,7 @@ Full policy: [Privacy.md](Privacy.md).
 Native iOS rebuild is feature-complete for v1's core; the Scriptable prototype is still in daily personal use as the system continues to bake. What's left before App Store submission:
 
 - Empty-state polish for the home dashboard
-- A single-screen first-launch intro (Action Button setup walkthrough)
+- First-time user experience — shape TBD; the Action Button binding is the highest-leverage thing it needs to teach
 - iCloud sync toggle
 - Polish punch list: sparkle-field render performance at high ratio, the add-hit sheet's visual treatment, the icon's Tinted appearance variant
 - App Store metadata, screenshots, TestFlight, submission

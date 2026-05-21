@@ -10,15 +10,25 @@ Polish layer. Pre-launch.
 
 > **Implementation status:** Settings tab + Behavior, Notifications, About, Reset, and Export rows are in. App icon is in (Drift.icon Icon Composer bundle dropped into the Xcode target, App Icon build setting set to `Drift`). iCloud sync toggle and the first-launch experience still remain.
 
-## First-launch experience
+## Onboarding
 
-The earlier plan grew into a multi-screen pager (welcome → Action Button setup → widget → notifications permission → privacy → tip jar → hand-off). That was pulled back — it added scope and friction for what's fundamentally a quiet app. The current direction is much lighter:
+First-time UX is in scope for v1. **The previous attempt — a 7-step pager (welcome → Action Button setup → widget → notifications → privacy → tip jar → hand-off) — is ruled out.** It felt like a checkpoint maze for a quiet app and added friction up front, which is exactly the tone we're avoiding. Don't reintroduce that shape.
 
-- Lean on the **dashboard empty state** as the first-launch surface — a centered spirit, the "drift" wordmark, and a single line of copy telling the user how to log their first hit. No pager, no skipping through screens.
-- The Action Button is still the highest-leverage logging surface, but instead of an animated walkthrough we expose it via a "Set up the Action Button" row inside Settings that links directly into the iOS Settings → Action Button page (or shows brief instructions if deep-linking isn't possible).
-- Notifications permission is requested lazily — the first time `NotificationScheduler` actually tries to schedule one, not at launch.
+What still needs to land:
 
-Not v1: the persisted `drift.onboarding.complete` flag, multi-screen flows, animated walkthroughs.
+- A first-time experience that feels like a continuation of the app's voice — quiet, gentle, present-tense. Not a wizard.
+- The **Action Button binding** is the single highest-leverage thing onboarding must do: users who don't bind it don't log via the path the app is designed around. The first attempt's animated iOS Settings walkthrough was the right idea on the wrong surface.
+- **Notifications permission** should be requested at a moment that justifies it (e.g. right after the user logs their first hit, when the value of "we'll celebrate the gap" is concrete), not at first launch.
+- **Privacy + tip jar** still need surfaces somewhere — they were screens in the pager but could just as well live as Settings rows the first-time user is gently pointed to.
+
+Design direction TBD. Constraints / smells to avoid based on the previous attempt:
+
+- **Pager-style step counters** ("1 of 7") feel like a setup checklist; they fight the tone.
+- **Modal overlays that block the dashboard** are heavier than the moment usually warrants.
+- **Multiple skip buttons** add cognitive load even when each one is individually friendly.
+- The app's empty state already does *some* of this work — whatever the new shape is, it should compose with that, not replace or duplicate it.
+
+A persisted `drift.onboarding.complete` flag is still the right gating mechanism whatever the shape ends up being.
 
 ## Settings screen
 

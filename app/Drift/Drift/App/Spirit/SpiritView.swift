@@ -38,17 +38,15 @@ struct SpiritView: View {
             .frame(width: 96, height: 96)
         }
         .onChange(of: lastSessionEnd) { oldValue, newValue in
-            // Only animate when the anchor moves forward (reset / new event).
-            // Edits to past hits shouldn't trigger the smooth-decay.
-            guard !reduceMotion,
-                  let old = oldValue,
-                  let new = newValue,
-                  new > old else {
-                return
-            }
+            // Trigger on either a forward jump (anchor moved later — hit
+            // logged) or anchor cleared. Both read as "reset to baseline."
+            // Backward edits (e.g. editing a hit to be earlier) shouldn't.
+            guard !reduceMotion, let old = oldValue else { return }
+            if let new = newValue, new <= old { return }
             let avg = wakingAvgSec ?? 0
-            preSnapRatio = avg > 0 ? new.timeIntervalSince(old) / avg : 0
-            snapStartedAt = .now
+            let now = Date.now
+            preSnapRatio = avg > 0 ? now.timeIntervalSince(old) / avg : 0
+            snapStartedAt = now
         }
     }
 }

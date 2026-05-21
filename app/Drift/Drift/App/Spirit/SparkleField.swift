@@ -64,15 +64,12 @@ struct SparkleField: View {
         .ignoresSafeArea()
         .allowsHitTesting(false)
         .onChange(of: lastSessionEnd) { oldValue, newValue in
-            guard !reduceMotion,
-                  let old = oldValue,
-                  let new = newValue,
-                  new > old else {
-                return
-            }
+            guard !reduceMotion, let old = oldValue else { return }
+            if let new = newValue, new <= old { return }
             let avg = wakingAvgSec ?? 0
-            preSnapRatio = avg > 0 ? new.timeIntervalSince(old) / avg : 0
-            snapStartedAt = .now
+            let now = Date.now
+            preSnapRatio = avg > 0 ? now.timeIntervalSince(old) / avg : 0
+            snapStartedAt = now
         }
     }
 

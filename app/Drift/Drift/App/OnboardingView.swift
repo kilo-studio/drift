@@ -1,20 +1,25 @@
 import SwiftUI
 import UIKit
 
-/// First-launch carousel. Seven cards, each doing real work — set a preference,
-/// request a permission, or show a working preview — rather than narrating at
-/// the user. The spirit floats at the top of every card so the character is
-/// present from second one. Spec: `Issues/12 — Onboarding, settings, app icon.md`.
+/// First-launch carousel. Each card does real work — sets a preference, requests
+/// a permission, or shows a working preview — rather than narrating at the user.
+/// The cloud spirit floats at the top of every card so the character is present
+/// from second one. Spec: `Issues/12 — Onboarding, settings, app icon.md`.
 struct OnboardingView: View {
     @Environment(HitStore.self) private var store
     @AppStorage(driftOnboardingCompleteKey) private var complete: Bool = false
 
     @State private var page: Int = 0
 
-    private let totalPages = 7
+    /// 9 slides: intro, sessions, sleep, notifications, action button, control
+    /// center, shortcuts, spirit, conclusion. Page indices below assume this
+    /// order — keep `spiritPreviewPage` in sync when reordering.
+    private let totalPages = 9
+    private let spiritPreviewPage = 7
+
     private let spiritSize: CGFloat = 96
     /// Synthetic average used to drive both the resting top-spirit ratio and
-    /// the card-6 animation. 1 hour reads as a believable typical gap.
+    /// the spirit-preview animation. One hour reads as a believable typical gap.
     private let demoAvgSec: TimeInterval = 3600
 
     var body: some View {
@@ -22,15 +27,19 @@ struct OnboardingView: View {
             Color.driftSkyLowerMid.ignoresSafeArea()
             AmbientLayer()
 
-            // Sparkles only during the meet-the-spirit card. Anchored near the
-            // top spirit so the halo grows out from where the user's looking.
-            if page == 5 {
-                SparkleField(
-                    lastSessionEnd: Date.now.addingTimeInterval(-currentDemoRatio * demoAvgSec),
-                    wakingAvgSec: demoAvgSec,
-                    layer: .back,
-                    spiritPercent: CGPoint(x: 50, y: 14)
-                )
+            // Sparkles only during the meet-the-spirit card. Inputs driven by
+            // TimelineView so the sparkles actually animate in / out as the
+            // demo ratio cycles.
+            if page == spiritPreviewPage {
+                TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { ctx in
+                    let ratio = demoRatio(at: ctx.date)
+                    SparkleField(
+                        lastSessionEnd: ctx.date.addingTimeInterval(-ratio * demoAvgSec),
+                        wakingAvgSec: demoAvgSec,
+                        layer: .back,
+                        spiritPercent: CGPoint(x: 50, y: 14)
+                    )
+                }
                 .ignoresSafeArea()
                 .transition(.opacity.animation(.easeInOut(duration: 0.4)))
             }
@@ -39,16 +48,18 @@ struct OnboardingView: View {
                 topSpirit
                     .frame(width: spiritSize, height: spiritSize)
                     .padding(.top, 60)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 24)
 
                 TabView(selection: $page) {
                     IntroCard().tag(0)
                     SessionsCard(store: store).tag(1)
                     SleepCard(store: store).tag(2)
                     NotificationsCard(store: store).tag(3)
-                    LoggingCard().tag(4)
-                    SpiritPreviewCard().tag(5)
-                    ConclusionCard().tag(6)
+                    ActionButtonCard().tag(4)
+                    ControlCenterCard().tag(5)
+                    ShortcutsCard().tag(6)
+                    SpiritPreviewCard().tag(7)
+                    ConclusionCard().tag(8)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 .frame(maxHeight: .infinity)
@@ -66,24 +77,27 @@ struct OnboardingView: View {
 
     // MARK: - Top spirit
 
-    /// Top spirit. Static at a moderate ratio on most cards; animated through a
-    /// range during card 5 so the meet-the-spirit preview is what the user is
-    /// actually looking at (not a separate inset preview).
+    /// Top spirit. During the spirit-preview card it animates through a cosine-
+    /// eased ratio range; on other cards it sits at a moderate ratio so the
+    /// character is alive but not celebrating yet.
+    ///
+    /// Synthetic `longestWakingGapSec` and `longestGapSec` are non-zero on the
+    /// preview card so the cheek-color thresholds (waking-record → peach,
+    /// overall-record → coral) actually get crossed during the cycle — without
+    /// them the cheeks stay flat at the base color.
     @ViewBuilder
     private var topSpirit: some View {
-        if page == 5 {
+        if page == spiritPreviewPage {
             TimelineView(.animation) { ctx in
                 let ratio = demoRatio(at: ctx.date)
                 SpiritView(
                     lastSessionEnd: ctx.date.addingTimeInterval(-ratio * demoAvgSec),
                     wakingAvgSec: demoAvgSec,
-                    longestWakingGapSec: 0,
-                    longestGapSec: 0
+                    longestWakingGapSec: demoAvgSec * 2,
+                    longestGapSec: demoAvgSec * 3.5
                 )
             }
         } else {
-            // Watching-but-resting baseline — ratio ~1.5 so eyes have a small
-            // amount of growth, signaling "alive and present" without celebration.
             SpiritView(
                 lastSessionEnd: Date.now.addingTimeInterval(-1.5 * demoAvgSec),
                 wakingAvgSec: demoAvgSec,
@@ -93,20 +107,15 @@ struct OnboardingView: View {
         }
     }
 
-    /// Cosine-eased loop between ratio 0.3 and 5 over 8s. Smooth at the
-    /// boundaries so the spirit doesn't snap back.
+    /// Cosine-eased loop between ratio 0.3 and 5 over 12s. Slow enough that the
+    /// viewer can register each stage of the spirit's mood; cosine boundaries
+    /// avoid the snap-decay reset that linear cycling would trigger.
     private func demoRatio(at date: Date) -> Double {
+        let cycleSec: Double = 12
         let cyclePos = date.timeIntervalSinceReferenceDate
-            .truncatingRemainder(dividingBy: 8) / 8
+            .truncatingRemainder(dividingBy: cycleSec) / cycleSec
         let t = (1 - cos(cyclePos * .pi * 2)) / 2
         return 0.3 + (5 - 0.3) * t
-    }
-
-    /// Snapshot of the current demo ratio — used for the sparkle field's input
-    /// outside the TimelineView. Not exact-per-frame, but the SparkleField's
-    /// own TimelineView re-reads on every frame so this stays smooth enough.
-    private var currentDemoRatio: Double {
-        demoRatio(at: Date.now)
     }
 
     // MARK: - CTA + dots
@@ -141,7 +150,7 @@ struct OnboardingView: View {
     private var ctaLabel: String {
         switch page {
         case 0: return "let's go"
-        case totalPages - 1: return "happy drifting"
+        case totalPages - 1: return "start drifting"
         default: return "next"
         }
     }
@@ -161,17 +170,31 @@ struct OnboardingView: View {
 
 private struct IntroCard: View {
     var body: some View {
-        OnboardingCardChrome(title: "drift") {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Drift helps you notice the gaps between hits and gently reduce them over time.")
-                    .font(.driftRowLabel)
+        OnboardingCardChrome {
+            VStack(spacing: 24) {
+                Text.caveat("drift")
+                    .font(.custom("Caveat", size: 64).weight(.semibold))
                     .foregroundStyle(.driftInk)
-                Text("No streaks. No shame. No nagging. Just a quiet, present-tense view of what's actually happening — and a cloud spirit that grows brighter the longer it's been.")
-                    .font(.driftRowDescription)
-                    .foregroundStyle(.driftInkSoft)
+
+                Text("helps you vape less, gently")
+                    .font(.onboardingTitle)
+                    .foregroundStyle(.driftInk)
+                    .multilineTextAlignment(.center)
+
+                VStack(spacing: 10) {
+                    factLine("data stays on your device")
+                    factLine("no ads, no tracking")
+                    factLine("completely free")
+                }
+                .padding(.top, 12)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private func factLine(_ text: String) -> some View {
+        Text(text)
+            .font(.driftRowLabel)
+            .foregroundStyle(.driftInkSoft)
     }
 }
 
@@ -181,11 +204,12 @@ private struct SessionsCard: View {
     private static let thresholdOptions: [TimeInterval] = [60, 180, 300, 600, 900, 1800]
 
     var body: some View {
-        OnboardingCardChrome(title: "how should drift count?") {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Most people take a few quick hits in a row, then go a while. Drift can group rapid hits into a single \"session\" so the gaps you see reflect the time *between* episodes, not between every puff.")
-                    .font(.driftRowDescription)
-                    .foregroundStyle(.driftInkSoft)
+        OnboardingCardChrome {
+            VStack(spacing: 24) {
+                Text("how should drift count?")
+                    .font(.onboardingTitle)
+                    .foregroundStyle(.driftInk)
+                    .multilineTextAlignment(.center)
 
                 VStack(spacing: 0) {
                     SettingsToggleRow(
@@ -221,16 +245,22 @@ private struct SleepCard: View {
     private static let hourOptions: [Int] = Array(0...23)
 
     var body: some View {
-        OnboardingCardChrome(title: "when do you sleep?") {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Drift tracks two record gaps: your longest *overall* (counting overnight) and your longest *waking* gap. Most overnight gaps don't feel like progress, so the waking record is usually the more meaningful one.")
+        OnboardingCardChrome {
+            VStack(spacing: 24) {
+                Text("when do you sleep?")
+                    .font(.onboardingTitle)
+                    .foregroundStyle(.driftInk)
+                    .multilineTextAlignment(.center)
+
+                Text("Hits before your wake hour roll into the previous day's stats. Drift also won't send notifications during your sleep window.")
                     .font(.driftRowDescription)
                     .foregroundStyle(.driftInkSoft)
+                    .multilineTextAlignment(.center)
 
                 VStack(spacing: 0) {
                     SettingsPickerRow(
                         label: "bedtime",
-                        description: "Notifications soften their tone after this hour.",
+                        description: "Notifications pause after this hour.",
                         selection: $store.sleepStartHour,
                         options: Self.hourOptions,
                         formatted: { formatHour($0) }
@@ -238,7 +268,7 @@ private struct SleepCard: View {
                     SettingsDivider()
                     SettingsPickerRow(
                         label: "wake up",
-                        description: "Hits before this hour roll into the previous day's stats.",
+                        description: "Hits before this hour roll into the previous day.",
                         selection: $store.sleepEndHour,
                         options: Self.hourOptions,
                         formatted: { formatHour($0) }
@@ -261,16 +291,17 @@ private struct NotificationsCard: View {
     @Bindable var store: HitStore
 
     var body: some View {
-        OnboardingCardChrome(title: "notifications") {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Optional, local-only. Three kinds: a confirmation when you log, a gentle nudge when you pass your average gap, and a celebration when you beat your record. Drift hedges its tone overnight, so it won't praise you for being asleep.")
-                    .font(.driftRowDescription)
-                    .foregroundStyle(.driftInkSoft)
+        OnboardingCardChrome {
+            VStack(spacing: 24) {
+                Text("notifications")
+                    .font(.onboardingTitle)
+                    .foregroundStyle(.driftInk)
+                    .multilineTextAlignment(.center)
 
                 VStack(spacing: 0) {
                     SettingsToggleRow(
                         label: "notifications",
-                        description: "Master switch. Drift will request permission the first time you turn this on.",
+                        description: "Master switch. Drift will ask permission the first time you turn this on.",
                         isOn: $store.notifsEnabled
                     )
                     if store.notifsEnabled {
@@ -310,40 +341,73 @@ private struct NotificationsCard: View {
     }
 }
 
-private struct LoggingCard: View {
+private struct ActionButtonCard: View {
     var body: some View {
-        OnboardingCardChrome(title: "logging a hit") {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Tap the **+** tab on the home screen any time you take a hit. Drift records the time and updates everything.")
+        OnboardingCardChrome {
+            VStack(spacing: 24) {
+                Text("the action button")
+                    .font(.onboardingTitle)
+                    .foregroundStyle(.driftInk)
+                    .multilineTextAlignment(.center)
+
+                Text("Bind \"Log a hit in Drift\" to your iPhone's side button for instant logging — even from the lock screen.")
                     .font(.driftRowDescription)
                     .foregroundStyle(.driftInkSoft)
+                    .multilineTextAlignment(.center)
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("for instant logging")
-                        .font(.driftRowLabel)
-                        .foregroundStyle(.driftInk)
-                    Text("Bind \"Log a hit in Drift\" to the **iOS Action Button** — that's the side button on iPhone 15 Pro and later. From iOS Settings → Action Button → Choose Shortcut → search \"Log a hit\".")
-                        .font(.driftRowDescription)
-                        .foregroundStyle(.driftInkSoft)
-
-                    Button {
-                        if let url = URL(string: UIApplication.openSettingsURLString) {
-                            UIApplication.shared.open(url)
-                        }
-                    } label: {
-                        Text("open settings")
-                            .font(.driftRowLabel)
-                            .foregroundStyle(.driftCoral)
+                OnboardingActionButton(label: "open iOS settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.top, 4)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .driftCard()
+            }
+        }
+    }
+}
 
-                Text("You can also add \"Log a hit in Drift\" as a Control Center tile (iOS Settings → Control Center → search Drift) or run it from the Shortcuts app.")
+private struct ControlCenterCard: View {
+    var body: some View {
+        OnboardingCardChrome {
+            VStack(spacing: 24) {
+                Text("control center")
+                    .font(.onboardingTitle)
+                    .foregroundStyle(.driftInk)
+                    .multilineTextAlignment(.center)
+
+                Text("Add Drift to Control Center as an Open-App tile so logging is one swipe away. Settings → Control Center → +.")
                     .font(.driftRowDescription)
                     .foregroundStyle(.driftInkSoft)
+                    .multilineTextAlignment(.center)
+
+                OnboardingActionButton(label: "open iOS settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct ShortcutsCard: View {
+    var body: some View {
+        OnboardingCardChrome {
+            VStack(spacing: 24) {
+                Text("shortcuts")
+                    .font(.onboardingTitle)
+                    .foregroundStyle(.driftInk)
+                    .multilineTextAlignment(.center)
+
+                Text("Drift is already in the Shortcuts app — search \"Log a hit in Drift\" to use it from Siri, the lock screen, or a home screen widget.")
+                    .font(.driftRowDescription)
+                    .foregroundStyle(.driftInkSoft)
+                    .multilineTextAlignment(.center)
+
+                OnboardingActionButton(label: "open shortcuts") {
+                    if let url = URL(string: "shortcuts://") {
+                        UIApplication.shared.open(url)
+                    }
+                }
             }
         }
     }
@@ -351,59 +415,91 @@ private struct LoggingCard: View {
 
 private struct SpiritPreviewCard: View {
     var body: some View {
-        OnboardingCardChrome(title: "meet the spirit") {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("The longer it's been since your last hit, the bigger the cloud spirit's eyes get. Past your rolling-average gap, the sky starts filling with sparkles.")
-                    .font(.driftRowLabel)
-                    .foregroundStyle(.driftInk)
-                Text("Watch the spirit above — it's drifting through the range right now. The sparkles arrive when you've gone longer than usual. No counters, no scoring; just a present-tense picture of where you are.")
-                    .font(.driftRowDescription)
-                    .foregroundStyle(.driftInkSoft)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+        OnboardingCardChrome {
+            Text("the longer past your average gap between hits or sessions, the happier your spirit gets")
+                .font(.onboardingTitle)
+                .foregroundStyle(.driftInk)
+                .multilineTextAlignment(.center)
         }
     }
 }
 
 private struct ConclusionCard: View {
+    /// Tip-jar destination. Swap to the real Buy Me a Coffee URL once the page
+    /// is live; this placeholder reads OK in the meantime.
+    private let tipJarURL = URL(string: "https://buymeacoffee.com/griffinmullins")!
+
     var body: some View {
-        OnboardingCardChrome(title: "happy drifting") {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("You can change any of these choices anytime in Settings.")
-                    .font(.driftRowLabel)
+        OnboardingCardChrome {
+            VStack(spacing: 24) {
+                Text("you're all set")
+                    .font(.onboardingTitle)
                     .foregroundStyle(.driftInk)
-                Text("Everything stays on your device. Drift is free and ad-free — if you'd like to support it, there's a row in Settings → About when you're ready.")
+                    .multilineTextAlignment(.center)
+
+                Text("Change any of these in Settings anytime.")
                     .font(.driftRowDescription)
                     .foregroundStyle(.driftInkSoft)
+                    .multilineTextAlignment(.center)
+
+                OnboardingActionButton(label: "buy me a coffee") {
+                    UIApplication.shared.open(tipJarURL)
+                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }
 
-// MARK: - Shared card chrome
+// MARK: - Shared chrome
 
-/// Shared layout for every onboarding card: Caveat title at top, content
-/// below, breathing room around. Horizontal padding matches the rest of the
-/// app's surfaces.
+/// Shared layout for every onboarding card: content centered in a scroll
+/// container so long settings stacks remain reachable on small devices, with
+/// uniform horizontal padding to keep titles centered without clipping.
 private struct OnboardingCardChrome<Content: View>: View {
-    let title: String
     @ViewBuilder let content: () -> Content
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
-                Text.caveat(title)
-                    .font(.driftHeroLabel)
-                    .foregroundStyle(.driftInk)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(spacing: 0) {
                 content()
+                    .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
     }
+}
+
+/// Secondary action button inside an onboarding card. Visually quieter than
+/// the bottom CTA — soft material capsule, ink-colored label — so the bottom
+/// "next" / "start drifting" stays the primary path.
+private struct OnboardingActionButton: View {
+    let label: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(.driftRowLabel)
+                .foregroundStyle(.driftInk)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background {
+                    Capsule().fill(.ultraThinMaterial)
+                }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Typography
+
+extension Font {
+    /// Large onboarding header. Quicksand SemiBold so it's clearly readable
+    /// and doesn't compete with the "drift" wordmark for "handwritten" energy
+    /// — that face is reserved for the brand mark itself in this flow.
+    static let onboardingTitle = Font.custom("Quicksand-SemiBold", size: 28)
 }
 
 // MARK: - UserDefaults key

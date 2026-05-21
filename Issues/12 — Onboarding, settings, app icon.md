@@ -12,23 +12,46 @@ Polish layer. Pre-launch.
 
 ## Onboarding
 
-First-time UX is in scope for v1. **The previous attempt — a 7-step pager (welcome → Action Button setup → widget → notifications → privacy → tip jar → hand-off) — is ruled out.** It felt like a checkpoint maze for a quiet app and added friction up front, which is exactly the tone we're avoiding. Don't reintroduce that shape.
+First-time UX is in scope for v1.
 
-What still needs to land:
+**Previous attempt — ruled out.** A 7-step narrative pager (welcome → Action Button → widget → notifications → privacy → tip jar → hand-off) that mostly read text at the user. Pager step counters, modal overlays, multiple skip buttons. Felt like a checkpoint maze for a quiet app. Don't reintroduce that shape.
 
-- A first-time experience that feels like a continuation of the app's voice — quiet, gentle, present-tense. Not a wizard.
-- The **Action Button binding** is the single highest-leverage thing onboarding must do: users who don't bind it don't log via the path the app is designed around. The first attempt's animated iOS Settings walkthrough was the right idea on the wrong surface.
-- **Notifications permission** should be requested at a moment that justifies it (e.g. right after the user logs their first hit, when the value of "we'll celebrate the gap" is concrete), not at first launch.
-- **Privacy + tip jar** still need surfaces somewhere — they were screens in the pager but could just as well live as Settings rows the first-time user is gently pointed to.
+### Direction
 
-Design direction TBD. Constraints / smells to avoid based on the previous attempt:
+**Functional onboarding via a carousel of cards** — each card does real work (sets a preference, requests a permission, shows a working preview), not just narrates. The spirit floats at the top of every card so the character is present from second one.
 
-- **Pager-style step counters** ("1 of 7") feel like a setup checklist; they fight the tone.
-- **Modal overlays that block the dashboard** are heavier than the moment usually warrants.
-- **Multiple skip buttons** add cognitive load even when each one is individually friendly.
-- The app's empty state already does *some* of this work — whatever the new shape is, it should compose with that, not replace or duplicate it.
+Each card's setting writes to UserDefaults immediately, so by the time the user reaches the final card the app is configured the way they wanted. Every choice is also reachable from Settings later (use a "you can change this anytime in Settings" note to lower the stakes of each card).
 
-A persisted `drift.onboarding.complete` flag is still the right gating mechanism whatever the shape ends up being.
+### Card sequence
+
+1. **Intro.** Purpose of the app in one paragraph: "Drift helps you notice the gaps between hits and gently reduce them over time. No streaks, no shame — just a present-tense view of what's actually happening." Spirit at top, "drift" wordmark, single "let's go" CTA.
+
+2. **Sessions vs hits.** "How do you want Drift to count?" Briefly explain that rapid hits often happen as a session, and Drift can group them. Inline `useSessions` toggle and, when on, the session-threshold picker (same control as Settings → Behavior → Use sessions). Default: sessions on, 5-minute threshold.
+
+3. **Sleep window.** Explain the waking-gap concept — "Drift tracks both your longest overall gap and your longest *waking* gap, since most overnight gaps don't really feel like progress." Inline bedtime + wake-up hour pickers. Default: 23 / 6.
+
+4. **Notifications.** Explain the three types in one short paragraph each (immediate confirmation, beating-your-average, beating-your-record) and the overnight hedge in one line. Master toggle to request the system permission; if approved, expose the three per-type toggles. Default suggestion: all three on.
+
+5. **Logging a hit.** Explain that one tap or one Action Button press logs a hit, and the app updates everything. Show **how to bind the Action Button to "Log a hit in Drift"** — ideally with a button that deep-links into iOS Settings → Action Button. If the deep link isn't reliably available, fall back to a clear screenshot/illustration of the path through Settings. Secondary: an "add a Control Center shortcut" suggestion (the iOS 18+ Control Center custom controls picker) and "or run from Shortcuts" mention.
+
+6. **Meet the spirit.** A working mini-preview, not a description. The spirit + a small sparkle field render in the card; a slider or auto-advancing animation walks through ratio states from baseline-sad → wide-eyed → fully revealed with sparkles. Caption explains the rule once: "the longer it's been since your last hit, the bigger the spirit's eyes get and the more sparkles fill the sky." No numbers, no thresholds.
+
+7. **Conclusion.** "Happy drifting." Closes the carousel, sets `drift.onboarding.complete`, drops the user on Home.
+
+### Implementation considerations
+
+- **Carousel container:** SwiftUI `TabView(.page)` with hidden index dots and a custom progress indicator that matches the app's tone (a soft dot row, not "1 of 7"). Forward swipe always available; backward swipe optional.
+- **Spirit at top:** the existing `SpiritView` can live in the onboarding container, sized smaller than home (~120pt), with its `ratio` driven either by a static value per card or — on card 6 — animated through a range.
+- **Gating:** `@AppStorage("drift.onboarding.complete")` flag, default false. `DriftApp` shows `OnboardingView` until set. Existing installs with logged hits get the flag flipped true on first launch of the new build so they don't re-onboard.
+- **Action Button deep link:** iOS has historically gated direct deep links to Settings pages (`App-prefs:` URL schemes are unreliable on recent iOS). Implement the deep-link button, but design the card to work without it (clear written/illustrated path through Settings).
+- **Notifications permission:** request via `UNUserNotificationCenter.requestAuthorization` only when the user toggles the master switch on card 4 — not at app launch, not before they've seen what the notifications do.
+- **Reset for testing:** the existing Settings → Data → Reset all data should also clear `drift.onboarding.complete` so a reset re-runs onboarding. (Confirm this is the current behavior — `HitStore.resetEverything` may need a small change.)
+
+### Open questions
+
+- Should each card have a "skip" affordance, or do we trust that defaults are good enough and just let the user swipe through quickly? Lean: no skip on individual cards — every card has a working default — but a single subtle "skip setup" link in the corner on card 2 onward (jumps straight to card 7) is worth considering for the user who already knows what they want.
+- Privacy + tip jar — leave out of the carousel entirely (Settings → About handles both) or insert a privacy line somewhere in the conclusion card?
+- For users restoring from a backup with existing hits, do they re-onboard or skip to the dashboard? Lean: skip — existing data means they're not a new user. Flip `drift.onboarding.complete = true` if hits already exist on first launch of this build.
 
 ## Settings screen
 

@@ -6,7 +6,7 @@ A small, gentle iOS app for noticing the gaps between hits. It rewards time spen
 
 ## What Drift is not
 
-- Not a quit-app. No shame, no daily targets, no failure-resetting streaks. Achievements that only grow (personal records, cumulative time drifted, milestone unlocks) are different and welcome — see [[Issues/15 — Achievement system]]. A counter that drops to zero on a bad day is the thing being avoided.
+- Not a quit-app. No shame, no daily targets, no failure-resetting streaks. A counter that drops to zero on a bad day is the thing being avoided.
 - Not a tracker that asks you to journal triggers or feelings.
 - Not a quantified-self dashboard. The numbers are there but the spirit is the headline.
 - Not social. No accounts, no sharing, no leaderboards.
@@ -21,12 +21,11 @@ All data lives on-device by default. Optional iCloud sync via CloudKit (your iCl
 
 The hero is "free for X." Everything else — the spirit's expression, sparkle density, color of the timer — is a derivative of that one quantity. The user shouldn't have to interpret a dashboard to feel how they're doing.
 
-### Streaks, achievements, visualization — three different things
+### Streaks vs visualization — drawing the line
 
-Three concepts that look similar from outside but are different in kind. Drift draws a sharp line between them.
+Two concepts that look similar from outside but are different in kind. Drift draws a sharp line:
 
 - **Streaks** describe your behavior over time and *judge* it. A counter that drops to zero on a bad day implicitly frames that day as a failure. ❌ Out.
-- **Achievements** describe your behavior over time and *only celebrate* it. Personal records that ratchet, milestones that unlock and stay, cumulative counters that only grow. ✅ In. See [[Issues/15 — Achievement system]].
 - **Visualization** describes a *present-moment quantity*, neutrally. The cloud spirit is `ratio = ms / avgMs` drawn as a creature with feelings. When the eyes shrink after a hit, nothing was "lost" — the variable being measured just changed value, the way a clock face changes when time passes. ✅ Always fine.
 
 The cleanest test: **a streak describes *you*; the spirit describes *time*.** The spirit isn't a streak even though it visibly grows and shrinks. It's not narrating your behavior at all — it's a clock with feelings.
@@ -37,7 +36,7 @@ Why streaks specifically are the failure mode being avoided:
 - They bias toward dishonest logging — users skip hits to preserve the streak, polluting the data.
 - They frame data as morality. A hit becomes a "failure" instead of a thing that happened.
 
-Achievements that only grow have none of these failure modes. The spirit, since it's not narrating behavior at all, has none either. So both fit alongside each other without contradiction.
+There was a third concept on this list at one point — **achievements** (personal records that ratchet, milestone unlocks, cumulative counters that only grow). The thinking was that since they only grow, they don't have the failure-mode of streaks. An achievement system was actually built and shipped briefly before being pulled. Why: the spirit already does the visualization in real time (a "longest waking gap" record and the spirit's gold-halo milestone are the same fact surfaced twice), and the "earn this badge" tone tugs the app away from the gentleness it's built around. The decision: visualization is enough. See [[Issues/15 — Achievement system]] for the postmortem.
 
 ### Honest celebrations
 

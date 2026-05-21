@@ -1,12 +1,32 @@
 ---
-status: doing
-priority: low
-tags: [feature, dashboard, v1.x]
+status: removed
+priority: none
+tags: [feature, dashboard, removed]
 ---
 
-# Achievement system
+# Achievement system — REMOVED
 
-> **Implementation status:** Initial cut shipped. SwiftData models (`AchievementState`,
+> **Final status:** Built and removed. The full system shipped briefly —
+> `AchievementState` + `MilestoneUnlock` SwiftData models, an `AchievementID`
+> catalog, an evaluation engine that ran after every append/edit/delete + on
+> launch, and an Achievements tab between History and Settings — and then was
+> pulled back out. Why:
+>
+> 1. The spirit already does the visualization. A ratchet record (e.g. "longest
+>    waking gap = 4h 12m") and a spirit gold-halo milestone are the same fact
+>    surfaced twice. The spirit wins on immediacy.
+> 2. "Earn this badge" tonally fought the "no streak, no nag" philosophy this
+>    whole app is built around. Visualization is neutral; achievements judge.
+> 3. Every metric needed parallel tracking (lowest 7-day avg, lowest rolling
+>    avg, most consecutive solo sessions, total time drifted…) inside a model
+>    that touched every store mutation. The complexity didn't change what the
+>    user actually felt.
+>
+> The original spec is preserved below for context. **Don't reintroduce it
+> without first solving the philosophical tension above.**
+>
+> Original implementation status (preserved for reference):
+> Initial cut shipped. SwiftData models (`AchievementState`,
 > `MilestoneUnlock`), the `AchievementID` catalog, and an evaluation engine that
 > runs after every append/edit/delete and on launch are in. Achievements tab lives
 > between History and Settings in the bottom bar (`rosette` glyph). View groups

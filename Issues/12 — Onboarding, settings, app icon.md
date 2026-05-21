@@ -9,20 +9,22 @@ tags: [polish]
 Polish layer. Pre-launch.
 
 > **Implementation status:** Settings tab + Behavior, Notifications, About, and Reset
-> rows are in. iCloud sync, onboarding, and the app icon remain — those are phase 6
-> of the build sequence and the only blockers between this issue and Issue 13 (App
-> Store submission).
+> rows are in. App icon is in (Drift.icon Icon Composer bundle dropped into the
+> Xcode target, App Icon build setting set to `Drift`). iCloud sync and the
+> onboarding flow remain.
 
 ## Onboarding
 
-A single screen on first launch:
+**Scope grew during planning.** The original single-screen spec wasn't enough — the highest-leverage thing onboarding has to do is teach users how to bind "Log a hit" to the iOS Action Button, because users who don't bind it don't actually log. So onboarding becomes a multi-screen pager:
 
-1. **The hero**: a static spirit at low ratio, small "Drift" wordmark, subtitle: "Notice the gaps."
-2. **One paragraph**: what it does. "Tap once to log a hit. Drift shows you the time between, the average, and your records. The cloud spirit gets happier the longer you've gone." Or similar — keep it human.
-3. **Privacy line**: "Everything stays on your device. iCloud sync is off by default."
-4. **Two buttons**: "Enable notifications" (requests permission), "Get started" (skip notifications, can enable later in settings).
+1. **Welcome**: spirit hero, "Drift" wordmark, one-paragraph what-it-is.
+2. **Action Button setup**: animated walkthrough showing how to bind "Log a hit" in iOS Settings → Action Button. This is the critical screen. Show the actual iOS Settings UI as illustration with arrows / highlights. Include a "Skip — I'll set this up later" affordance.
+3. **Widget (optional)**: a one-pager explaining the Drift home-screen widget and how to add it. Skippable.
+4. **Notifications**: explains the three notification types in one paragraph, then "Enable notifications" / "Not now."
+5. **Privacy line**: "Everything stays on your device. iCloud sync is off by default."
+6. **Hand-off**: "Tap the + tab when you take a hit. Drift takes it from there." Drops the user on an empty-state home (see follow-up: dashboard empty state).
 
-Skip onboarding entirely on subsequent launches.
+A persisted `drift.onboarding.complete` UserDefaults flag gates the flow. Skipped entirely on subsequent launches.
 
 ## Settings screen
 
@@ -62,13 +64,12 @@ Skip onboarding entirely on subsequent launches.
 
 ## App icon
 
-- [ ] Design icon: stylized cloud spirit on warm cream / sky-blue background. Soft, recognizable at 60×60.
-- [ ] Tinted icon variant (iOS 18) — monochrome silhouette
-- [ ] Dark icon variant — same spirit on a deep-blue night sky maybe
-- [ ] All 14 required sizes via Asset Catalog
+- [x] Design icon: stylized cloud spirit on warm cream / sky-blue background. Soft, recognizable at 60×60.
+- [x] Authored in Icon Composer as a `Drift.icon` bundle (single source, all variants generated from it — including tinted and dark)
+- [x] Dropped into the Xcode target at the project root (alongside `DriftApp.swift`); App Icon build setting points to `Drift`
+- [x] Replaces the old `AppIcon.appiconset` (Xcode 16+ prefers the `.icon` file when both exist)
 
 ## Out of scope
 
 - Multiple themes (just the Ghibli sky)
-- Custom app icons
-- Tutorial / hand-holding beyond the one onboarding screen
+- Custom (user-selectable) app icons

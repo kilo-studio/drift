@@ -6,12 +6,12 @@ A small, beautiful iOS app that helps you notice the gaps. Currently a Scriptabl
 
 ## Status
 
-Prototype still in daily personal use. Native iOS rebuild well underway: dashboard, spirit, sparkles, logging via App Intent, notifications, ambient cloud/star layer, dark mode, the prototype-data migration, hit history with calendar + edit/delete, four-tab nav (home / history / settings / +) with a scroll-minimizing bottom bar, and the settings tab itself (use-sessions toggle, session threshold, rolling window, sleep window, notification master + per-type toggles + timing offsets, reset, about) are all in. What's left before submission: iCloud sync + onboarding + app icon (the rest of Issue 12), milestone glows (Issue 14), privacy doc (Issue 02), and App Store metadata (Issue 13). Distribution: free on the App Store, source on GitHub, case study on portfolio.
+Prototype still in daily personal use. Native iOS rebuild is feature-complete for v1's core: dashboard, spirit, sparkles, logging via App Intent, notifications, ambient cloud/star layer, dark mode, the prototype-data migration, hit history with calendar + edit/delete, three-tab nav (home / history / settings) + a trailing + tab with a scroll-minimizing bottom bar, the full settings tab (use-sessions toggle, session threshold, rolling window, sleep window, notification master + per-type toggles + timing offsets, reset, about), the app icon (an Icon Composer `Drift.icon` bundle), opaque spirit wisps, and smooth ease-out decay when a hit is logged. What's left before submission: empty-state polish for the home dashboard, multi-screen onboarding (especially the Action Button setup walkthrough), milestone glows on the hero (Issue 14), iCloud sync toggle (rest of Issue 12), privacy doc (Issue 02), and App Store metadata (Issue 13). Distribution: free on the App Store, source on GitHub, case study on portfolio.
 
 ## Where things live
 
 - [[Plan]] — roadmap and phases
-- [[Issues]] — flat list of work items, one file per issue, with status frontmatter
+- [[Issues]] — flat list of work items, one file per issue, with status frontmatter (Issue 15 was explored and removed; the file stays for context)
 - [[Design/Philosophy|Design philosophy]] — what this is, why it looks the way it does
 - [[Design/Spirit|The spirit]] — the cloud character: ratio model, eye scaling, sparkle field, milestones
 - [[Design/Design system|Design system]] — colors, type, color logic
@@ -21,6 +21,10 @@ Prototype still in daily personal use. Native iOS rebuild well underway: dashboa
 - [[Case study]] — portfolio writeup outline
 - [[Notes]] — private scratch
 - [[Prototype]] — Scriptable prototype docs (the system that already runs)
+
+## Related projects
+
+[[../Linger/README]] — a sibling app for on/off duration tracking (Invisalign-style). Started as Drift's `duration-mode` branch and was split into its own repo so each app can have a focused identity. The split decision is a good design story for the case study.
 
 ## Quick context
 

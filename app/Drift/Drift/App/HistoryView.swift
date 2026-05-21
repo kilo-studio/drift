@@ -18,24 +18,12 @@ struct HistoryView: View {
             Color.driftSkyLowerMid.ignoresSafeArea()
             AmbientLayer()
 
-            ScrollView {
-                VStack(spacing: 16) {
-                    Text.caveat("history")
-                        .font(.driftHeroLabel)
-                        .foregroundStyle(.driftInkSoft)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 36)
-
-                    CalendarCard(
-                        countsByDay: countsByDay,
-                        displayedMonth: $displayedMonth,
-                        selectedDay: $selectedDay
-                    )
-
-                    selectedDaySection
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 120)
+            if store.hits.isEmpty {
+                emptyState
+                    .transition(.opacity.animation(.easeOut(duration: 0.4)))
+            } else {
+                content
+                    .transition(.opacity.animation(.easeIn(duration: 0.6)))
             }
         }
         .sheet(item: $hitToEdit) { hit in
@@ -52,6 +40,51 @@ struct HistoryView: View {
             Button("Cancel", role: .cancel) { hitToDelete = nil }
         } message: { hit in
             Text(timeOfDay(hit.t))
+        }
+    }
+
+    /// Empty-state surface — no calendar to render and nothing to drill into.
+    /// Keeps the page from showing a blank month grid with zero data.
+    private var emptyState: some View {
+        VStack(spacing: 14) {
+            Spacer()
+            Text.caveat("history")
+                .font(.driftHeroLabel)
+                .foregroundStyle(.driftInkSoft)
+            Text("Your history will live here.\nLog your first hit on the home tab.")
+                .font(.driftRowDescription)
+                .foregroundStyle(.driftInkSoft)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer()
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Real history surface — calendar + selected-day section. Pulled into a
+    /// computed view so the body can cleanly switch between this and the
+    /// empty state via `if/else`.
+    private var content: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                Text.caveat("history")
+                    .font(.driftHeroLabel)
+                    .foregroundStyle(.driftInkSoft)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 36)
+
+                CalendarCard(
+                    countsByDay: countsByDay,
+                    displayedMonth: $displayedMonth,
+                    selectedDay: $selectedDay
+                )
+
+                selectedDaySection
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 120)
         }
     }
 

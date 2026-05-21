@@ -23,56 +23,12 @@ struct HomeView: View {
                 layer: .back
             )
 
-            ScrollView {
-                VStack(spacing: 16) {
-                    HStack(alignment: .top) {
-                        HeroPrimaryView(lastHitDate: store.lastSessionEnd())
-                        Spacer(minLength: 8)
-                        // Placeholder matches the spirit's rest position; the
-                        // actual spirit lives in ContentView's ZStack so it
-                        // persists across tab switches.
-                        Color.clear
-                            .frame(width: spiritSize, height: spiritSize)
-                            .offset(x: -16, y: 24)
-                    }
-                    .padding(.top, 36)
-
-                    HeroBestsView(
-                        longestWakingGapSec: store.longestWakingGapSec,
-                        longestGapSec: store.longestGapSec
-                    )
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.bottom, 16)
-
-                    statCardsRow
-
-                    wakingGapRow
-
-                    ChartCard(title: "today's stretches", subtitle: "minutes between \(unit.plural) today") {
-                        TodayStretchesChart(stretches: store.todayStretches())
-                    }
-
-                    ChartCard(title: "the last fortnight", subtitle: "\(unit.plural) per day · last 14 days") {
-                        FortnightChart(counts: store.dailySessionCounts(lastN: 14))
-                    }
-
-                    ChartCard(title: "when the cravings hit", subtitle: "\(unit.plural) by hour of day") {
-                        HoursChart(counts: store.sessionsByHour())
-                    }
-
-                    ChartCard(title: "stretching the gaps", subtitle: "minutes between \(unit.plural)\n\(store.rollingWindowDays)-day rolling average") {
-                        RollingAvgChart(series: store.rollingAvg(lastN: 30))
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 120)
-            }
-            .onScrollGeometryChange(for: Bool.self) { geom in
-                geom.contentOffset.y > 8
-            } action: { _, shouldStick in
-                if shouldStick != homeScrolled {
-                    homeScrolled = shouldStick
-                }
+            if store.hits.isEmpty {
+                emptyState
+                    .transition(.opacity.animation(.easeOut(duration: 0.4)))
+            } else {
+                dashboard
+                    .transition(.opacity.animation(.easeIn(duration: 0.6)))
             }
 
             // Front sparkle layer — rare and big, same ratio-gated reveal as
@@ -83,6 +39,82 @@ struct HomeView: View {
                 wakingAvgSec: store.wakingAvgSec(),
                 layer: .front
             )
+        }
+    }
+
+    /// Centered welcome surface shown before the first hit is logged. The
+    /// global spirit stays in its top-right rest position; the page-level
+    /// invite reads underneath. After the first hit, the dashboard fades in
+    /// and replaces this.
+    private var emptyState: some View {
+        VStack(spacing: 14) {
+            Spacer()
+            Text("drift")
+                .font(.driftDisplay)
+                .foregroundStyle(.driftInk)
+            Text("Tap the + tab when you take a hit.\nDrift takes it from there.")
+                .font(.driftRowDescription)
+                .foregroundStyle(.driftInkSoft)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer()
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var dashboard: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                HStack(alignment: .top) {
+                    HeroPrimaryView(lastHitDate: store.lastSessionEnd())
+                    Spacer(minLength: 8)
+                    // Placeholder matches the spirit's rest position; the
+                    // actual spirit lives in ContentView's ZStack so it
+                    // persists across tab switches.
+                    Color.clear
+                        .frame(width: spiritSize, height: spiritSize)
+                        .offset(x: -16, y: 24)
+                }
+                .padding(.top, 36)
+
+                HeroBestsView(
+                    longestWakingGapSec: store.longestWakingGapSec,
+                    longestGapSec: store.longestGapSec
+                )
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 16)
+
+                statCardsRow
+
+                wakingGapRow
+
+                ChartCard(title: "today's stretches", subtitle: "minutes between \(unit.plural) today") {
+                    TodayStretchesChart(stretches: store.todayStretches())
+                }
+
+                ChartCard(title: "the last fortnight", subtitle: "\(unit.plural) per day · last 14 days") {
+                    FortnightChart(counts: store.dailySessionCounts(lastN: 14))
+                }
+
+                ChartCard(title: "when the cravings hit", subtitle: "\(unit.plural) by hour of day") {
+                    HoursChart(counts: store.sessionsByHour())
+                }
+
+                ChartCard(title: "stretching the gaps", subtitle: "minutes between \(unit.plural)\n\(store.rollingWindowDays)-day rolling average") {
+                    RollingAvgChart(series: store.rollingAvg(lastN: 30))
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 120)
+        }
+        .onScrollGeometryChange(for: Bool.self) { geom in
+            geom.contentOffset.y > 8
+        } action: { _, shouldStick in
+            if shouldStick != homeScrolled {
+                homeScrolled = shouldStick
+            }
         }
     }
 

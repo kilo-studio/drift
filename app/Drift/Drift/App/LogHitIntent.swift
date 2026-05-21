@@ -10,6 +10,10 @@ import WidgetKit
 /// auto-initializes on first access so a cold trigger spins up SwiftData in the
 /// background, mutates the store, and returns. When the app IS running, we reuse
 /// the live `sharedStore` so the dashboard's `@Observable` broadcasts the update.
+///
+/// Returns plain `IntentResult` (no `ProvidesDialog`) so the system doesn't surface
+/// a shortcut-completion banner — `HitStore.append` already schedules the immediate
+/// confirmation notification, and the dialog banner duplicates it.
 struct LogHitIntent: AppIntent {
     static var title: LocalizedStringResource = "Log a hit"
     static var description = IntentDescription(
@@ -18,33 +22,12 @@ struct LogHitIntent: AppIntent {
     static var openAppWhenRun: Bool = false
 
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    func perform() async throws -> some IntentResult {
         let store = try DriftApp.sharedStore ?? HitStore(context: DriftApp.container.mainContext)
-        let prevLast = store.lastHitDate
         try store.append()
-
         WidgetCenter.shared.reloadAllTimelines()
-
-        let dialog = formatDialog(
-            prevLast: prevLast,
-            now: Date(),
-            avgSec: store.wakingAvgSec(),
-            totalHits: store.hits.count
-        )
-        return .result(dialog: IntentDialog(stringLiteral: dialog))
+        return .result()
     }
-}
-
-private func formatDialog(prevLast: Date?, now: Date, avgSec: TimeInterval?, totalHits: Int) -> String {
-    if totalHits < 10 {
-        return "First steps logged. \(totalHits)/10 baseline."
-    }
-    guard let prev = prevLast else {
-        return "First hit logged. Building your baseline."
-    }
-    let deltaMin = Int(now.timeIntervalSince(prev) / 60)
-    let avgMin = Int((avgSec ?? 0) / 60)
-    return "Logged. \(deltaMin)m since last hit · avg \(avgMin)m."
 }
 
 /// Surfaces `LogHitIntent` as a built-in App Shortcut so iOS suggests it without the

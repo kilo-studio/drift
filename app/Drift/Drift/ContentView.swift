@@ -140,17 +140,22 @@ struct ContentView: View {
     }
 
     /// Spirit lives in an overlay so it persists across tab switches.
+    ///
+    /// Positioning uses `.offset` (pure GPU transform, doesn't re-layout)
+    /// instead of `.position` so the spring-driven transition between rest
+    /// and sticky doesn't trigger a SwiftUI layout pass mid-scroll, which was
+    /// the cause of the noticeable stutter at each transition moment.
+    /// `compositingGroup` flattens the Canvas paths to a single layer before
+    /// the scale + offset transforms, so the GPU has one texture to move
+    /// instead of recomposing every path each frame. `geometryGroup` makes
+    /// the scale + offset apply atomically so we don't see a momentary
+    /// half-applied state on the first animation frame.
     private var spiritOverlay: some View {
         GeometryReader { geo in
-            let rest = restCenter(in: geo.size)
-            let sticky = stickyCenter(in: geo.size)
-            let target = spiritIsStuck ? sticky : rest
+            let restPos = restOffset(in: geo.size)
+            let stickyPos = stickyOffset(in: geo.size)
+            let target = spiritIsStuck ? stickyPos : restPos
 
-            // During the establishing period the spirit's mood shouldn't
-            // shift around — there isn't enough data for the ratio to mean
-            // anything yet, and the donut is the focal element. Pass nil
-            // inputs so SpiritFrame falls through to ratio = 1.0 (neutral
-            // baseline) and no record thresholds get crossed.
             SpiritView(
                 lastSessionEnd: store.isBaselineEstablished ? store.lastSessionEnd() : nil,
                 wakingAvgSec: store.isBaselineEstablished ? store.wakingAvgSec() : nil,
@@ -158,26 +163,29 @@ struct ContentView: View {
                 longestGapSec: store.isBaselineEstablished ? store.longestGapSec : 0
             )
             .frame(width: spiritSize, height: spiritSize)
+            .compositingGroup()
             .scaleEffect(spiritIsStuck ? 0.7 : 1.0, anchor: .topTrailing)
-            .position(x: target.x, y: target.y)
+            .offset(x: target.x, y: target.y)
+            .geometryGroup()
             .animation(.spring(response: 0.55, dampingFraction: 0.7), value: spiritIsStuck)
         }
         .allowsHitTesting(false)
     }
 
-    private func restCenter(in size: CGSize) -> CGPoint {
+    /// Top-left offset for the spirit at rest. Equivalent to the previous
+    /// `restCenter` minus half the spirit size on each axis (since `.offset`
+    /// positions the view's top-left rather than its center).
+    private func restOffset(in size: CGSize) -> CGPoint {
         CGPoint(
-            x: size.width - 16 - spiritSize / 2 - 16,
-            y: 36 + 24 + spiritSize / 2
+            x: size.width - 16 - spiritSize - 16,
+            y: 36 + 24
         )
     }
 
-    private func stickyCenter(in size: CGSize) -> CGPoint {
-        let xinset: CGFloat = 8
-        let yinset: CGFloat = 0
-        return CGPoint(
-            x: size.width - xinset - spiritSize / 2,
-            y: yinset + spiritSize / 2
+    private func stickyOffset(in size: CGSize) -> CGPoint {
+        CGPoint(
+            x: size.width - 8 - spiritSize,
+            y: 0
         )
     }
 }

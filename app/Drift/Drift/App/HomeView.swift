@@ -11,10 +11,12 @@ struct HomeView: View {
     /// rendered in the global overlay.
     let spiritSize: CGFloat
 
-    /// One-time celebration banner when the user logs the hit/session that
-    /// crosses the baseline threshold. Skipped users don't see this — they
-    /// chose to bypass establishing.
-    @State private var showBaselineToast = false
+    /// One-time celebration overlay when the user logs the hit/session that
+    /// crosses the baseline threshold. Full-screen cream wash + a large
+    /// handwritten "now let's start drifting!" — dwells a couple seconds,
+    /// fades out to reveal the freshly-unlocked dashboard. Skipped users
+    /// don't see this — they chose to bypass establishing.
+    @State private var showBaselineCelebration = false
 
     var body: some View {
         ZStack {
@@ -45,7 +47,7 @@ struct HomeView: View {
                 layer: .front
             )
         }
-        .overlay(alignment: .top) { baselineToast }
+        .overlay { baselineCelebration }
         .onChange(of: store.baselineCount) { oldCount, newCount in
             // Only celebrate real establishings — skip should silently switch
             // to the post-baseline UI without congratulating the user for
@@ -53,13 +55,13 @@ struct HomeView: View {
             if oldCount < HitStore.baselineTarget,
                newCount >= HitStore.baselineTarget,
                !store.baselineSkipped {
-                withAnimation(.easeOut(duration: 0.3)) {
-                    showBaselineToast = true
+                withAnimation(.easeInOut(duration: 0.6)) {
+                    showBaselineCelebration = true
                 }
                 Task {
-                    try? await Task.sleep(for: .seconds(3))
-                    withAnimation(.easeIn(duration: 0.4)) {
-                        showBaselineToast = false
+                    try? await Task.sleep(for: .seconds(2.5))
+                    withAnimation(.easeInOut(duration: 0.8)) {
+                        showBaselineCelebration = false
                     }
                 }
             }
@@ -67,9 +69,9 @@ struct HomeView: View {
     }
 
     /// Pre-baseline home: spirit lives in its top-right rest position (via
-    /// ContentView's overlay), donut + caption sit roughly centered, "tap +
-    /// below" hint surfaces when the user hasn't logged anything yet, and a
-    /// small Skip link lives at the bottom.
+    /// ContentView's overlay), donut + caption + body + skip sit clustered
+    /// near the vertical center, and a small counts card sits lower as
+    /// supporting info.
     private var baselineState: some View {
         VStack(spacing: 0) {
             Spacer()
@@ -93,9 +95,6 @@ struct HomeView: View {
                 .padding(.top, 8)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Spacer()
-            Spacer()
-
             Button {
                 store.baselineSkipped = true
             } label: {
@@ -103,11 +102,17 @@ struct HomeView: View {
                     .font(.driftRowDescription)
                     .foregroundStyle(.driftInkFade)
                     .underline()
-                    .padding(.vertical, 12)
+                    .padding(.vertical, 8)
                     .padding(.horizontal, 24)
             }
             .buttonStyle(.plain)
-            .padding(.bottom, 80)
+            .padding(.top, 8)
+
+            Spacer()
+
+            countsCard
+                .padding(.horizontal, 32)
+                .padding(.bottom, 120)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -122,24 +127,48 @@ struct HomeView: View {
         return "Vape as you normally would and log them so Drift can learn your patterns."
     }
 
-    /// Earned-moment toast that floats in from the top, dwells ~3s, fades out.
-    @ViewBuilder
-    private var baselineToast: some View {
-        if showBaselineToast {
-            Text.caveat("now let's start drifting!")
-                .font(.driftCardTitle)
+    /// Supporting counts shown below the establishing message. Shows hits
+    /// only when sessions are off; shows both sessions + hits otherwise so
+    /// the user can see how grouping is shaping the count their donut tracks.
+    private var countsCard: some View {
+        HStack(spacing: 32) {
+            if store.useSessions {
+                countItem(value: store.baselineCount, label: "sessions")
+                countItem(value: store.hits.count, label: "hits")
+            } else {
+                countItem(value: store.hits.count, label: "hits")
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .driftCard()
+    }
+
+    private func countItem(value: Int, label: String) -> some View {
+        VStack(spacing: 2) {
+            Text("\(value)")
+                .font(.driftStatNum)
                 .foregroundStyle(.driftInk)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 14)
-                .background {
-                    Capsule()
-                        .fill(.ultraThinMaterial)
-                        .overlay(
-                            Capsule().stroke(Color.driftCoral.opacity(0.35), lineWidth: 1)
-                        )
-                }
-                .padding(.top, 72)
-                .transition(.opacity.combined(with: .move(edge: .top)))
+            Text(label)
+                .font(.driftRowDescription)
+                .foregroundStyle(.driftInkSoft)
+        }
+    }
+
+    /// Earned-moment celebration: full-screen cream wash with a large
+    /// handwritten message in the middle. Fades in over ~0.6s, dwells ~2.5s,
+    /// fades back out to reveal the freshly-unlocked dashboard underneath.
+    @ViewBuilder
+    private var baselineCelebration: some View {
+        if showBaselineCelebration {
+            ZStack {
+                Color.driftCream.ignoresSafeArea()
+                Text.caveat("now let's start drifting!")
+                    .font(.custom("Caveat", size: 52).weight(.semibold))
+                    .foregroundStyle(.driftInk)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+            }
+            .transition(.opacity)
         }
     }
 

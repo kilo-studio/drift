@@ -113,8 +113,8 @@ struct SettingsView: View {
                 )
                 SettingsDivider()
                 SettingsPickerRow(
-                    label: "wake up",
-                    description: "Hits before this roll into the previous day's stats.",
+                    label: "end of day",
+                    description: "Hits before this hour count as the previous day's stats.",
                     selection: store.sleepEndHour,
                     options: Self.hourOptions,
                     formatted: { formatHour($0) }

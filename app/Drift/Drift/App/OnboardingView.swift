@@ -339,7 +339,7 @@ private struct SleepCard: View {
                     .foregroundStyle(.driftInk)
                     .multilineTextAlignment(.center)
 
-                Text("Drift won't send notifications during your sleep window. Hits before your wake hour roll into the previous day's stats.")
+                Text("Drift won't send notifications during your sleep window. Hits before end of day count as the previous day's stats.")
                     .font(.onboardingSubtitle)
                     .foregroundStyle(.driftInkSoft)
                     .multilineTextAlignment(.center)
@@ -354,8 +354,8 @@ private struct SleepCard: View {
                     )
                     SettingsDivider()
                     SettingsPickerRow(
-                        label: "wake up",
-                        description: "Hits before this hour roll into the previous day.",
+                        label: "end of day",
+                        description: "Hits before this hour count as the previous day.",
                         selection: $store.sleepEndHour,
                         options: Self.hourOptions,
                         formatted: { formatHour($0) }

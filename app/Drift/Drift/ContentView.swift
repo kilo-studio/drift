@@ -35,7 +35,15 @@ struct ContentView: View {
         // before it actually navigates.
         TabView(selection: tabSelectionBinding) {
             Tab("home", systemImage: "house.fill", value: AppTab.home) {
-                HomeView(homeScrolled: $homeScrolled, spiritSize: spiritSize)
+                HomeView(
+                    onScrolledChange: { newValue in
+                        if newValue != homeScrolled {
+                            homeScrolled = newValue
+                        }
+                    },
+                    spiritSize: spiritSize
+                )
+                .equatable()
             }
             // History only appears once the user has finished (or skipped) the
             // baseline period. Before that there's nothing meaningful in it.

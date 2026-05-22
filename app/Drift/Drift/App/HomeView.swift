@@ -1,15 +1,27 @@
 import SwiftUI
 
-struct HomeView: View {
+struct HomeView: View, Equatable {
     @Environment(HitStore.self) private var store
 
-    /// Reported up to ContentView so the spirit (rendered globally) can swoop
-    /// to the corner. True past 8pt of scroll, false near the top.
-    @Binding var homeScrolled: Bool
+    /// Reported up to ContentView only when the over-threshold bool flips —
+    /// once on the way down, once on the way back up. As a callback instead
+    /// of a binding so HomeView isn't marked dependent on the value.
+    let onScrolledChange: (Bool) -> Void
 
     /// Passed in from ContentView so the placeholder size matches the spirit
     /// rendered in the global overlay.
     let spiritSize: CGFloat
+
+    /// HomeView is wrapped with `.equatable()` at the call site so SwiftUI
+    /// can short-circuit re-renders driven by the parent (which recreates
+    /// our `onScrolledChange` closure every time `homeScrolled` flips).
+    /// Closures aren't Equatable and the closure does the same thing each
+    /// render anyway — only the actual rendering inputs need comparing.
+    /// Observable changes from `@Environment(HitStore.self)` still trigger
+    /// re-renders independently of this equality.
+    nonisolated static func == (lhs: HomeView, rhs: HomeView) -> Bool {
+        lhs.spiritSize == rhs.spiritSize
+    }
 
     var body: some View {
         ZStack {
@@ -173,9 +185,7 @@ struct HomeView: View {
         .onScrollGeometryChange(for: Bool.self) { geom in
             geom.contentOffset.y > 8
         } action: { _, shouldStick in
-            if shouldStick != homeScrolled {
-                homeScrolled = shouldStick
-            }
+            onScrolledChange(shouldStick)
         }
     }
 

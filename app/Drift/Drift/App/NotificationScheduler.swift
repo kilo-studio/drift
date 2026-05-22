@@ -62,7 +62,7 @@ enum NotificationScheduler {
         if immediateEnabled() {
             await fireImmediate(ctx)
         }
-        if beatAverageEnabled(), ctx.totalHits >= 10, let avg = ctx.wakingAvgSec, avg > 0 {
+        if beatAverageEnabled(), ctx.totalHits >= HitStore.baselineTarget, let avg = ctx.wakingAvgSec, avg > 0 {
             await scheduleBeatAverage(avgSec: avg)
         }
         if beatRecordEnabled(), ctx.totalHits >= 2 {
@@ -135,8 +135,12 @@ enum NotificationScheduler {
         }
         let deltaMin = Int(ctx.now.timeIntervalSince(prev) / 60)
 
-        if ctx.totalHits < 10 {
-            return "\(deltaMin)m since last hit · \(ctx.totalHits)/10 baseline"
+        // X/N baseline framing only applies to users still establishing.
+        // Skipped users get the normal body from hit 1 — they opted out of
+        // the establishing period.
+        let baselineSkipped = UserDefaults.standard.bool(forKey: driftBaselineSkippedKey)
+        if !baselineSkipped, ctx.totalHits < HitStore.baselineTarget {
+            return "\(deltaMin)m since last hit · \(ctx.totalHits)/\(HitStore.baselineTarget) baseline"
         }
         let avgMin = Int((ctx.wakingAvgSec ?? 0) / 60)
         var body = "⏱ \(deltaMin)m since last hit · avg \(avgMin)m"

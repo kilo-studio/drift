@@ -31,8 +31,12 @@ struct ContentView: View {
             Tab("home", systemImage: "house.fill", value: AppTab.home) {
                 HomeView(homeScrolled: $homeScrolled, spiritSize: spiritSize)
             }
-            Tab("history", systemImage: "clock", value: AppTab.history) {
-                HistoryView()
+            // History only appears once the user has finished (or skipped) the
+            // baseline period. Before that there's nothing meaningful in it.
+            if store.isBaselineEstablished {
+                Tab("history", systemImage: "clock", value: AppTab.history) {
+                    HistoryView()
+                }
             }
             Tab("settings", systemImage: "gearshape", value: AppTab.settings) {
                 SettingsView()

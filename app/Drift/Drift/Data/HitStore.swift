@@ -3,6 +3,11 @@ import SwiftData
 import CoreTransferable
 import UniformTypeIdentifiers
 
+/// UserDefaults key for the baseline-skip flag. File-scope so both `HitStore`
+/// (writing) and `NotificationScheduler` (reading, to suppress the X/N
+/// baseline framing) can reach it.
+let driftBaselineSkippedKey = "drift.baseline.skipped"
+
 /// JSON snapshot of every logged hit, shaped like the Scriptable prototype
 /// payload so it round-trips through `PrototypeImport.parse`. Carried via
 /// `ShareLink` from Settings → Data → "export hits".
@@ -26,6 +31,12 @@ final class HitStore {
     private let thresholdKey = "drift.session.thresholdSec"
     private let rollingWindowKey = "drift.rollingWindowDays"
     private let useSessionsKey = "drift.useSessions"
+
+    /// How many of the user's chosen unit (sessions if `useSessions`, else hits)
+    /// before the rolling average has enough samples to drive a meaningful
+    /// spirit ratio. Drives the pre-baseline empty state, the X/N framing in
+    /// the immediate notification, and the gate on scheduled notifications.
+    static let baselineTarget = 5
     // Sleep-window keys live in Hit+DateKeys.swift so the date-key free functions
     // can read them without taking HitStore as a dependency. Mirrored here as
     // observable stored properties so settings UI can bind two-way.
@@ -137,6 +148,29 @@ final class HitStore {
         useSessions ? sessionThresholdSec : 0
     }
 
+    /// Persisted "user opted to skip the baseline period." Once set, the home
+    /// dashboard switches to the normal post-baseline UI even with zero hits
+    /// and notifications behave as usual (no X/5 framing). Reset clears it.
+    var baselineSkipped: Bool {
+        didSet {
+            UserDefaults.standard.set(baselineSkipped, forKey: driftBaselineSkippedKey)
+        }
+    }
+
+    /// Count of the unit the user picked in onboarding — sessions if
+    /// `useSessions`, otherwise individual hits. Drives the donut on the
+    /// pre-baseline home and the X/N framing in notifications.
+    var baselineCount: Int {
+        useSessions ? hits.sessions(threshold: effectiveSessionThreshold).count : hits.count
+    }
+
+    /// Whether the user is past the establishing-baseline period. True once
+    /// `baselineCount >= baselineTarget`, or immediately when the user taps
+    /// Skip. Drives History tab visibility and home-view branching.
+    var isBaselineEstablished: Bool {
+        baselineSkipped || baselineCount >= Self.baselineTarget
+    }
+
     init(context: ModelContext) throws {
         self.context = context
 
@@ -156,6 +190,7 @@ final class HitStore {
         self.notifsBeatRecordEnabled = (UserDefaults.standard.object(forKey: driftNotifsBeatRecordKey) as? Bool) ?? true
         self.notifsBeatAverageOffsetSec = (UserDefaults.standard.object(forKey: driftNotifsBeatAvgOffsetKey) as? Double) ?? 300
         self.notifsBeatRecordOffsetSec = (UserDefaults.standard.object(forKey: driftNotifsBeatRecordOffsetKey) as? Double) ?? 0
+        self.baselineSkipped = UserDefaults.standard.bool(forKey: driftBaselineSkippedKey)
 
         if let existing = try context.fetch(FetchDescriptor<Records>()).first {
             self.records = existing
@@ -297,9 +332,11 @@ final class HitStore {
         try context.save()
         try reload()
         publishToWidget()
-        // Re-run onboarding next launch — without this, a reset would leave
-        // the user on an empty dashboard with no path back through setup.
+        // Re-run onboarding and the baseline period next launch — a reset
+        // should mean a real reset, not just a data wipe leaving the user
+        // staring at an empty post-baseline dashboard.
         UserDefaults.standard.removeObject(forKey: driftOnboardingCompleteKey)
+        baselineSkipped = false
     }
 
     /// Inserts many hits in chronological order, walking the same record-update logic

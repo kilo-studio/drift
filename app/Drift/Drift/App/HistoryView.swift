@@ -503,6 +503,10 @@ private struct DayStretchesChart: View {
 
 // MARK: - Add / Edit sheets
 
+/// Mirrors `NotificationsView`'s sheet vocabulary: sky background, Caveat
+/// hero label, SettingsCards, solid-coral CTA. The previous Form-based version
+/// had Form's grouped-list white background painting over the presentation
+/// background on every appearance, which read as a white flash.
 struct AddHitSheet: View {
     @Environment(HitStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -510,44 +514,86 @@ struct AddHitSheet: View {
     @State private var futureWarning = false
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section("when") {
-                    DatePicker("time", selection: $date, in: ...Date(), displayedComponents: [.date, .hourAndMinute])
-                }
-                Section("quick") {
-                    Button("5 minutes ago") { date = Date().addingTimeInterval(-300) }
-                    Button("15 minutes ago") { date = Date().addingTimeInterval(-900) }
-                    Button("1 hour ago") { date = Date().addingTimeInterval(-3600) }
-                }
-            }
-            // Form defaults to a white grouped-list background; hiding it lets
-            // the sheet's `.presentationBackground(.driftSkyLowerMid)` (set by
-            // ContentView) show through instead of the brief white flash on
-            // appear.
-            .scrollContentBackground(.hidden)
-            .navigationTitle("add hit")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Add") {
+        ZStack {
+            Color.driftSkyLowerMid.ignoresSafeArea()
+
+            ScrollView {
+                VStack(spacing: 16) {
+                    Text.caveat("add hit")
+                        .font(.driftHeroLabel)
+                        .foregroundStyle(.driftInkSoft)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 28)
+
+                    SettingsCard {
+                        DatePicker(
+                            "time",
+                            selection: $date,
+                            in: ...Date(),
+                            displayedComponents: [.date, .hourAndMinute]
+                        )
+                        .datePickerStyle(.compact)
+                        .tint(.driftCoral)
+                        .font(.driftRowLabel)
+                        .foregroundStyle(.driftInk)
+                    }
+
+                    SettingsCard {
+                        VStack(spacing: 0) {
+                            quickRow(label: "5 minutes ago") {
+                                date = Date().addingTimeInterval(-300)
+                            }
+                            SettingsDivider()
+                            quickRow(label: "15 minutes ago") {
+                                date = Date().addingTimeInterval(-900)
+                            }
+                            SettingsDivider()
+                            quickRow(label: "1 hour ago") {
+                                date = Date().addingTimeInterval(-3600)
+                            }
+                        }
+                    }
+
+                    Button {
                         if date > Date() {
                             futureWarning = true
                         } else {
                             try? store.addPast(at: date)
                             dismiss()
                         }
+                    } label: {
+                        Text("add hit")
+                            .font(.driftRowLabel)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background {
+                                Capsule().fill(Color.driftCoral)
+                            }
                     }
-                    .fontWeight(.semibold)
+                    .buttonStyle(.plain)
+                    .padding(.top, 8)
                 }
-            }
-            .alert("Can't add hits in the future.", isPresented: $futureWarning) {
-                Button("OK", role: .cancel) {}
+                .padding(.horizontal, 16)
+                .padding(.bottom, 120)
             }
         }
+        .alert("Can't add hits in the future.", isPresented: $futureWarning) {
+            Button("OK", role: .cancel) {}
+        }
+    }
+
+    private func quickRow(label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Text(label)
+                    .font(.driftRowLabel)
+                    .foregroundStyle(.driftInk)
+                Spacer()
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 

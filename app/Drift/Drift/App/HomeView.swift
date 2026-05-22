@@ -123,10 +123,10 @@ struct HomeView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    /// Supporting counts shown below the establishing message. Two separate
-    /// `driftCard`s side-by-side when sessions are on; one card with just
-    /// hits otherwise. Cards aren't merged so each metric reads as its own
-    /// independent surface.
+    /// Supporting counts. Only renders in sessions mode — in hits mode the
+    /// donut already shows the hit count so a separate "hits" card just
+    /// duplicates the same number. With sessions on, the two metrics are
+    /// distinct (donut tracks sessions; hits is the underlying total).
     @ViewBuilder
     private var countsRow: some View {
         if store.useSessions {
@@ -134,8 +134,6 @@ struct HomeView: View {
                 countCard(value: store.baselineCount, label: "sessions")
                 countCard(value: store.hits.count, label: "hits")
             }
-        } else {
-            countCard(value: store.hits.count, label: "hits")
         }
     }
 
@@ -292,12 +290,12 @@ private struct BaselineDonut: View {
 
     var body: some View {
         ZStack {
-            // Cream track + ink fill — keeps the donut feeling like part of
-            // the app's neutral palette. Coral as the fill read as "this is
-            // bad / urgent" which is the opposite of the gentle tone we want
-            // during establishing.
+            // Track tinted with the same sky-overlay used on `driftCard`'s
+            // glass effect, so the donut visually slots in with the rest of
+            // the app's card surfaces. Ink fill keeps the filled arc neutral
+            // and grounded (coral read as alarming).
             Circle()
-                .stroke(Color.driftCream, lineWidth: 16)
+                .stroke(Color.driftSkyLowerMid.opacity(0.4), lineWidth: 16)
             Circle()
                 .trim(from: 0, to: progress)
                 .stroke(

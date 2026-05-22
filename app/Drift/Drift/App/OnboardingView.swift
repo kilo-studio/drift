@@ -625,7 +625,7 @@ private struct ConclusionCard: View {
     /// top of `**bold**`, which in practice swallowed the bold weight inside
     /// the link span.
     private var tipJarSentence: AttributedString {
-        var s = AttributedString("Drift is completely free forever, but if you'd like to show your support, you can buy me a coffee.")
+        var s = AttributedString("Drift is completely free forever, but if you'd like to show your support, buy me a coffee.")
         s.font = .onboardingSubtitle
         s.foregroundColor = .driftInkSoft
 

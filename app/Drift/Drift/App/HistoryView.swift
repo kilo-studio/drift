@@ -521,6 +521,11 @@ struct AddHitSheet: View {
                     Button("1 hour ago") { date = Date().addingTimeInterval(-3600) }
                 }
             }
+            // Form defaults to a white grouped-list background; hiding it lets
+            // the sheet's `.presentationBackground(.driftSkyLowerMid)` (set by
+            // ContentView) show through instead of the brief white flash on
+            // appear.
+            .scrollContentBackground(.hidden)
             .navigationTitle("add hit")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

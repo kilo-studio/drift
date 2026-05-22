@@ -72,54 +72,53 @@ struct HomeView: View {
         }
     }
 
-    /// Pre-baseline home: donut + caption + body + skip sit centered as the
-    /// focal cluster. The counts cards pin near the bottom as supporting
-    /// info. Spirit and sparkles are suppressed during this period — they
-    /// don't belong yet (no real data to drive them).
+    /// Pre-baseline home: a single VStack flow so the donut + caption + body
+    /// + skip + counts cards never overlap. Three flexible spacers above and
+    /// one below balance the cluster vertically without pinning the cards on
+    /// top of the text.
     private var baselineState: some View {
-        ZStack {
-            // Centered focal cluster.
-            VStack(spacing: 0) {
-                BaselineDonut(
-                    count: store.baselineCount,
-                    target: HitStore.baselineTarget
-                )
-                .frame(width: 200, height: 200)
+        VStack(spacing: 0) {
+            Spacer()
+            Spacer()
+            Spacer()
 
-                Text.caveat("establishing baseline")
-                    .font(.driftCardTitle)
-                    .foregroundStyle(.driftInk)
-                    .padding(.top, 24)
+            BaselineDonut(
+                count: store.baselineCount,
+                target: HitStore.baselineTarget
+            )
+            .frame(width: 200, height: 200)
 
-                Text("Vape as you normally would and log them and establish your average.")
-                    .font(.driftRowDescription)
-                    .foregroundStyle(.driftInkSoft)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-                    .padding(.top, 8)
-                    .fixedSize(horizontal: false, vertical: true)
+            Text.caveat("establishing baseline")
+                .font(.driftCardTitle)
+                .foregroundStyle(.driftInk)
+                .padding(.top, 24)
 
-                Button {
-                    store.baselineSkipped = true
-                } label: {
-                    Text("skip")
-                        .font(.driftRowDescription)
-                        .foregroundStyle(.driftInkFade)
-                        .underline()
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 24)
-                }
-                .buttonStyle(.plain)
+            Text("Vape as you normally would and log them and establish your average.")
+                .font(.driftRowDescription)
+                .foregroundStyle(.driftInkSoft)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
                 .padding(.top, 8)
-            }
+                .fixedSize(horizontal: false, vertical: true)
 
-            // Counts cards pinned near the bottom.
-            VStack {
-                Spacer()
-                countsRow
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 100)
+            Button {
+                store.baselineSkipped = true
+            } label: {
+                Text("skip")
+                    .font(.driftRowDescription)
+                    .foregroundStyle(.driftInkFade)
+                    .underline()
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 24)
             }
+            .buttonStyle(.plain)
+            .padding(.top, 8)
+
+            Spacer()
+
+            countsRow
+                .padding(.horizontal, 20)
+                .padding(.bottom, 100)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -293,12 +292,16 @@ private struct BaselineDonut: View {
 
     var body: some View {
         ZStack {
+            // Cream track + ink fill — keeps the donut feeling like part of
+            // the app's neutral palette. Coral as the fill read as "this is
+            // bad / urgent" which is the opposite of the gentle tone we want
+            // during establishing.
             Circle()
-                .stroke(Color.driftInkFade.opacity(0.2), lineWidth: 16)
+                .stroke(Color.driftCream, lineWidth: 16)
             Circle()
                 .trim(from: 0, to: progress)
                 .stroke(
-                    Color.driftCoral,
+                    Color.driftInk,
                     style: StrokeStyle(lineWidth: 16, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))

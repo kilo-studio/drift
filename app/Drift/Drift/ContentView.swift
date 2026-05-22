@@ -49,7 +49,14 @@ struct ContentView: View {
         }
         .tint(.primary)
         .tabBarMinimizeBehavior(.onScrollDown)
-        .overlay { spiritOverlay }
+        .overlay {
+            // Suppress the spirit until the user has established (or skipped)
+            // a baseline — the donut is the focal element during that period
+            // and the spirit overlapping it just clutters the moment.
+            if store.isBaselineEstablished {
+                spiritOverlay
+            }
+        }
         .sheet(isPresented: $showAddSheet) {
             AddHitSheet()
         }

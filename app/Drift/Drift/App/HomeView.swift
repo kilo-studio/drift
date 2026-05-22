@@ -24,11 +24,16 @@ struct HomeView: View {
 
             AmbientLayer()
 
-            SparkleField(
-                lastSessionEnd: store.lastSessionEnd(),
-                wakingAvgSec: store.wakingAvgSec(),
-                layer: .back
-            )
+            // Sparkles only after baseline is established — during the
+            // establishing period the donut is the focal element and
+            // ratio-gated sparkles don't have meaningful data to fire on.
+            if store.isBaselineEstablished {
+                SparkleField(
+                    lastSessionEnd: store.lastSessionEnd(),
+                    wakingAvgSec: store.wakingAvgSec(),
+                    layer: .back
+                )
+            }
 
             if store.isBaselineEstablished {
                 dashboard
@@ -38,14 +43,13 @@ struct HomeView: View {
                     .transition(.opacity.animation(.easeOut(duration: 0.4)))
             }
 
-            // Front sparkle layer — rare and big, same ratio-gated reveal as
-            // the back. Reads as "closer to the camera" sparkles drifting in
-            // front of the cards as you stretch further past your average.
-            SparkleField(
-                lastSessionEnd: store.lastSessionEnd(),
-                wakingAvgSec: store.wakingAvgSec(),
-                layer: .front
-            )
+            if store.isBaselineEstablished {
+                SparkleField(
+                    lastSessionEnd: store.lastSessionEnd(),
+                    wakingAvgSec: store.wakingAvgSec(),
+                    layer: .front
+                )
+            }
         }
         .overlay { baselineCelebration }
         .onChange(of: store.baselineCount) { oldCount, newCount in
@@ -68,82 +72,75 @@ struct HomeView: View {
         }
     }
 
-    /// Pre-baseline home: spirit lives in its top-right rest position (via
-    /// ContentView's overlay), donut + caption + body + skip sit clustered
-    /// near the vertical center, and a small counts card sits lower as
-    /// supporting info.
+    /// Pre-baseline home: donut + caption + body + skip sit centered as the
+    /// focal cluster. The counts cards pin near the bottom as supporting
+    /// info. Spirit and sparkles are suppressed during this period — they
+    /// don't belong yet (no real data to drive them).
     private var baselineState: some View {
-        VStack(spacing: 0) {
-            Spacer()
+        ZStack {
+            // Centered focal cluster.
+            VStack(spacing: 0) {
+                BaselineDonut(
+                    count: store.baselineCount,
+                    target: HitStore.baselineTarget
+                )
+                .frame(width: 200, height: 200)
 
-            BaselineDonut(
-                count: store.baselineCount,
-                target: HitStore.baselineTarget
-            )
-            .frame(width: 220, height: 220)
+                Text.caveat("establishing baseline")
+                    .font(.driftCardTitle)
+                    .foregroundStyle(.driftInk)
+                    .padding(.top, 24)
 
-            Text.caveat("establishing baseline")
-                .font(.driftCardTitle)
-                .foregroundStyle(.driftInk)
-                .padding(.top, 24)
-
-            Text(baselineCopy)
-                .font(.driftRowDescription)
-                .foregroundStyle(.driftInkSoft)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
-                .padding(.top, 8)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Button {
-                store.baselineSkipped = true
-            } label: {
-                Text("skip")
+                Text("Vape as you normally would and log them and establish your average.")
                     .font(.driftRowDescription)
-                    .foregroundStyle(.driftInkFade)
-                    .underline()
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 24)
+                    .foregroundStyle(.driftInkSoft)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+                    .padding(.top, 8)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button {
+                    store.baselineSkipped = true
+                } label: {
+                    Text("skip")
+                        .font(.driftRowDescription)
+                        .foregroundStyle(.driftInkFade)
+                        .underline()
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 24)
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 8)
             }
-            .buttonStyle(.plain)
-            .padding(.top, 8)
 
-            Spacer()
-
-            countsCard
-                .padding(.horizontal, 32)
-                .padding(.bottom, 120)
+            // Counts cards pinned near the bottom.
+            VStack {
+                Spacer()
+                countsRow
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 100)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    /// Body copy under the donut. Switches based on whether the user has
-    /// logged anything yet — at 0 the priority is pointing them at the +
-    /// tab; after that we lean into "keep logging."
-    private var baselineCopy: String {
-        if store.baselineCount == 0 {
-            return "Tap + below to log your first hit. Vape as you normally would so Drift can learn your patterns."
-        }
-        return "Vape as you normally would and log them so Drift can learn your patterns."
-    }
-
-    /// Supporting counts shown below the establishing message. Shows hits
-    /// only when sessions are off; shows both sessions + hits otherwise so
-    /// the user can see how grouping is shaping the count their donut tracks.
-    private var countsCard: some View {
-        HStack(spacing: 32) {
-            if store.useSessions {
-                countItem(value: store.baselineCount, label: "sessions")
-                countItem(value: store.hits.count, label: "hits")
-            } else {
-                countItem(value: store.hits.count, label: "hits")
+    /// Supporting counts shown below the establishing message. Two separate
+    /// `driftCard`s side-by-side when sessions are on; one card with just
+    /// hits otherwise. Cards aren't merged so each metric reads as its own
+    /// independent surface.
+    @ViewBuilder
+    private var countsRow: some View {
+        if store.useSessions {
+            HStack(spacing: 12) {
+                countCard(value: store.baselineCount, label: "sessions")
+                countCard(value: store.hits.count, label: "hits")
             }
+        } else {
+            countCard(value: store.hits.count, label: "hits")
         }
-        .frame(maxWidth: .infinity)
-        .driftCard()
     }
 
-    private func countItem(value: Int, label: String) -> some View {
+    private func countCard(value: Int, label: String) -> some View {
         VStack(spacing: 2) {
             Text("\(value)")
                 .font(.driftStatNum)
@@ -152,6 +149,8 @@ struct HomeView: View {
                 .font(.driftRowDescription)
                 .foregroundStyle(.driftInkSoft)
         }
+        .frame(maxWidth: .infinity)
+        .driftCard()
     }
 
     /// Earned-moment celebration: full-screen cream wash with a large
@@ -162,11 +161,16 @@ struct HomeView: View {
         if showBaselineCelebration {
             ZStack {
                 Color.driftCream.ignoresSafeArea()
-                Text.caveat("now let's start drifting!")
-                    .font(.custom("Caveat", size: 52).weight(.semibold))
+                // Extra trailing thin-spaces for the Caveat swash on "!" —
+                // `Text.caveat`'s default single thin-space isn't enough at
+                // this font size and the swash was clipping against the
+                // Text frame.
+                Text("\u{2009}\u{2009}now let's start drifting!\u{2009}\u{2009}\u{2009}\u{2009}")
+                    .font(.custom("Caveat", size: 44).weight(.semibold))
                     .foregroundStyle(.driftInk)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
+                    .minimumScaleFactor(0.7)
+                    .padding(.horizontal, 24)
             }
             .transition(.opacity)
         }

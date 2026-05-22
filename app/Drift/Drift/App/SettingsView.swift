@@ -207,7 +207,9 @@ struct SettingsView: View {
                 SettingsDivider()
                 SettingsLinkRow(label: "privacy policy", url: URL(string: "https://drift.app/privacy")!)
                 SettingsDivider()
-                SettingsLinkRow(label: "github", url: URL(string: "https://github.com/grillinmuffins/drift")!)
+                SettingsLinkRow(label: "github", url: URL(string: "https://github.com/kilo-studio/drift")!)
+                SettingsDivider()
+                SettingsLinkRow(label: "buy me a coffee", url: URL(string: "https://buymeacoffee.com/griffinmullins")!)
             }
         }
     }

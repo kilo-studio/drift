@@ -15,6 +15,12 @@ struct OnboardingView: View {
     /// stored value, so a previously-scrolled card still shows the spirit in
     /// the corner when you come back to it.
     @State private var pageScrolled: [Int: Bool] = [:]
+    /// When true, the spirit overlay reroutes its rest position to match
+    /// ContentView's top-right rest. Set during the conclusion CTA so the
+    /// spirit smoothly translates into its home-page spot before onboarding
+    /// dismisses — without this the spirit visibly jumps when the view tree
+    /// swaps.
+    @State private var animatingSpiritToHome: Bool = false
 
     /// 7 slides: intro, spirit preview, sleep, notifications, logging,
     /// sessions, conclusion. Sessions sits near the end because it's the
@@ -59,8 +65,8 @@ struct OnboardingView: View {
             TabView(selection: $page) {
                 IntroCard(scrolled: bindingFor(0)).tag(0)
                 SpiritPreviewCard(scrolled: bindingFor(1)).tag(1)
-                SleepCard(store: store, scrolled: bindingFor(2)).tag(2)
-                NotificationsCard(store: store, scrolled: bindingFor(3)).tag(3)
+                NotificationsCard(store: store, scrolled: bindingFor(2)).tag(2)
+                SleepCard(store: store, scrolled: bindingFor(3)).tag(3)
                 LoggingCard(scrolled: bindingFor(4)).tag(4)
                 SessionsCard(store: store, scrolled: bindingFor(5)).tag(5)
                 ConclusionCard(scrolled: bindingFor(6)).tag(6)
@@ -100,12 +106,24 @@ struct OnboardingView: View {
                 .position(x: target.x, y: target.y)
                 .animation(.spring(response: 0.55, dampingFraction: 0.7), value: cardScrolled)
                 .animation(.spring(response: 0.55, dampingFraction: 0.7), value: page)
+                .animation(.spring(response: 0.6, dampingFraction: 0.75), value: animatingSpiritToHome)
         }
     }
 
     /// Page-aware rest position. Default is high-and-centered; spirit-preview
-    /// shifts down so the demo reads as the focal element of the slide.
+    /// shifts down so the demo reads as the focal element of the slide. The
+    /// final conclusion → home animation reroutes here to match
+    /// `ContentView.restCenter` so the spirit slides into place rather than
+    /// teleporting when the view tree swaps.
     private func restCenter(in size: CGSize) -> CGPoint {
+        if animatingSpiritToHome {
+            // Matches ContentView.restCenter exactly: width - 16 - half - 16,
+            // y = 36 + 24 + half. Keep both in sync if either changes.
+            return CGPoint(
+                x: size.width - 16 - spiritSize / 2 - 16,
+                y: 36 + 24 + spiritSize / 2
+            )
+        }
         let restY: CGFloat = page == spiritPreviewPage ? 240 : (60 + spiritSize / 2)
         return CGPoint(x: size.width / 2, y: restY)
     }
@@ -199,7 +217,15 @@ struct OnboardingView: View {
 
     private func advance() {
         if page == totalPages - 1 {
-            complete = true
+            // Slide the spirit toward where ContentView will place it, then
+            // hand off. The position match means the swap looks like the
+            // same spirit settling into its home spot rather than two
+            // separate views.
+            animatingSpiritToHome = true
+            Task {
+                try? await Task.sleep(for: .milliseconds(550))
+                complete = true
+            }
         } else {
             withAnimation(.easeInOut(duration: 0.3)) {
                 page += 1
@@ -390,7 +416,7 @@ private struct NotificationsCard: View {
                     .foregroundStyle(.driftInk)
                     .multilineTextAlignment(.center)
 
-                Text("Wait at least until you're notified you're beating your average before the next hit and you'll be drifting!")
+                Text("Wait as long as you can after you're notified you're beating your average before the next hit and you'll be drifting!")
                     .font(.onboardingSubtitle)
                     .foregroundStyle(.driftInkSoft)
                     .multilineTextAlignment(.center)

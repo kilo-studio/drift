@@ -13,6 +13,12 @@ struct ContentView: View {
     @State private var currentTab: AppTab = .home
     @State private var homeScrolled: Bool = false
     @State private var showAddSheet: Bool = false
+    /// One-time celebration when the baseline-count crosses the threshold via
+    /// real logs (not via skip). Owned here rather than HomeView so it
+    /// renders above the tab bar AND the spirit overlay — those are sibling
+    /// layers in this ContentView's body, so the celebration overlay sits
+    /// outside both.
+    @State private var showBaselineCelebration: Bool = false
 
     private let spiritSize: CGFloat = 96
 
@@ -50,9 +56,47 @@ struct ContentView: View {
         .tint(.primary)
         .tabBarMinimizeBehavior(.onScrollDown)
         .overlay { spiritOverlay }
+        .overlay { baselineCelebrationOverlay }
         .sheet(isPresented: $showAddSheet) {
             AddHitSheet()
                 .presentationBackground(.driftSkyLowerMid)
+        }
+        .onChange(of: store.baselineCount) { oldCount, newCount in
+            // Earned moment only — skipping should silently switch to the
+            // post-baseline UI without congratulating the user for bypassing.
+            if oldCount < HitStore.baselineTarget,
+               newCount >= HitStore.baselineTarget,
+               !store.baselineSkipped {
+                withAnimation(.easeInOut(duration: 0.6)) {
+                    showBaselineCelebration = true
+                }
+                Task {
+                    try? await Task.sleep(for: .seconds(2.5))
+                    withAnimation(.easeInOut(duration: 0.8)) {
+                        showBaselineCelebration = false
+                    }
+                }
+            }
+        }
+    }
+
+    /// Full-screen cream wash + handwritten message. Lives at this layer so
+    /// it covers both the tab bar and the spirit overlay underneath.
+    @ViewBuilder
+    private var baselineCelebrationOverlay: some View {
+        if showBaselineCelebration {
+            ZStack {
+                Color.driftCream.ignoresSafeArea()
+                // Extra thin-spaces around the Caveat string so the trailing
+                // "!" swash doesn't clip against the Text frame at this size.
+                Text("\u{2009}\u{2009}now let's start drifting!\u{2009}\u{2009}\u{2009}\u{2009}")
+                    .font(.custom("Caveat", size: 44).weight(.semibold))
+                    .foregroundStyle(.driftInk)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.7)
+                    .padding(.horizontal, 24)
+            }
+            .transition(.opacity)
         }
     }
 
@@ -102,11 +146,16 @@ struct ContentView: View {
             let sticky = stickyCenter(in: geo.size)
             let target = spiritIsStuck ? sticky : rest
 
+            // During the establishing period the spirit's mood shouldn't
+            // shift around — there isn't enough data for the ratio to mean
+            // anything yet, and the donut is the focal element. Pass nil
+            // inputs so SpiritFrame falls through to ratio = 1.0 (neutral
+            // baseline) and no record thresholds get crossed.
             SpiritView(
-                lastSessionEnd: store.lastSessionEnd(),
-                wakingAvgSec: store.wakingAvgSec(),
-                longestWakingGapSec: store.longestWakingGapSec,
-                longestGapSec: store.longestGapSec
+                lastSessionEnd: store.isBaselineEstablished ? store.lastSessionEnd() : nil,
+                wakingAvgSec: store.isBaselineEstablished ? store.wakingAvgSec() : nil,
+                longestWakingGapSec: store.isBaselineEstablished ? store.longestWakingGapSec : 0,
+                longestGapSec: store.isBaselineEstablished ? store.longestGapSec : 0
             )
             .frame(width: spiritSize, height: spiritSize)
             .scaleEffect(spiritIsStuck ? 0.7 : 1.0, anchor: .topTrailing)

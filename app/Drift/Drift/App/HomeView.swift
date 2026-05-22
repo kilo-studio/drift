@@ -11,13 +11,6 @@ struct HomeView: View {
     /// rendered in the global overlay.
     let spiritSize: CGFloat
 
-    /// One-time celebration overlay when the user logs the hit/session that
-    /// crosses the baseline threshold. Full-screen cream wash + a large
-    /// handwritten "now let's start drifting!" — dwells a couple seconds,
-    /// fades out to reveal the freshly-unlocked dashboard. Skipped users
-    /// don't see this — they chose to bypass establishing.
-    @State private var showBaselineCelebration = false
-
     var body: some View {
         ZStack {
             Color.driftSkyLowerMid.ignoresSafeArea()
@@ -49,25 +42,6 @@ struct HomeView: View {
                     wakingAvgSec: store.wakingAvgSec(),
                     layer: .front
                 )
-            }
-        }
-        .overlay { baselineCelebration }
-        .onChange(of: store.baselineCount) { oldCount, newCount in
-            // Only celebrate real establishings — skip should silently switch
-            // to the post-baseline UI without congratulating the user for
-            // bypassing the period.
-            if oldCount < HitStore.baselineTarget,
-               newCount >= HitStore.baselineTarget,
-               !store.baselineSkipped {
-                withAnimation(.easeInOut(duration: 0.6)) {
-                    showBaselineCelebration = true
-                }
-                Task {
-                    try? await Task.sleep(for: .seconds(2.5))
-                    withAnimation(.easeInOut(duration: 0.8)) {
-                        showBaselineCelebration = false
-                    }
-                }
             }
         }
     }
@@ -150,28 +124,6 @@ struct HomeView: View {
         .driftCard()
     }
 
-    /// Earned-moment celebration: full-screen cream wash with a large
-    /// handwritten message in the middle. Fades in over ~0.6s, dwells ~2.5s,
-    /// fades back out to reveal the freshly-unlocked dashboard underneath.
-    @ViewBuilder
-    private var baselineCelebration: some View {
-        if showBaselineCelebration {
-            ZStack {
-                Color.driftCream.ignoresSafeArea()
-                // Extra trailing thin-spaces for the Caveat swash on "!" —
-                // `Text.caveat`'s default single thin-space isn't enough at
-                // this font size and the swash was clipping against the
-                // Text frame.
-                Text("\u{2009}\u{2009}now let's start drifting!\u{2009}\u{2009}\u{2009}\u{2009}")
-                    .font(.custom("Caveat", size: 44).weight(.semibold))
-                    .foregroundStyle(.driftInk)
-                    .multilineTextAlignment(.center)
-                    .minimumScaleFactor(0.7)
-                    .padding(.horizontal, 24)
-            }
-            .transition(.opacity)
-        }
-    }
 
     private var dashboard: some View {
         ScrollView {
@@ -290,12 +242,11 @@ private struct BaselineDonut: View {
 
     var body: some View {
         ZStack {
-            // Track tinted with the same sky-overlay used on `driftCard`'s
-            // glass effect, so the donut visually slots in with the rest of
-            // the app's card surfaces. Ink fill keeps the filled arc neutral
-            // and grounded (coral read as alarming).
+            // Faint ink tint at low opacity reads as a visible-but-subtle
+            // track against the sky background — same-color tints (e.g.
+            // driftSkyLowerMid at 0.4) blended invisibly into the bg.
             Circle()
-                .stroke(Color.driftSkyLowerMid.opacity(0.4), lineWidth: 16)
+                .stroke(Color.driftInk.opacity(0.12), lineWidth: 16)
             Circle()
                 .trim(from: 0, to: progress)
                 .stroke(

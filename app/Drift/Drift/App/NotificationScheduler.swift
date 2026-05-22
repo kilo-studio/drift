@@ -101,10 +101,12 @@ enum NotificationScheduler {
     }
     private static func beatAverageOffsetSec() -> TimeInterval {
         // `double(forKey:)` returns 0 for unset keys — and 0 is a valid offset
-        // ("right at"), so distinguish via `object(forKey:)` to apply the +60s
-        // default only when nothing's stored.
+        // ("right at"), so distinguish via `object(forKey:)` to apply the
+        // default only when nothing's stored. Default: +5 min — the
+        // beat-average nudge is gentle, and 5 minutes past the average is
+        // when "wait it out" starts to feel meaningful.
         if let v = UserDefaults.standard.object(forKey: driftNotifsBeatAvgOffsetKey) as? Double { return v }
-        return 60
+        return 300
     }
     private static func beatRecordOffsetSec() -> TimeInterval {
         if let v = UserDefaults.standard.object(forKey: driftNotifsBeatRecordOffsetKey) as? Double { return v }

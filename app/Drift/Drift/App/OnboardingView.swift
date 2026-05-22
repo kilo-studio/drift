@@ -10,13 +10,15 @@ struct OnboardingView: View {
     @AppStorage(driftOnboardingCompleteKey) private var complete: Bool = false
 
     @State private var page: Int = 0
-    /// Reported by each card's ScrollView. When true, the global spirit
-    /// overlay swoops into the top-right corner — matches the home page's
-    /// scroll-driven swoop behavior. Resets when the page changes.
-    @State private var cardScrolled = false
+    /// Per-page scroll state — keyed by page index so each card preserves its
+    /// own scrolled flag. Swiping between pages reads the destination page's
+    /// stored value, so a previously-scrolled card still shows the spirit in
+    /// the corner when you come back to it.
+    @State private var pageScrolled: [Int: Bool] = [:]
 
-    /// 7 slides: intro, spirit preview, sessions, sleep, notifications, logging
-    /// shortcuts, conclusion. Keep `spiritPreviewPage` in sync when reordering.
+    /// 7 slides: intro, spirit preview, sleep, notifications, logging,
+    /// sessions, conclusion. Sessions sits near the end because it's the
+    /// most abstract concept and the user has built familiarity by then.
     private let totalPages = 7
     private let spiritPreviewPage = 1
 
@@ -24,6 +26,13 @@ struct OnboardingView: View {
     /// Synthetic average used to drive both the resting top-spirit ratio and
     /// the spirit-preview animation. One hour reads as a believable typical gap.
     private let demoAvgSec: TimeInterval = 3600
+
+    /// Whether the currently-visible card is scrolled. Derived from
+    /// `pageScrolled` so the spirit reflects the actual scroll state of
+    /// whichever card is showing.
+    private var cardScrolled: Bool {
+        pageScrolled[page] ?? false
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -40,7 +49,7 @@ struct OnboardingView: View {
                         lastSessionEnd: ctx.date.addingTimeInterval(-ratio * demoAvgSec),
                         wakingAvgSec: demoAvgSec,
                         layer: .back,
-                        spiritPercent: CGPoint(x: 50, y: 14)
+                        spiritPercent: spiritPercentForSparkles
                     )
                 }
                 .ignoresSafeArea()
@@ -48,13 +57,13 @@ struct OnboardingView: View {
             }
 
             TabView(selection: $page) {
-                IntroCard(scrolled: $cardScrolled).tag(0)
-                SpiritPreviewCard(scrolled: $cardScrolled).tag(1)
-                SessionsCard(store: store, scrolled: $cardScrolled).tag(2)
-                SleepCard(store: store, scrolled: $cardScrolled).tag(3)
-                NotificationsCard(store: store, scrolled: $cardScrolled).tag(4)
-                LoggingCard(scrolled: $cardScrolled).tag(5)
-                ConclusionCard(scrolled: $cardScrolled).tag(6)
+                IntroCard(scrolled: bindingFor(0)).tag(0)
+                SpiritPreviewCard(scrolled: bindingFor(1)).tag(1)
+                SleepCard(store: store, scrolled: bindingFor(2)).tag(2)
+                NotificationsCard(store: store, scrolled: bindingFor(3)).tag(3)
+                LoggingCard(scrolled: bindingFor(4)).tag(4)
+                SessionsCard(store: store, scrolled: bindingFor(5)).tag(5)
+                ConclusionCard(scrolled: bindingFor(6)).tag(6)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             .ignoresSafeArea(edges: .bottom)
@@ -64,22 +73,24 @@ struct OnboardingView: View {
             spiritOverlay
                 .allowsHitTesting(false)
         }
-        .onChange(of: page) { _, _ in
-            // Each card has its own scroll state; resetting on page change
-            // avoids carrying over a stuck spirit from the previous card.
-            cardScrolled = false
-        }
         .animation(.easeOut(duration: 0.25), value: page)
+    }
+
+    private func bindingFor(_ index: Int) -> Binding<Bool> {
+        Binding(
+            get: { pageScrolled[index] ?? false },
+            set: { pageScrolled[index] = $0 }
+        )
     }
 
     // MARK: - Spirit overlay
 
-    /// Global spirit overlay positioned in screen coordinates. Rest = centered
-    /// horizontally near the top of the carousel area; sticky = top-right
-    /// corner at a smaller scale, matching the home page's swoop.
+    /// Global spirit overlay positioned in screen coordinates. Rest position
+    /// depends on page — the spirit-preview card pulls it down toward the
+    /// vertical center so the demo isn't crammed against the top.
     private var spiritOverlay: some View {
         GeometryReader { geo in
-            let rest = CGPoint(x: geo.size.width / 2, y: 60 + spiritSize / 2)
+            let rest = restCenter(in: geo.size)
             let sticky = CGPoint(x: geo.size.width - 8 - spiritSize / 2, y: spiritSize / 2)
             let target = cardScrolled ? sticky : rest
 
@@ -88,31 +99,42 @@ struct OnboardingView: View {
                 .scaleEffect(cardScrolled ? 0.7 : 1.0, anchor: .topTrailing)
                 .position(x: target.x, y: target.y)
                 .animation(.spring(response: 0.55, dampingFraction: 0.7), value: cardScrolled)
+                .animation(.spring(response: 0.55, dampingFraction: 0.7), value: page)
         }
     }
 
-    /// Top spirit. During the spirit-preview card it animates through a cosine-
-    /// eased ratio range with `stableFloat: true` so the spirit doesn't visibly
-    /// "jump" at threshold crossings — only cheek color transitions remain.
-    @ViewBuilder
+    /// Page-aware rest position. Default is high-and-centered; spirit-preview
+    /// shifts down so the demo reads as the focal element of the slide.
+    private func restCenter(in size: CGSize) -> CGPoint {
+        let restY: CGFloat = page == spiritPreviewPage ? 240 : (60 + spiritSize / 2)
+        return CGPoint(x: size.width / 2, y: restY)
+    }
+
+    /// Where the sparkle halo centers on the spirit-preview slide. Tied to
+    /// `restCenter` so the halo follows the spirit's lowered position.
+    private var spiritPercentForSparkles: CGPoint {
+        // Sparkles use viewport-percentage coords; assume an ~852pt iPhone height
+        // and compute. The percent doesn't need to be exact — sparkles just sort
+        // by distance to this point for the reveal-order curve.
+        let restYPct = 240.0 / 852.0 * 100
+        return CGPoint(x: 50, y: restYPct)
+    }
+
+    /// Single `TimelineView` for the spirit on every page — only the inputs
+    /// change. This avoids the view-tree change that caused a cross-fade
+    /// flash when navigating between the preview card and the others.
     private var topSpirit: some View {
-        if page == spiritPreviewPage {
-            TimelineView(.animation) { ctx in
-                let ratio = demoRatio(at: ctx.date)
-                SpiritView(
-                    lastSessionEnd: ctx.date.addingTimeInterval(-ratio * demoAvgSec),
-                    wakingAvgSec: demoAvgSec,
-                    longestWakingGapSec: demoAvgSec * 2,
-                    longestGapSec: demoAvgSec * 3.5,
-                    stableFloat: true
-                )
-            }
-        } else {
+        TimelineView(.animation) { ctx in
+            let isPreview = page == spiritPreviewPage
+            let ratio: Double = isPreview ? demoRatio(at: ctx.date) : 1.5
+            let lastSessionEnd = ctx.date.addingTimeInterval(-ratio * demoAvgSec)
+
             SpiritView(
-                lastSessionEnd: Date.now.addingTimeInterval(-1.5 * demoAvgSec),
+                lastSessionEnd: lastSessionEnd,
                 wakingAvgSec: demoAvgSec,
-                longestWakingGapSec: 0,
-                longestGapSec: 0
+                longestWakingGapSec: isPreview ? demoAvgSec * 2 : 0,
+                longestGapSec: isPreview ? demoAvgSec * 3.5 : 0,
+                stableFloat: isPreview
             )
         }
     }
@@ -128,9 +150,6 @@ struct OnboardingView: View {
 
     // MARK: - Sticky bottom
 
-    /// Cream-tinted bottom strip with an arced top edge separating it from the
-    /// scrollable carousel content above. Holds the primary CTA (full card
-    /// width, solid coral) and the page dots.
     private var stickyBottom: some View {
         VStack(spacing: 18) {
             Button(action: advance) {
@@ -148,11 +167,11 @@ struct OnboardingView: View {
             pageDots
         }
         .padding(.horizontal, 20)
-        .padding(.top, 24)
+        .padding(.top, 40)
         .padding(.bottom, 12)
         .frame(maxWidth: .infinity)
         .background(
-            ArcedTop(archHeight: 14)
+            ArcedTop(archHeight: 22)
                 .fill(Color.driftCream)
                 .ignoresSafeArea(edges: .bottom)
         )
@@ -191,10 +210,10 @@ struct OnboardingView: View {
 
 // MARK: - Sticky bottom shape
 
-/// Bottom strip with an arc rising into the middle of its top edge — soft,
-/// hand-drawn-looking separator between the scrollable carousel and the
-/// sticky CTA area beneath. Height of the arc is the offset of the side
-/// endpoints below the rect's top edge; the curve peaks at y = 0 in the middle.
+/// Bottom strip with an arc rising into the middle of its top edge — soft
+/// separator between the scrollable carousel and the sticky CTA area beneath.
+/// `archHeight` is the offset of the side endpoints below the rect's top edge;
+/// the curve peaks at y = 0 in the middle.
 private struct ArcedTop: Shape {
     let archHeight: CGFloat
 
@@ -220,6 +239,11 @@ private struct ArcedTop: Shape {
 /// pads enough top/bottom space to clear the spirit and sticky bottom.
 private struct OnboardingCardChrome<Content: View>: View {
     @Binding var scrolled: Bool
+    /// Per-card top padding override — the spirit-preview card pushes content
+    /// lower so the title sits near the vertical middle rather than crammed
+    /// under a top-anchored spirit. Default 180 matches the spirit's resting
+    /// position + breathing room.
+    var topPadding: CGFloat = 180
     @ViewBuilder let content: () -> Content
 
     var body: some View {
@@ -228,7 +252,7 @@ private struct OnboardingCardChrome<Content: View>: View {
                 content()
                     .frame(maxWidth: .infinity)
             }
-            .padding(.top, 180)
+            .padding(.top, topPadding)
             .padding(.horizontal, 20)
             .padding(.bottom, 200)
         }
@@ -251,8 +275,8 @@ private struct IntroCard: View {
     var body: some View {
         OnboardingCardChrome(scrolled: $scrolled) {
             VStack(spacing: 12) {
-                // Extra trailing thin-space so the Caveat "t" swash at this size
-                // doesn't get clipped by the Text frame.
+                // Extra trailing thin-space so the Caveat "t" swash at this
+                // size doesn't get clipped by the Text frame.
                 Text("\u{2009}\u{2009}drift\u{2009}\u{2009}\u{2009}")
                     .font(.custom("Caveat", size: 72).weight(.semibold))
                     .foregroundStyle(.driftInk)
@@ -283,7 +307,9 @@ private struct SpiritPreviewCard: View {
     @Binding var scrolled: Bool
 
     var body: some View {
-        OnboardingCardChrome(scrolled: $scrolled) {
+        // Push content well below the lowered spirit so the title sits near
+        // the vertical middle of the visible card area.
+        OnboardingCardChrome(scrolled: $scrolled, topPadding: 340) {
             VStack(spacing: 16) {
                 Text("make your spirit happy")
                     .font(.onboardingTitle)
@@ -296,53 +322,6 @@ private struct SpiritPreviewCard: View {
                     .multilineTextAlignment(.center)
             }
         }
-    }
-}
-
-private struct SessionsCard: View {
-    @Bindable var store: HitStore
-    @Binding var scrolled: Bool
-
-    private static let thresholdOptions: [TimeInterval] = [60, 180, 300, 600, 900, 1800]
-
-    var body: some View {
-        OnboardingCardChrome(scrolled: $scrolled) {
-            VStack(spacing: 20) {
-                Text("use sessions?")
-                    .font(.onboardingTitle)
-                    .foregroundStyle(.driftInk)
-                    .multilineTextAlignment(.center)
-
-                Text("Sessions group multiple hits in rapid succession into a single session and Drift will measure time between sessions instead of time between hits.")
-                    .font(.onboardingSubtitle)
-                    .foregroundStyle(.driftInkSoft)
-                    .multilineTextAlignment(.center)
-
-                VStack(spacing: 0) {
-                    SettingsToggleRow(
-                        label: "use sessions",
-                        description: "Group rapid hits into one session. When off, every tap counts on its own.",
-                        isOn: $store.useSessions
-                    )
-                    if store.useSessions {
-                        SettingsDivider()
-                        SettingsPickerRow(
-                            label: "session threshold",
-                            description: "Rapid hits within this gap collapse into one session.",
-                            selection: $store.sessionThresholdSec,
-                            options: Self.thresholdOptions,
-                            formatted: { formatThreshold($0) }
-                        )
-                    }
-                }
-                .driftCard()
-            }
-        }
-    }
-
-    private func formatThreshold(_ sec: TimeInterval) -> String {
-        let m = Int(sec / 60)
-        return m == 1 ? "1 min" : "\(m) min"
     }
 }
 
@@ -419,7 +398,7 @@ private struct NotificationsCard: View {
                 VStack(spacing: 0) {
                     SettingsToggleRow(
                         label: "notifications",
-                        description: "Master switch. Drift will ask permission the first time you turn this on.",
+                        description: "Master switch.",
                         isOn: $store.notifsEnabled
                     )
                     if store.notifsEnabled {
@@ -456,10 +435,12 @@ private struct NotificationsCard: View {
                 .driftCard()
             }
         }
-        .onChange(of: store.notifsEnabled) { _, newValue in
-            if newValue {
-                Task { await requestNotificationPermission() }
-            }
+        .onAppear {
+            // Request permission as soon as the user lands on this card —
+            // the master switch defaults on, so otherwise we'd never trigger
+            // the prompt. iOS only shows the dialog once per install; later
+            // calls return the existing status.
+            Task { await requestNotificationPermission() }
         }
     }
 
@@ -546,9 +527,7 @@ private struct LoggingMethodCard: View {
                 .foregroundStyle(.driftInkSoft)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Secondary button — soft glass with coral text. The prominent
-            // solid-coral CTA lives at the bottom of the carousel; these
-            // shouldn't compete with it.
+            // Secondary button — soft glass with coral text.
             Button(action: action) {
                 Text(buttonLabel)
                     .font(.driftRowLabel)
@@ -567,12 +546,59 @@ private struct LoggingMethodCard: View {
     }
 }
 
+private struct SessionsCard: View {
+    @Bindable var store: HitStore
+    @Binding var scrolled: Bool
+
+    private static let thresholdOptions: [TimeInterval] = [60, 180, 300, 600, 900, 1800]
+
+    var body: some View {
+        OnboardingCardChrome(scrolled: $scrolled) {
+            VStack(spacing: 20) {
+                Text("use sessions?")
+                    .font(.onboardingTitle)
+                    .foregroundStyle(.driftInk)
+                    .multilineTextAlignment(.center)
+
+                Text("Sessions group multiple hits in rapid succession into a single session. Drift will measure time between sessions instead of time between hits.")
+                    .font(.onboardingSubtitle)
+                    .foregroundStyle(.driftInkSoft)
+                    .multilineTextAlignment(.center)
+
+                VStack(spacing: 0) {
+                    SettingsToggleRow(
+                        label: "use sessions",
+                        description: "Group rapid hits into one session. When off, every tap counts on its own.",
+                        isOn: $store.useSessions
+                    )
+                    if store.useSessions {
+                        SettingsDivider()
+                        SettingsPickerRow(
+                            label: "session threshold",
+                            description: "Rapid hits within this gap collapse into one session.",
+                            selection: $store.sessionThresholdSec,
+                            options: Self.thresholdOptions,
+                            formatted: { formatThreshold($0) }
+                        )
+                    }
+                }
+                .driftCard()
+            }
+        }
+    }
+
+    private func formatThreshold(_ sec: TimeInterval) -> String {
+        let m = Int(sec / 60)
+        return m == 1 ? "1 min" : "\(m) min"
+    }
+}
+
 private struct ConclusionCard: View {
     @Binding var scrolled: Bool
 
     /// Tip-jar destination. Swap to the real Buy Me a Coffee URL once the
     /// page is live; this placeholder reads OK in the meantime.
-    private let tipJarURL = "https://buymeacoffee.com/griffinmullins"
+    private static let tipJarURL = URL(string: "https://buymeacoffee.com/griffinmullins")!
 
     var body: some View {
         OnboardingCardChrome(scrolled: $scrolled) {
@@ -587,17 +613,28 @@ private struct ConclusionCard: View {
                     .foregroundStyle(.driftInkSoft)
                     .multilineTextAlignment(.center)
 
-                // Inline markdown link inside a soft invitation. The link text
-                // is bold via combined ** + [] markdown so it visually pops
-                // without becoming a full CTA button.
-                Text("Drift is completely free forever, but if you'd like to show your support, you can [**buy me a coffee**](\(tipJarURL)).")
-                    .font(.onboardingSubtitle)
-                    .foregroundStyle(.driftInkSoft)
-                    .tint(.driftCoral)
+                Text(tipJarSentence)
                     .multilineTextAlignment(.center)
                     .padding(.top, 8)
             }
         }
+    }
+
+    /// Built explicitly as `AttributedString` so the link text really gets the
+    /// SemiBold weight — SwiftUI's Markdown shortcut applies link styling on
+    /// top of `**bold**`, which in practice swallowed the bold weight inside
+    /// the link span.
+    private var tipJarSentence: AttributedString {
+        var s = AttributedString("Drift is completely free forever, but if you'd like to show your support, you can buy me a coffee.")
+        s.font = .onboardingSubtitle
+        s.foregroundColor = .driftInkSoft
+
+        if let range = s.range(of: "buy me a coffee") {
+            s[range].link = Self.tipJarURL
+            s[range].font = Font.custom("Quicksand-SemiBold", size: 17)
+            s[range].foregroundColor = .driftCoral
+        }
+        return s
     }
 }
 

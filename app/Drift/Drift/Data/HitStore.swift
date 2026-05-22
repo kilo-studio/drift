@@ -154,7 +154,7 @@ final class HitStore {
         self.notifsImmediateEnabled = (UserDefaults.standard.object(forKey: driftNotifsImmediateKey) as? Bool) ?? true
         self.notifsBeatAverageEnabled = (UserDefaults.standard.object(forKey: driftNotifsBeatAverageKey) as? Bool) ?? true
         self.notifsBeatRecordEnabled = (UserDefaults.standard.object(forKey: driftNotifsBeatRecordKey) as? Bool) ?? true
-        self.notifsBeatAverageOffsetSec = (UserDefaults.standard.object(forKey: driftNotifsBeatAvgOffsetKey) as? Double) ?? 60
+        self.notifsBeatAverageOffsetSec = (UserDefaults.standard.object(forKey: driftNotifsBeatAvgOffsetKey) as? Double) ?? 300
         self.notifsBeatRecordOffsetSec = (UserDefaults.standard.object(forKey: driftNotifsBeatRecordOffsetKey) as? Double) ?? 0
 
         if let existing = try context.fetch(FetchDescriptor<Records>()).first {

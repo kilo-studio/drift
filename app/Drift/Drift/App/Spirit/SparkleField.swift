@@ -46,7 +46,11 @@ struct SparkleField: View {
 
     var body: some View {
         GeometryReader { geo in
-            TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { ctx in
+            // 30fps caps the per-frame work for 200 sparkles × 2 layers — the
+            // halved cost noticeably reduces stutter when the spirit overlay
+            // springs between rest and sticky positions on scroll. Eye can't
+            // track 60fps on slow twinkling drift either way.
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { ctx in
                 Canvas { gc, size in
                     guard !sparkles.isEmpty else { return }
                     let now = ctx.date

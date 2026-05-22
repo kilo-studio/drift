@@ -27,7 +27,12 @@ struct SpiritView: View {
     @State private var preSnapRatio: Double = 0
 
     var body: some View {
-        TimelineView(.animation) { context in
+        // 30fps cap — blinks are 0.1s (3 frames visible) and the float-sin
+        // period is 5s (~150 samples per cycle) so visual smoothness is fine,
+        // and the halved per-frame cost matters during the scroll-driven
+        // position spring (otherwise the Canvas redraw competes with the
+        // sparkle fields for the same frame budget).
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
             let frame = SpiritFrame(
                 now: context.date,
                 lastSessionEnd: lastSessionEnd,

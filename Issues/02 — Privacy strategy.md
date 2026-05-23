@@ -15,10 +15,22 @@ Lock in the data and privacy stance before any code. This is a **feature**, not 
 - [x] No analytics that include hit data
 - [x] No third-party SDKs
 - [x] Privacy nutrition labels: "Data Not Collected" honestly
-- [x] **Privacy policy text drafted** in `Privacy.md` at repo root and as `docs/privacy.html` for GitHub Pages
-- [ ] **Host on GitHub Pages** — pending repo visibility flip and Pages enablement (see Issue 14)
-- [ ] **Update `SettingsView` privacy URL** from the placeholder to the live Pages URL once published
+- [x] **Privacy policy text** lives in `Privacy.md` at repo root
+- [x] **Hosting** — no Pages site. Repo is public (flipped 2026-05-23), so `Privacy.md` is served directly by GitHub at https://github.com/kilo-studio/drift/blob/main/Privacy.md. GitHub Pages + the `docs/` site (landing + privacy + css) were briefly set up then torn down to keep surfaces minimal — the only things to maintain are the repo (README + Privacy.md) and the app.
+- [x] **Update `SettingsView` privacy URL** — now `https://github.com/kilo-studio/drift/blob/main/Privacy.md` (change is in the uncommitted SettingsView edits; commits with the rest of the settings work)
 - [ ] **Update policy when iCloud sync ships** — current text intentionally omits CloudKit details since the toggle isn't live yet
+
+## Pre-public history scrub (2026-05-23)
+
+Before flipping `kilo-studio/drift` public, rewrote history with `git filter-repo`
+to remove files that should never be public but were in old commits:
+- `prototype/vape-log.json` — real personal hit log (~385 timestamps). Now gitignored.
+- `CLAUDE.md`, `Plan.md`, `Case study.md` — internal/assistant docs (already
+  removed from the tip in `940006b`, but lingered in history).
+
+All local copies were preserved (the rewrite only touches committed history). A
+fresh clone of origin was audited clean afterward. All commit SHAs changed — the
+old pre-scrub tips are orphaned.
 
 ## Privacy policy outline
 

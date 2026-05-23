@@ -546,7 +546,7 @@ enum DebugScenario: String, CaseIterable, Identifiable {
         case .longMonth:       return "Long stretch — 1 month free"
         case .maxedOut:        return "Long stretch — 5 years (all badges)"
         case .belowRecord:     return "Long stretch — 2d, below your record"
-        case .nearMilestone:   return "Long stretch — ~40s before 1 week (watch the crossing)"
+        case .nearMilestone:   return "Long stretch — ~30s before 1 week (watch the crossing)"
         }
     }
 }
@@ -596,10 +596,10 @@ extension HitStore {
             dates = Self.seedHistory(endingAt: now.addingTimeInterval(-16 * 86400), days: 4, sessionsPerDay: 12)
                   + Self.seedHistory(endingAt: now.addingTimeInterval(-2 * 86400), days: 2, sessionsPerDay: 12)
         case .nearMilestone:
-            // ~40s shy of 1 week → the crossing (and its badge flourish) fires
-            // within the first minute, so it's watchable.
+            // ~30s shy of 1 week → the crossing (and its badge flourish) fires
+            // about half a minute after launch, so it's easy to sit and watch.
             baselineSkipped = true
-            dates = Self.seedHistory(endingAt: now.addingTimeInterval(-(7 * 86400 - 40)), days: 14, sessionsPerDay: 11)
+            dates = Self.seedHistory(endingAt: now.addingTimeInterval(-(7 * 86400 - 30)), days: 14, sessionsPerDay: 11)
         }
 
         let tz = TimeZone.current.secondsFromGMT() / 60

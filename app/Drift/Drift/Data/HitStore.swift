@@ -530,6 +530,7 @@ enum DebugScenario: String, CaseIterable, Identifiable {
     case longDay
     case longWeek
     case longMonth
+    case maxedOut
     case belowRecord
 
     var id: String { rawValue }
@@ -542,6 +543,7 @@ enum DebugScenario: String, CaseIterable, Identifiable {
         case .longDay:         return "Long stretch — 1 day free"
         case .longWeek:        return "Long stretch — 1 week free"
         case .longMonth:       return "Long stretch — 1 month free"
+        case .maxedOut:        return "Long stretch — 5 years (all badges)"
         case .belowRecord:     return "Long stretch — 2d, below your record"
         }
     }
@@ -578,6 +580,11 @@ extension HitStore {
         case .longMonth:
             baselineSkipped = true
             dates = Self.seedHistory(endingAt: now.addingTimeInterval(-32 * 86400), days: 14, sessionsPerDay: 11)
+        case .maxedOut:
+            // ~5 years free → every milestone (≤ 1 year) reached, and the
+            // donut hits its "all drifted past" terminal state.
+            baselineSkipped = true
+            dates = Self.seedHistory(endingAt: now.addingTimeInterval(-5 * 365 * 86400), days: 14, sessionsPerDay: 11)
         case .belowRecord:
             // An older block ending ~16 days ago, then a ~12-day void, then
             // recent activity ending 2 days ago → longest gap ~12 days while

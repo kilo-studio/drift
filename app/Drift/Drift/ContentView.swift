@@ -2,8 +2,10 @@ import SwiftUI
 
 enum AppTab: Hashable {
     case home, history, settings
-    /// Pseudo-tab — selected briefly when the user taps the trailing + slot,
-    /// intercepted to present the add-hit sheet without actually navigating.
+    /// The trailing search-role slot, repurposed as the + button. Its tap is
+    /// intercepted (see `addTapInterceptor`) so the search transition never
+    /// fires; this value only exists so the binding can recognize and reject a
+    /// selection that slips past the interceptor.
     case addAction
 }
 
@@ -29,10 +31,14 @@ struct ContentView: View {
     }
 
     var body: some View {
-        // Native TabView. iOS 26's Tab(role: .search) auto-places a tab on the
-        // trailing edge — that's the layout pattern from Apple Music. We
-        // repurpose that slot for the + Menu by intercepting the tab selection
-        // before it actually navigates.
+        // iOS 26's Tab(role: .search) is the ONLY way to get a button in the
+        // trailing-separated slot of the tab bar — there's no API for a regular
+        // trailing button, and a free-floating overlay can't track the bar when
+        // it re-centers or minimizes. So the + keeps the search role for
+        // placement, and `addTapInterceptor` (a transparent button pinned over
+        // the pill) swallows the tap before it reaches the tab — that's what
+        // stops iOS's search-mode transition, the source of the white flash.
+        // The pill's + glyph still comes from the search tab beneath it.
         TabView(selection: tabSelectionBinding) {
             Tab("home", systemImage: "house.fill", value: AppTab.home) {
                 HomeView(
@@ -56,18 +62,21 @@ struct ContentView: View {
                 SettingsView()
             }
             Tab("add", systemImage: "plus", value: AppTab.addAction, role: .search) {
-                // Never actually navigated to — we revert in the binding setter
-                // below before the user sees this view.
-                Color.clear
+                Color.driftSkyLowerMid.ignoresSafeArea()
             }
         }
         .tint(.primary)
         .tabBarMinimizeBehavior(.onScrollDown)
+        .overlay { addTapInterceptor }
         .overlay { spiritOverlay }
         .overlay { baselineCelebrationOverlay }
         .sheet(isPresented: $showAddSheet) {
             AddHitSheet()
                 .presentationBackground(.driftSkyLowerMid)
+                // Half-height by default (the native iOS way — `.medium` detent),
+                // draggable up to full if the date picker needs the room.
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
         .onChange(of: store.baselineCount) { oldCount, newCount in
             // Earned moment only — skipping should silently switch to the
@@ -108,17 +117,16 @@ struct ContentView: View {
         }
     }
 
-    /// Intercept the .addAction "tab" selection: snap back to the prior tab
-    /// and present the add-hit menu. The user sees the trailing tab slot styled
-    /// like Apple Music's search button without ever actually navigating into it.
+    /// Reject any selection of the search-role + slot: keep the current tab and
+    /// open the sheet instead. This is the backstop — `addTapInterceptor`
+    /// normally swallows the tap before it ever gets here, but if a tap slips
+    /// past (e.g. the bar is minimized and the pill has moved), this still
+    /// prevents a navigation into the empty search tab.
     private var tabSelectionBinding: Binding<AppTab> {
         Binding(
             get: { currentTab },
             set: { newValue in
                 if newValue == .addAction {
-                    // Don't update currentTab; just trigger the menu/sheet instead.
-                    // For now use the sheet directly — Menu can't be triggered
-                    // programmatically without a label tap.
                     showAddSheet = true
                 } else {
                     currentTab = newValue
@@ -127,24 +135,26 @@ struct ContentView: View {
         )
     }
 
-    private var plusMenu: some View {
-        Menu {
-            Button {
-                try? store.append()
-            } label: {
-                Label("Log hit now", systemImage: "plus.circle.fill")
-            }
+    /// Transparent button pinned over the search pill. It sits above the tab bar
+    /// in the overlay stack, so it wins the hit-test and the tap never reaches
+    /// the search tab — which is what prevents iOS's search-mode transition (the
+    /// white flash). The pill's visible + glyph is still drawn by the search tab
+    /// underneath; this view is invisible. Position matches the measured pill
+    /// center (≈45pt from right, ≈52pt from bottom). `ignoresSafeArea` so the
+    /// bottom-relative math is against the true screen edge.
+    private var addTapInterceptor: some View {
+        GeometryReader { geo in
             Button {
                 showAddSheet = true
             } label: {
-                Label("Choose time", systemImage: "clock")
+                Color.clear
+                    .frame(width: 56, height: 56)
+                    .contentShape(Circle())
             }
-        } label: {
-            Image(systemName: "plus")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(.driftCoral)
-                .frame(width: 36, height: 36)
+            .buttonStyle(.plain)
+            .position(x: geo.size.width - 45, y: geo.size.height - 52)
         }
+        .ignoresSafeArea()
     }
 
     /// Spirit lives in an overlay so it persists across tab switches.

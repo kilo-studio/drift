@@ -191,17 +191,31 @@ extension Array where Element == Hit {
         var result: [(Date, TimeInterval)] = []
         var day = firstDay
         while day <= endDay {
-            let windowEnd = cal.date(bySettingHour: 23, minute: 59, second: 59, of: day)!
             let windowStart = cal.date(byAdding: .day, value: -window, to: day)!
-            let windowSessions = allSessions.filter { $0.end >= windowStart && $0.start <= windowEnd }
-            if windowSessions.count >= 2 {
-                let sorted = windowSessions.sorted { $0.start < $1.start }
-                var totalGap: TimeInterval = 0
+            let windowStartKey = deviceLocalDateKey(windowStart)
+            let dayKey = deviceLocalDateKey(day)
+            let windowSessions = allSessions.filter { s in
+                let k = s.logLocalDateKey
+                return k >= windowStartKey && k <= dayKey
+            }
+            // Bucket by waking day and only average gaps WITHIN a waking day —
+            // identical to `wakingAvgSec`, so the chart's latest point equals
+            // the "N-day avg between sessions" stat card. The previous version
+            // averaged every consecutive gap, which swept in the overnight gaps
+            // (last session of a day → first of the next) and inflated the line
+            // far above the card's number.
+            let buckets = Dictionary(grouping: windowSessions, by: \.wakingDayKey)
+            var totalGap: TimeInterval = 0
+            var totalIntervals = 0
+            for (_, daySessions) in buckets where daySessions.count >= 2 {
+                let sorted = daySessions.sorted { $0.start < $1.start }
                 for i in 1..<sorted.count {
                     totalGap += sorted[i].start.timeIntervalSince(sorted[i-1].end)
                 }
-                let avg = totalGap / Double(sorted.count - 1)
-                result.append((day, avg))
+                totalIntervals += sorted.count - 1
+            }
+            if totalIntervals > 0 {
+                result.append((day, totalGap / Double(totalIntervals)))
             }
             day = cal.date(byAdding: .day, value: 1, to: day)!
         }

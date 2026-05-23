@@ -22,9 +22,11 @@ struct OnboardingView: View {
     /// swaps.
     @State private var animatingSpiritToHome: Bool = false
 
-    /// 7 slides: intro, spirit preview, sleep, notifications, logging,
-    /// sessions, conclusion. Sessions sits near the end because it's the
-    /// most abstract concept and the user has built familiarity by then.
+    /// 7 slides: intro, spirit preview, notifications, sleep, logging,
+    /// sessions, conclusion. Sleep follows notifications since the sleep
+    /// window mostly exists to govern when notifications fire. Sessions sits
+    /// near the end because it's the most abstract concept and the user has
+    /// built familiarity by then.
     private let totalPages = 7
     private let spiritPreviewPage = 1
 
@@ -553,7 +555,10 @@ private struct LoggingMethodCard: View {
                 .foregroundStyle(.driftInkSoft)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Secondary button — soft glass with coral text.
+            // Secondary button — soft glass with coral text. `contentShape`
+            // makes the whole capsule tappable: without it `.buttonStyle(.plain)`
+            // only hit-tests the text glyphs, so the padded/expanded area around
+            // the label looked tappable but wasn't.
             Button(action: action) {
                 Text(buttonLabel)
                     .font(.driftRowLabel)
@@ -564,6 +569,7 @@ private struct LoggingMethodCard: View {
                         .regular.tint(.driftSkyLowerMid.opacity(0.4)),
                         in: Capsule()
                     )
+                    .contentShape(Capsule())
             }
             .buttonStyle(.plain)
             .padding(.top, 4)

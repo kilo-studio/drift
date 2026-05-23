@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Settings tab. Detail surfaces (currently just notifications) come up as
 /// sheets from the bottom — push navigation felt heavy for what's essentially
@@ -9,6 +10,12 @@ struct SettingsView: View {
     @Environment(HitStore.self) private var store
     @State private var showResetConfirm: Bool = false
     @State private var showNotifications: Bool = false
+
+    @State private var showImporter: Bool = false
+    /// Parsed file held between picking and confirming — the replace only runs
+    /// once the user OKs the destructive warning.
+    @State private var pendingImport: PrototypeImport.Parsed?
+    @State private var importError: String?
 
     private static let thresholdOptions: [TimeInterval] = [60, 180, 300, 600, 900, 1800]
     private static let windowOptions: [Int] = [7, 14, 30, 60]
@@ -40,6 +47,7 @@ struct SettingsView: View {
                     sleepWindowCard(store: $store)
                     notificationsCard
                     dataCard
+                    onboardingCard
                     aboutCard
                 }
                 .padding(.horizontal, 16)
@@ -62,6 +70,44 @@ struct SettingsView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Every logged hit will be deleted and your records reset to zero. This can't be undone.")
+        }
+        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.json]) { result in
+            handleImportPick(result)
+        }
+        .alert("Replace all data?", isPresented: Binding(
+            get: { pendingImport != nil },
+            set: { if !$0 { pendingImport = nil } }
+        ), presenting: pendingImport) { parsed in
+            Button("Replace", role: .destructive) {
+                try? store.replaceWithImport(parsed)
+                pendingImport = nil
+            }
+            Button("Cancel", role: .cancel) { pendingImport = nil }
+        } message: { parsed in
+            Text("This will delete your current hits and replace them with the \(parsed.hits.count) in this file. This can't be undone.")
+        }
+        .alert("Import failed", isPresented: Binding(
+            get: { importError != nil },
+            set: { if !$0 { importError = nil } }
+        )) {
+            Button("OK", role: .cancel) { importError = nil }
+        } message: {
+            Text(importError ?? "")
+        }
+    }
+
+    /// Read + parse the picked file. Validation happens before the replace
+    /// warning so a bad file never wipes anything — on success we stash the
+    /// parsed result and let the confirmation alert drive the destructive step.
+    private func handleImportPick(_ result: Result<URL, Error>) {
+        guard case .success(let url) = result else { return }  // .failure = user cancelled
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        do {
+            let data = try Data(contentsOf: url)
+            pendingImport = try PrototypeImport.parse(data)
+        } catch {
+            importError = "That file couldn't be read as a Drift export."
         }
     }
 
@@ -148,9 +194,9 @@ struct SettingsView: View {
                     .foregroundStyle(.driftInkSoft)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 SettingsDivider()
-                ShareLink(item: store.makeHitsExport(), preview: SharePreview("Drift hits")) {
+                ShareLink(item: store.makeHitsExport(), preview: SharePreview("Drift history")) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("export hits")
+                        Text("export history")
                             .font(.driftRowLabel)
                             .foregroundStyle(.driftInk)
                         Text("Save every logged hit as a JSON file you can keep in Files or share elsewhere.")
@@ -164,13 +210,13 @@ struct SettingsView: View {
                 .buttonStyle(.plain)
                 SettingsDivider()
                 Button {
-                    UserDefaults.standard.removeObject(forKey: driftOnboardingCompleteKey)
+                    showImporter = true
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("re-run onboarding")
+                        Text("import history")
                             .font(.driftRowLabel)
                             .foregroundStyle(.driftInk)
-                        Text("Walk through the setup carousel again. Your hits stay where they are.")
+                        Text("Restore from a Drift export file. This replaces all hits currently logged.")
                             .font(.driftRowDescription)
                             .foregroundStyle(.driftInkSoft)
                             .fixedSize(horizontal: false, vertical: true)
@@ -200,12 +246,36 @@ struct SettingsView: View {
         }
     }
 
+    /// Re-run onboarding lives on its own card, away from the destructive
+    /// data actions — it's a harmless "walk through setup again," not a data
+    /// operation, so grouping it with export/import/reset misrepresented it.
+    private var onboardingCard: some View {
+        SettingsCard {
+            Button {
+                UserDefaults.standard.removeObject(forKey: driftOnboardingCompleteKey)
+            } label: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("re-run onboarding")
+                        .font(.driftRowLabel)
+                        .foregroundStyle(.driftInk)
+                    Text("Walk through the setup carousel again. Your hits stay where they are.")
+                        .font(.driftRowDescription)
+                        .foregroundStyle(.driftInkSoft)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
     private var aboutCard: some View {
         SettingsCard {
             VStack(spacing: 0) {
                 SettingsInfoRow(label: "version", value: appVersion)
                 SettingsDivider()
-                SettingsLinkRow(label: "privacy policy", url: URL(string: "https://drift.app/privacy")!)
+                SettingsLinkRow(label: "privacy policy", url: URL(string: "https://github.com/kilo-studio/drift/blob/main/Privacy.md")!)
                 SettingsDivider()
                 SettingsLinkRow(label: "github", url: URL(string: "https://github.com/kilo-studio/drift")!)
                 SettingsDivider()

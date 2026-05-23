@@ -254,9 +254,11 @@ private struct BaselineDonut: View {
         ZStack {
             // Faint ink tint at low opacity reads as a visible-but-subtle
             // track against the sky background — same-color tints (e.g.
-            // driftSkyLowerMid at 0.4) blended invisibly into the bg.
+            // driftSkyLowerMid at 0.4) blended invisibly into the bg. Bumped
+            // up so the empty/low-progress ring is clearly visible rather than
+            // reading as no track at all.
             Circle()
-                .stroke(Color.driftInk.opacity(0.12), lineWidth: 16)
+                .stroke(Color.driftInk.opacity(0.18), lineWidth: 16)
             Circle()
                 .trim(from: 0, to: progress)
                 .stroke(

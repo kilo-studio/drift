@@ -388,6 +388,25 @@ final class HitStore {
         return HitsExport(data: data, filename: "drift-export-\(stamp.string(from: Date())).json")
     }
 
+    /// Replace **all** existing hits + records with an imported snapshot.
+    /// Destructive — call sites confirm with the user first. Unlike
+    /// `resetEverything` this leaves onboarding/baseline state untouched, since
+    /// the user is restoring data, not starting over. Gap records are rebuilt
+    /// by `bulkImport`'s delta walk, with the file's stored records kept as a
+    /// floor in case they exceed what the restored hits alone yield.
+    func replaceWithImport(_ parsed: PrototypeImport.Parsed) throws {
+        for h in hits { context.delete(h) }
+        records.longestGapSec = 0
+        records.longestWakingGapSec = 0
+        try context.save()
+        try reload()
+        try bulkImport(parsed.hits)
+        if parsed.longestGapSec > records.longestGapSec { records.longestGapSec = parsed.longestGapSec }
+        if let w = parsed.longestWakingGapSec, w > records.longestWakingGapSec { records.longestWakingGapSec = w }
+        try context.save()
+        publishToWidget()
+    }
+
     /// Mirrors the slice of state the widget renders from.
     private func publishToWidget() {
         WidgetBridge.write(.init(

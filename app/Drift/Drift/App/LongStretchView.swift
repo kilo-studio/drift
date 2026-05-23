@@ -23,6 +23,14 @@ let driftShortDate: DateFormatter = {
     return f
 }()
 
+/// Includes the year — a drift can span years, so "since May 24" alone is
+/// ambiguous. Used for the hero's start-date subtext.
+let driftSinceDate: DateFormatter = {
+    let f = DateFormatter()
+    f.dateFormat = "MMM d, yyyy"
+    return f
+}()
+
 /// Big centered "free for X" timer — days + hours past a day, with the start date.
 struct LongStretchHero: View {
     let lastSessionEnd: Date?
@@ -38,7 +46,7 @@ struct LongStretchHero: View {
             }
 
             if let start = lastSessionEnd {
-                Text("since \(driftShortDate.string(from: start))")
+                Text("since \(driftSinceDate.string(from: start))")
                     .font(.driftRowDescription)
                     .foregroundStyle(.driftInkSoft)
                     .padding(.top, 2)

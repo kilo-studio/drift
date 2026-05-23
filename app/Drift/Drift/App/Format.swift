@@ -48,7 +48,7 @@ func formatGap(_ seconds: TimeInterval) -> String {
     if s < 86_400 {
         return "\(s / 3600)h \((s % 3600) / 60)m"
     }
-    let d = s / 86_400
+    let d = (s / 86_400).formatted(.number.grouping(.automatic))
     let h = (s % 86_400) / 3600
     return h > 0 ? "\(d)d \(h)h" : "\(d)d"
 }
@@ -70,8 +70,10 @@ func formatElapsedLongParts(_ seconds: TimeInterval) -> [ElapsedPart] {
     if s < secPerDay { return formatElapsedParts(seconds) }
     // Days + hours is precise, always includes the live hours, and matches how
     // people actually count a long stretch ("Day 32"). Weeks/months live on as
-    // milestone labels, not as the running number.
-    return [.number("\(s / secPerDay)"), .unit("d "), .number("\((s % secPerDay) / 3600)"), .unit("h")]
+    // milestone labels, not as the running number. The day count gets a grouping
+    // separator once it reaches the thousands ("1,825d").
+    let days = (s / secPerDay).formatted(.number.grouping(.automatic))
+    return [.number(days), .unit("d "), .number("\((s % secPerDay) / 3600)"), .unit("h")]
 }
 
 /// Humane sentence fragment picking the largest natural unit, singular/plural

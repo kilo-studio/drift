@@ -311,7 +311,7 @@ private struct CalendarCard: View {
         let canNext = canGoNext
         return HStack {
             chevron(.left, enabled: canPrev) {
-                displayedMonth = cal.date(byAdding: .month, value: -1, to: displayedMonth)!
+                if let p = prevMonth { displayedMonth = p }
             }
 
             Spacer()
@@ -323,7 +323,7 @@ private struct CalendarCard: View {
             Spacer()
 
             chevron(.right, enabled: canNext) {
-                displayedMonth = cal.date(byAdding: .month, value: 1, to: displayedMonth)!
+                if let n = nextMonth { displayedMonth = n }
             }
         }
     }
@@ -343,23 +343,36 @@ private struct CalendarCard: View {
         .disabled(!enabled)
     }
 
-    /// Allow going back as long as the previous month contains the user's first
-    /// session, or any session — no point browsing pre-history months.
-    private var canGoPrev: Bool {
-        guard let oldestKey = countsByDay.keys.min() else { return false }
-        let prevMonthStart = cal.date(byAdding: .month, value: -1, to: cal.startOfMonth(displayedMonth))!
-        let prevMonthEndKey = String(
-            format: "%04d-%02d-31",
-            cal.component(.year, from: prevMonthStart),
-            cal.component(.month, from: prevMonthStart)
-        )
-        return oldestKey <= prevMonthEndKey
+    /// Months worth visiting: any with data, plus the current month so "today"
+    /// stays reachable. Navigation jumps between adjacent entries, so a long run
+    /// of empty months (a long drift) is skipped instead of tapped through one
+    /// at a time.
+    private var navigableMonths: [Date] {
+        var months = Set<Date>()
+        for key in countsByDay.keys {
+            if let m = monthStart(fromKey: key) { months.insert(m) }
+        }
+        months.insert(cal.startOfMonth(Date()))
+        return months.sorted()
     }
 
-    /// Don't browse forward past the current month — no data there yet.
-    private var canGoNext: Bool {
-        let nowMonthStart = cal.startOfMonth(Date())
-        return cal.startOfMonth(displayedMonth) < nowMonthStart
+    private var prevMonth: Date? {
+        let cur = cal.startOfMonth(displayedMonth)
+        return navigableMonths.last { $0 < cur }
+    }
+    private var nextMonth: Date? {
+        let cur = cal.startOfMonth(displayedMonth)
+        return navigableMonths.first { $0 > cur }
+    }
+    private var canGoPrev: Bool { prevMonth != nil }
+    private var canGoNext: Bool { nextMonth != nil }
+
+    private func monthStart(fromKey key: String) -> Date? {
+        let parts = key.split(separator: "-")
+        guard parts.count >= 2, let y = Int(parts[0]), let m = Int(parts[1]) else { return nil }
+        var c = DateComponents()
+        c.year = y; c.month = m; c.day = 1
+        return cal.date(from: c)
     }
 
     private func monthYearLabel(_ date: Date) -> String {
@@ -701,19 +714,11 @@ struct RecordsSheet: View {
                         .padding(.top, 28)
 
                     SettingsCard {
-                        VStack(spacing: 0) {
-                            recordRow(
-                                label: "longest drift",
-                                value: longest > 0 ? formatGap(longest) : "—",
-                                detail: longestDriftDates
-                            )
-                            SettingsDivider()
-                            recordRow(
-                                label: "longest gap while awake",
-                                value: store.longestWakingGapSec > 0 ? formatGap(store.longestWakingGapSec) : "—",
-                                detail: nil
-                            )
-                        }
+                        recordRow(
+                            label: "longest drift",
+                            value: longest > 0 ? formatGap(longest) : "—",
+                            detail: longestDriftDates
+                        )
                     }
 
                     if !reachedBadges.isEmpty {

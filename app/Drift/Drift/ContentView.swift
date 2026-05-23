@@ -71,6 +71,15 @@ struct ContentView: View {
         }
         .tint(.primary)
         .tabBarMinimizeBehavior(.onScrollDown)
+        #if DEBUG
+        .onAppear {
+            // `--records`: start on History so the records sheet (opened by
+            // HistoryView's matching hook) is reachable for testing.
+            if ProcessInfo.processInfo.arguments.contains("--records") {
+                currentTab = .history
+            }
+        }
+        #endif
         .overlay { addTapInterceptor }
         .overlay { spiritOverlay }
         .overlay { baselineCelebrationOverlay }

@@ -12,6 +12,7 @@ struct HistoryView: View {
     @State private var selectedDay: Date = Calendar(identifier: .gregorian).startOfDay(for: Date())
     @State private var hitToEdit: Hit?
     @State private var hitToDelete: Hit?
+    @State private var showRecords: Bool = false
 
     var body: some View {
         ZStack {
@@ -29,6 +30,18 @@ struct HistoryView: View {
         .sheet(item: $hitToEdit) { hit in
             EditHitSheet(hit: hit)
         }
+        .sheet(isPresented: $showRecords) {
+            RecordsSheet()
+                .presentationBackground(.driftSkyLowerMid)
+        }
+        #if DEBUG
+        .task {
+            if ProcessInfo.processInfo.arguments.contains("--records") {
+                try? await Task.sleep(for: .seconds(0.8))
+                showRecords = true
+            }
+        }
+        #endif
         .alert("Delete this hit?", isPresented: .init(
             get: { hitToDelete != nil },
             set: { if !$0 { hitToDelete = nil } }
@@ -75,6 +88,8 @@ struct HistoryView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 36)
 
+                recordsCard
+
                 CalendarCard(
                     countsByDay: countsByDay,
                     displayedMonth: $displayedMonth,
@@ -86,6 +101,23 @@ struct HistoryView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 120)
         }
+    }
+
+    /// Tappable entry to the durable records sheet. Sits above the calendar —
+    /// your all-time records (longest drift, milestones ever reached) live here,
+    /// kept safe and out of the way rather than in your face on the home screen.
+    private var recordsCard: some View {
+        Button {
+            showRecords = true
+        } label: {
+            SettingsCard {
+                SettingsNavRow(
+                    label: "records",
+                    description: "Your longest drifts and the milestones you've reached."
+                )
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     /// Computed once per body render and passed down so the calendar and the
@@ -630,6 +662,120 @@ struct EditHitSheet: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Records sheet
+
+/// The durable, never-erased record of what you've reached: your all-time
+/// longest drift (with dates) and the milestones you've ever hit. Unlike the
+/// live milestones on the home screen, these persist through a relapse — they
+/// describe your history, they don't judge a bad day. Milestones-ever-reached
+/// is derived from the all-time longest gap, so there's nothing extra to store.
+struct RecordsSheet: View {
+    @Environment(HitStore.self) private var store
+
+    /// The current ongoing drift counts toward "longest" — if you're on your
+    /// best-ever run right now, the records should say so (it becomes the
+    /// permanent record once you next log a hit). Durable either way.
+    private var currentDrift: TimeInterval {
+        store.lastSessionEnd().map { Date.now.timeIntervalSince($0) } ?? 0
+    }
+    private var longest: TimeInterval { max(store.longestGapSec, currentDrift) }
+    private var longestIsCurrent: Bool { currentDrift > store.longestGapSec }
+
+    private var milestonesReached: [TimeInterval] {
+        driftMilestones.filter { longest >= $0 }
+    }
+
+    var body: some View {
+        ZStack {
+            Color.driftSkyLowerMid.ignoresSafeArea()
+
+            ScrollView {
+                VStack(spacing: 16) {
+                    Text.caveat("records")
+                        .font(.driftHeroLabel)
+                        .foregroundStyle(.driftInkSoft)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 28)
+
+                    SettingsCard {
+                        VStack(spacing: 0) {
+                            recordRow(
+                                label: "longest drift",
+                                value: longest > 0 ? formatGap(longest) : "—",
+                                detail: longestDriftDates
+                            )
+                            SettingsDivider()
+                            recordRow(
+                                label: "longest gap while awake",
+                                value: store.longestWakingGapSec > 0 ? formatGap(store.longestWakingGapSec) : "—",
+                                detail: nil
+                            )
+                        }
+                    }
+
+                    if !milestonesReached.isEmpty {
+                        SettingsCard {
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text.caveatLeading("milestones reached")
+                                    .font(.driftCardTitle)
+                                    .foregroundStyle(.driftInkSoft)
+                                    .padding(.bottom, 10)
+                                ForEach(Array(milestonesReached.reversed().enumerated()), id: \.offset) { idx, m in
+                                    if idx > 0 { SettingsDivider() }
+                                    HStack(spacing: 12) {
+                                        ZStack {
+                                            Circle().fill(Color.driftSage).frame(width: 24, height: 24)
+                                            Image(systemName: "checkmark")
+                                                .font(.system(size: 13, weight: .bold))
+                                                .foregroundStyle(.white)
+                                        }
+                                        Text("\(formatDurationHuman(m)) free")
+                                            .font(.driftRowLabel)
+                                            .foregroundStyle(.driftInk)
+                                        Spacer()
+                                    }
+                                    .padding(.vertical, 8)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 60)
+            }
+        }
+    }
+
+    private var longestDriftDates: String? {
+        if longestIsCurrent, let start = store.lastSessionEnd() {
+            return "\(driftShortDate.string(from: start)) → now"
+        }
+        guard let b = store.longestGapBounds() else { return nil }
+        return "\(driftShortDate.string(from: b.from)) → \(driftShortDate.string(from: b.to))"
+    }
+
+    private func recordRow(label: String, value: String, detail: String?) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(label)
+                    .font(.driftRowLabel)
+                    .foregroundStyle(.driftInk)
+                Spacer()
+                Text(value)
+                    .font(.driftBestNum)
+                    .foregroundStyle(.driftInk)
+            }
+            if let detail {
+                Text(detail)
+                    .font(.driftBestLabel)
+                    .foregroundStyle(.driftInkSoft)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

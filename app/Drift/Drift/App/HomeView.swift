@@ -86,25 +86,31 @@ struct HomeView: View, Equatable {
         let end = store.lastSessionEnd()
         let freeForSec = end.map { now.timeIntervalSince($0) } ?? 0
         let bounds = store.longestGapBounds()
-        return VStack(spacing: 0) {
-            Spacer().frame(height: spiritSize)   // clear the top-right spirit
-            Spacer()
+        // Scrollable so the milestones-reached card can grow on long drifts
+        // without overflowing. Top padding clears the resting spirit overlay.
+        return ScrollView {
+            VStack(spacing: 16) {
+                LongStretchHero(lastSessionEnd: end)
+                    .padding(.top, spiritSize + 24)
+                    .padding(.bottom, 8)
 
-            LongStretchHero(lastSessionEnd: end)
-                .padding(.bottom, 28)
+                HStack(spacing: 16) {
+                    if store.longestGapSec > 0 {
+                        LongestDriftCard(
+                            gapSec: store.longestGapSec,
+                            from: bounds?.from,
+                            to: bounds?.to,
+                            surpassed: freeForSec > store.longestGapSec
+                        )
+                    }
+                    NextMilestoneCard(freeForSec: freeForSec)
+                }
 
-            MilestoneDonut(freeForSec: freeForSec)
-
-            Spacer()
-
-            if store.longestGapSec > 0 {
-                LongestDriftCard(gapSec: store.longestGapSec, from: bounds?.from, to: bounds?.to)
-                    .padding(.horizontal, 16)
+                MilestonesReachedCard(freeForSec: freeForSec)
             }
-
-            Spacer().frame(height: 120)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 120)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     /// Pre-baseline home: a single VStack flow so the donut + caption + body

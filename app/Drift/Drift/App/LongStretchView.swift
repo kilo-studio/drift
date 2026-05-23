@@ -120,6 +120,10 @@ struct NextMilestoneCard: View {
 struct MilestonesReachedCard: View {
     let freeForSec: TimeInterval
 
+    /// Index of the milestone whose badge should be playing its one-time
+    /// crossing flourish (set when the reached count ticks up, cleared after).
+    @State private var burstIndex: Int?
+
     private var reached: [(index: Int, value: TimeInterval)] {
         driftMilestones.enumerated()
             .filter { freeForSec >= $0.element }
@@ -141,12 +145,25 @@ struct MilestonesReachedCard: View {
                 LazyVGrid(columns: columns, spacing: 14) {
                     // Most recent (largest) first.
                     ForEach(reached.reversed(), id: \.index) { item in
-                        MilestoneBadge(milestone: item.value, index: item.index)
+                        MilestoneBadge(milestone: item.value, index: item.index, burst: burstIndex == item.index)
+                            // Crossing a milestone springs the new badge in.
+                            .transition(.scale(scale: 0.4).combined(with: .opacity))
                     }
                 }
+                .animation(.spring(response: 0.5, dampingFraction: 0.55), value: reached.count)
             }
             .frame(maxWidth: .infinity)
             .driftCard()
+            .onChange(of: reached.count) { old, new in
+                // Only on a real crossing (not initial load) — fire the burst on
+                // the newest badge, then clear it.
+                guard new > old, let newest = reached.map(\.index).max() else { return }
+                burstIndex = newest
+                Task {
+                    try? await Task.sleep(for: .seconds(1.1))
+                    burstIndex = nil
+                }
+            }
         }
     }
 }
@@ -159,6 +176,9 @@ struct MilestonesReachedCard: View {
 struct MilestoneBadge: View {
     let milestone: TimeInterval
     let index: Int
+    /// One-time crossing flourish: a radial sparkle burst over the badge.
+    var burst: Bool = false
+    @State private var burstProgress: Double = 0
 
     /// Two signals that BOTH climb with the milestone, so the longest earns the
     /// most of each:
@@ -204,8 +224,18 @@ struct MilestoneBadge: View {
                 .font(.driftCardTitle)
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
+
+            if burst {
+                BurstOverlay(progress: burstProgress)
+            }
         }
         .frame(height: 116)
+        .onChange(of: burst) { _, isBursting in
+            if isBursting {
+                burstProgress = 0
+                withAnimation(.easeOut(duration: 0.9)) { burstProgress = 1 }
+            }
+        }
     }
 
     private func lerpRGB(_ a: (Double, Double, Double), _ b: (Double, Double, Double), _ t: Double) -> Color {
@@ -242,5 +272,41 @@ struct StarShape: Shape {
         }
         path.closeSubpath()
         return path
+    }
+}
+
+/// One-shot milestone-crossing flourish: a ring of small sparkles that fly
+/// outward and fade as `progress` goes 0 → 1. Warm palette to match the field.
+struct BurstOverlay: View {
+    let progress: Double
+
+    private static let colors: [Color] = [
+        Color(hex: 0xFFD08C), Color(hex: 0xF4B393), Color(hex: 0xE8836B), .white,
+    ]
+
+    var body: some View {
+        ZStack {
+            ForEach(0..<10, id: \.self) { i in
+                sparkle(i)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    @ViewBuilder
+    private func sparkle(_ i: Int) -> some View {
+        let angle: Double = Double(i) / 10.0 * 2.0 * .pi
+        let dist: Double = progress * 64.0
+        let dx: CGFloat = CGFloat(cos(angle) * dist)
+        let dy: CGFloat = CGFloat(sin(angle) * dist)
+        let scale: CGFloat = CGFloat(0.4 + (1.0 - progress) * 0.8)
+        let alpha: Double = (1.0 - progress) * 0.9
+
+        Image(systemName: "sparkle")
+            .font(.system(size: 11))
+            .foregroundStyle(Self.colors[i % Self.colors.count])
+            .scaleEffect(scale)
+            .opacity(alpha)
+            .offset(x: dx, y: dy)
     }
 }

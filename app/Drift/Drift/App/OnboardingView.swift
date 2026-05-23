@@ -507,21 +507,44 @@ private struct LoggingCard: View {
                     action: openIOSSettings
                 )
 
+                // Control Center has no useful button: you add a tile by
+                // editing Control Center itself (long-press → add a control),
+                // not from anywhere we can deep-link to. So this card is
+                // informational only.
                 LoggingMethodCard(
                     title: "Control Center",
-                    description: "Add Drift as a Control Center tile so logging is one swipe away.",
-                    buttonLabel: "Open Control Center settings",
-                    action: openIOSSettings
+                    description: "Add Drift as a Control Center tile so logging is one swipe away. Long-press Control Center, tap Add a Control, and search for Drift."
                 )
 
-                LoggingMethodCard(
-                    title: "Shortcuts",
-                    description: "\"Log a hit in Drift\" is already in the Shortcuts app — use it from Siri, the lock screen, or a home screen widget.",
-                    buttonLabel: "Open Shortcuts",
-                    action: openShortcuts
-                )
+                // The Shortcuts app underpins the Action button, the Control
+                // Center tile, and Siri — so if it's been deleted, those stop
+                // working. Detect it and offer to reinstall rather than open a
+                // nonexistent app. (canOpenURL needs the LSApplicationQueriesSchemes
+                // entry in Info.plist.)
+                if shortcutsInstalled {
+                    LoggingMethodCard(
+                        title: "Shortcuts",
+                        description: "\"Log a hit in Drift\" is already in the Shortcuts app. Use it from Siri, the lock screen, or a home screen widget.",
+                        buttonLabel: "Open Shortcuts",
+                        action: openShortcuts
+                    )
+                } else {
+                    LoggingMethodCard(
+                        title: "Shortcuts",
+                        description: "The Shortcuts app powers the Action button, the Control Center tile, and Siri logging, but it isn't installed. Get it free from the App Store to enable those.",
+                        buttonLabel: "Get Shortcuts",
+                        action: openShortcutsAppStore
+                    )
+                }
             }
         }
+    }
+
+    /// Whether the system Shortcuts app is currently installed. Drives the
+    /// Shortcuts card between "open it" and "install it."
+    private var shortcutsInstalled: Bool {
+        guard let url = URL(string: "shortcuts://") else { return false }
+        return UIApplication.shared.canOpenURL(url)
     }
 
     private func openIOSSettings() {
@@ -531,7 +554,16 @@ private struct LoggingCard: View {
     }
 
     private func openShortcuts() {
-        if let url = URL(string: "shortcuts://") {
+        guard let url = URL(string: "shortcuts://") else { return }
+        // Belt-and-suspenders: if the app vanished between render and tap,
+        // fall back to the App Store rather than failing silently.
+        UIApplication.shared.open(url) { success in
+            if !success { openShortcutsAppStore() }
+        }
+    }
+
+    private func openShortcutsAppStore() {
+        if let url = URL(string: "https://apps.apple.com/app/shortcuts/id915249334") {
             UIApplication.shared.open(url)
         }
     }
@@ -540,8 +572,11 @@ private struct LoggingCard: View {
 private struct LoggingMethodCard: View {
     let title: String
     let description: String
-    let buttonLabel: String
-    let action: () -> Void
+    /// Optional — some methods (e.g. Control Center, customized only from
+    /// within Control Center itself) are informational and have no useful
+    /// destination, so they render as text-only cards with no button.
+    var buttonLabel: String? = nil
+    var action: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -559,20 +594,22 @@ private struct LoggingMethodCard: View {
             // makes the whole capsule tappable: without it `.buttonStyle(.plain)`
             // only hit-tests the text glyphs, so the padded/expanded area around
             // the label looked tappable but wasn't.
-            Button(action: action) {
-                Text(buttonLabel)
-                    .font(.driftRowLabel)
-                    .foregroundStyle(.driftCoral)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 11)
-                    .glassEffect(
-                        .regular.tint(.driftSkyLowerMid.opacity(0.4)),
-                        in: Capsule()
-                    )
-                    .contentShape(Capsule())
+            if let buttonLabel, let action {
+                Button(action: action) {
+                    Text(buttonLabel)
+                        .font(.driftRowLabel)
+                        .foregroundStyle(.driftCoral)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .glassEffect(
+                            .regular.tint(.driftSkyLowerMid.opacity(0.4)),
+                            in: Capsule()
+                        )
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 4)
             }
-            .buttonStyle(.plain)
-            .padding(.top, 4)
         }
         .driftCard()
     }

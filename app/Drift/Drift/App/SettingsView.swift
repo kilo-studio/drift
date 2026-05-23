@@ -21,12 +21,6 @@ struct SettingsView: View {
     private static let windowOptions: [Int] = [7, 14, 30, 60]
     private static let hourOptions: [Int] = Array(0...23)
 
-    private var appVersion: String {
-        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
-        let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0"
-        return "\(v) (\(b))"
-    }
-
     var body: some View {
         @Bindable var store = store
 
@@ -189,7 +183,7 @@ struct SettingsView: View {
     private var dataCard: some View {
         SettingsCard {
             VStack(spacing: 0) {
-                Text("iCloud sync — coming soon")
+                Text("iCloud sync (coming soon)")
                     .font(.driftRowDescription)
                     .foregroundStyle(.driftInkSoft)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -273,8 +267,6 @@ struct SettingsView: View {
     private var aboutCard: some View {
         SettingsCard {
             VStack(spacing: 0) {
-                SettingsInfoRow(label: "version", value: appVersion)
-                SettingsDivider()
                 SettingsLinkRow(label: "privacy policy", url: URL(string: "https://github.com/kilo-studio/drift/blob/main/Privacy.md")!)
                 SettingsDivider()
                 SettingsLinkRow(label: "github", url: URL(string: "https://github.com/kilo-studio/drift")!)

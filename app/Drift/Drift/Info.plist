@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Lets canOpenURL("shortcuts://") report whether the system Shortcuts
+	     app is installed, so onboarding can offer to install it when missing.
+	     All other Info.plist keys are still generated (GENERATE_INFOPLIST_FILE)
+	     and merged on top of this base. -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>shortcuts</string>
+	</array>
+</dict>
+</plist>

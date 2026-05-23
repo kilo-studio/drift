@@ -79,7 +79,7 @@ struct HomeView: View, Equatable {
                 .foregroundStyle(.driftInk)
                 .padding(.top, 24)
 
-            Text("Vape as you normally would and log them and establish your average.")
+            Text("Vape as you normally would and log your hits to establish your average time between hits.")
                 .font(.driftRowDescription)
                 .foregroundStyle(.driftInkSoft)
                 .multilineTextAlignment(.center)

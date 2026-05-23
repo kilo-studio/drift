@@ -165,7 +165,7 @@ enum NotificationScheduler {
         let avgMin = Int(avgSec / 60)
         let content = UNMutableNotificationContent()
         content.title = "👏 You're beating your average"
-        content.body = "Don't hit it — you're past your average of \(avgMin)m"
+        content.body = "Don't hit it. You're past your average of \(avgMin)m"
 
         let req = UNNotificationRequest(
             identifier: beatAverageID,
@@ -214,7 +214,7 @@ enum NotificationScheduler {
         let bestMin = Int(longestSec / 60)
         let content = UNMutableNotificationContent()
         content.title = "🏆 new all-time best"
-        content.body = "You just beat your longest gap ever — \(bestMin)m. Keep drifting."
+        content.body = "You just beat your longest gap ever: \(bestMin)m. Keep drifting."
 
         let req = UNNotificationRequest(
             identifier: beatOverallRecordID,

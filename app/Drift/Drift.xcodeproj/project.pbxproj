@@ -67,11 +67,21 @@
 			);
 			target = 4CC3BCF82FA29B6D00B334D8 /* DriftWidgetExtension */;
 		};
+		4CC3BD9F2FA29B6E00B334D8 /* Exceptions for "Drift" folder in "Drift" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4CC3BCC82FA2998600B334D8 /* Drift */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4CC3BCCB2FA2998600B334D8 /* Drift */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4CC3BD9F2FA29B6E00B334D8 /* Exceptions for "Drift" folder in "Drift" target */,
+			);
 			path = Drift;
 			sourceTree = "<group>";
 		};
@@ -515,6 +525,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Drift/Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -561,6 +572,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Drift/Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;

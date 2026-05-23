@@ -85,26 +85,17 @@ struct HomeView: View, Equatable {
     private func longStretchState(now: Date) -> some View {
         let end = store.lastSessionEnd()
         let freeForSec = end.map { now.timeIntervalSince($0) } ?? 0
-        let bounds = store.longestGapBounds()
         // Scrollable so the milestones-reached card can grow on long drifts
         // without overflowing. Top padding clears the resting spirit overlay.
+        // The longest-drift record lives on History → Records, so the home
+        // stretch view stays focused: timer, next milestone, badges.
         return ScrollView {
             VStack(spacing: 16) {
                 LongStretchHero(lastSessionEnd: end)
                     .padding(.top, spiritSize + 24)
                     .padding(.bottom, 8)
 
-                HStack(spacing: 16) {
-                    if store.longestGapSec > 0 {
-                        LongestDriftCard(
-                            gapSec: store.longestGapSec,
-                            from: bounds?.from,
-                            to: bounds?.to,
-                            surpassed: freeForSec > store.longestGapSec
-                        )
-                    }
-                    NextMilestoneCard(freeForSec: freeForSec)
-                }
+                NextMilestoneCard(freeForSec: freeForSec)
 
                 MilestonesReachedCard(freeForSec: freeForSec)
             }

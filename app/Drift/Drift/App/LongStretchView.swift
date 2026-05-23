@@ -61,33 +61,8 @@ struct LongStretchHero: View {
     }
 }
 
-/// "Longest drift" record card — reuses `StatCard` so it matches the dashboard.
-/// Label adapts: "all-time longest drift" while you're under it, "previous
-/// longest drift" once the current stretch passes it. Dates sit in the label.
-struct LongestDriftCard: View {
-    let gapSec: TimeInterval
-    let from: Date?
-    let to: Date?
-    let surpassed: Bool
-
-    var body: some View {
-        StatCard(
-            title: surpassed ? "previous longest drift" : "all-time longest drift",
-            bigNumberParts: formatElapsedLongParts(gapSec),
-            bigNumberColor: .driftInk,
-            label: datesLabel
-        )
-    }
-
-    private var datesLabel: String {
-        guard let from, let to else { return " " }
-        return "\(driftShortDate.string(from: from)) → \(driftShortDate.string(from: to))"
-    }
-}
-
-/// Progress donut toward the next time milestone, laid out to mirror `StatCard`
-/// (centered title → content → label) so it sits flush beside the longest-drift
-/// card at matching height.
+/// Progress donut toward the next time milestone, full-width, laid out to
+/// mirror `StatCard` (centered title → content → label).
 struct NextMilestoneCard: View {
     let freeForSec: TimeInterval
 
@@ -117,15 +92,15 @@ struct NextMilestoneCard: View {
 
                 if let next {
                     Text.caveat(formatDurationHuman(next))
-                        .font(.driftCardTitle)
+                        .font(.driftHeroLabel)
                         .foregroundStyle(.driftInk)
                 } else {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 22, weight: .semibold))
+                        .font(.system(size: 30, weight: .semibold))
                         .foregroundStyle(.driftSageDeep)
                 }
             }
-            .frame(width: 92, height: 92)
+            .frame(width: 132, height: 132)
             .padding(.bottom, 10)
 
             Text(next.map { "\(formatGap($0 - freeForSec)) to go" } ?? "all drifted past")
@@ -166,7 +141,7 @@ struct MilestonesReachedCard: View {
                 LazyVGrid(columns: columns, spacing: 14) {
                     // Most recent (largest) first.
                     ForEach(reached.reversed(), id: \.index) { item in
-                        MilestoneBadge(milestone: item.value, seed: item.index)
+                        MilestoneBadge(milestone: item.value, index: item.index)
                     }
                 }
             }
@@ -176,62 +151,82 @@ struct MilestonesReachedCard: View {
     }
 }
 
-/// A single milestone "badge": an organic green blob (shape seeded by the
-/// milestone index, so each is subtly unique) with the duration centered on it.
+/// A single milestone "badge": a rounded regular polygon whose side count grows
+/// with the milestone (1 day = rounded square → 1 year ≈ 12-gon, nearly round),
+/// so a longer drift visibly earns a more elaborate, "more complete" medallion.
+/// Green fill + a soft darker stroke so it reads as a struck badge; duration
+/// centered on it.
 struct MilestoneBadge: View {
     let milestone: TimeInterval
-    let seed: Int
+    let index: Int
+
+    /// 1 day → 4 sides, climbing one per milestone toward a near-circle. High-
+    /// side polygons converge visually, so magnitude is *also* encoded as a
+    /// deepening green (short = light sage, long = deep forest) — the two
+    /// signals together keep every badge distinct.
+    private var sides: Int { index + 4 }
+    private var t: Double {
+        let total = driftMilestones.count
+        return total > 1 ? Double(index) / Double(total - 1) : 0
+    }
 
     var body: some View {
         ZStack {
-            BlobShape(seed: seed)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.driftSage, Color.driftSageDeep],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+            let shape = RoundedPolygon(sides: sides)
+            shape.fill(
+                LinearGradient(
+                    colors: [
+                        lerpRGB((0.659, 0.737, 0.576), (0.36, 0.46, 0.31), t),   // sage → forest (top)
+                        lerpRGB((0.494, 0.580, 0.463), (0.22, 0.31, 0.20), t),   // sageDeep → deep forest (bottom)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
                 )
+            )
+            shape.stroke(.white.opacity(0.25), lineWidth: 1.5)
+
             Text(formatDurationHuman(milestone))
                 .font(.driftCardTitle)
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
         }
-        .frame(height: 112)
+        .frame(height: 116)
+    }
+
+    private func lerpRGB(_ a: (Double, Double, Double), _ b: (Double, Double, Double), _ t: Double) -> Color {
+        Color(red: a.0 + (b.0 - a.0) * t, green: a.1 + (b.1 - a.1) * t, blue: a.2 + (b.2 - a.2) * t)
     }
 }
 
-/// An organic closed blob. `seed` perturbs the per-vertex radius via layered
-/// sines, so each milestone gets a distinct-but-coherent shape. Built as a
-/// smooth curve through the midpoints of seeded vertices.
-struct BlobShape: Shape {
-    var seed: Int
-    var vertices: Int = 8
+/// A regular polygon with softly rounded corners (radially symmetric). More
+/// `sides` = rounder, so milestone magnitude reads as shape complexity.
+struct RoundedPolygon: Shape {
+    var sides: Int
+    /// Fraction of each edge taken up by the corner round (0 = sharp, ~0.5 = max).
+    var cornerFraction: CGFloat = 0.4
 
     func path(in rect: CGRect) -> Path {
+        let n = max(3, sides)
         let center = CGPoint(x: rect.midX, y: rect.midY)
-        let baseR = min(rect.width, rect.height) / 2
-        let s = Double(seed)
-
-        func point(_ i: Int) -> CGPoint {
-            let angle = Double(i) / Double(vertices) * 2 * .pi - .pi / 2
-            let wobble = 0.12 * sin(angle * 2 + s * 1.3)
-                       + 0.07 * sin(angle * 3 + s * 2.1 + 1)
-                       + 0.05 * sin(angle * 5 + s * 0.7 + 2)
-            let r = baseR * (0.86 + CGFloat(wobble))
-            return CGPoint(x: center.x + cos(angle) * r, y: center.y + sin(angle) * r)
+        let r = min(rect.width, rect.height) / 2
+        let verts = (0..<n).map { i -> CGPoint in
+            let a = Double(i) / Double(n) * 2 * .pi - .pi / 2   // first vertex at top
+            return CGPoint(x: center.x + cos(a) * r, y: center.y + sin(a) * r)
         }
 
-        let pts = (0..<vertices).map(point)
-        func mid(_ a: CGPoint, _ b: CGPoint) -> CGPoint {
-            CGPoint(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
+        func lerp(_ a: CGPoint, _ b: CGPoint, _ t: CGFloat) -> CGPoint {
+            CGPoint(x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t)
         }
 
         var path = Path()
-        path.move(to: mid(pts[vertices - 1], pts[0]))
-        for i in 0..<vertices {
-            let next = (i + 1) % vertices
-            path.addQuadCurve(to: mid(pts[i], pts[next]), control: pts[i])
+        for i in 0..<n {
+            let curr = verts[i]
+            let prev = verts[(i - 1 + n) % n]
+            let next = verts[(i + 1) % n]
+            let entering = lerp(curr, prev, cornerFraction)
+            let leaving = lerp(curr, next, cornerFraction)
+            if i == 0 { path.move(to: entering) } else { path.addLine(to: entering) }
+            path.addQuadCurve(to: leaving, control: curr)
         }
         path.closeSubpath()
         return path

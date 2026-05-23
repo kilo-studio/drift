@@ -56,7 +56,9 @@ struct SpiritView: View {
             // Backward edits (e.g. editing a hit to be earlier) shouldn't.
             guard !reduceMotion, let old = oldValue else { return }
             if let new = newValue, new <= old { return }
-            let avg = wakingAvgSec ?? 0
+            // Same fallback as the frame ratio, so the reset animation blends
+            // down from the right (high) pre-snap ratio after a long stretch.
+            let avg = wakingAvgSec ?? (longestWakingGapSec > 0 ? longestWakingGapSec : 1800)
             let now = Date.now
             preSnapRatio = avg > 0 ? now.timeIntervalSince(old) / avg : 0
             snapStartedAt = now
@@ -86,7 +88,13 @@ private struct SpiritFrame {
         preSnapRatio: Double
     ) {
         let secSince = lastSessionEnd.map { now.timeIntervalSince($0) } ?? 0
-        let avg = wakingAvgSec ?? 0
+        // When the rolling waking average is unavailable — notably a long
+        // stretch with no hits in the window — fall back to the longest waking
+        // gap (or 30 min) so the ratio still scales with how long it's been.
+        // Without this the ratio collapsed to a neutral 1.0 and the eyes went
+        // baseline mid-celebration (cheeks fire off a separate threshold), so
+        // the spirit looked unhappy during a long drift.
+        let avg = wakingAvgSec ?? (longestWakingGapSec > 0 ? longestWakingGapSec : 1800)
         let realRatio = avg > 0 ? max(0.001, secSince / avg) : 1.0
 
         // If a reset just happened, blend from the pre-snap ratio down to

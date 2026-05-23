@@ -95,7 +95,11 @@ struct HomeView: View, Equatable {
                     .padding(.top, spiritSize + 24)
                     .padding(.bottom, 8)
 
-                NextMilestoneCard(freeForSec: freeForSec)
+                // Once every milestone is reached there's no "next" — drop the
+                // donut card entirely rather than show an empty/terminal state.
+                if let last = driftMilestones.last, freeForSec < last {
+                    NextMilestoneCard(freeForSec: freeForSec)
+                }
 
                 MilestonesReachedCard(freeForSec: freeForSec)
             }

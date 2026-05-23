@@ -30,7 +30,9 @@ struct StatCard: View {
             Text.caveat(title)
                 .font(.driftCardTitle)
                 .foregroundStyle(.driftInk)
-                .lineLimit(1)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.bottom, 4)
 
@@ -45,13 +47,17 @@ struct StatCard: View {
                 }
             }
             .foregroundStyle(bigNumberColor)
+            .lineLimit(1)
+            .minimumScaleFactor(0.6)
             .padding(.bottom, 4)
 
             Text(label)
                 .font(.driftLabel)
                 .foregroundStyle(.driftInkSoft)
+                .multilineTextAlignment(.center)
         }
-        .frame(maxWidth: .infinity)
+        // maxHeight so paired cards in an HStack match the taller one's height.
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .driftCard()
     }
 }

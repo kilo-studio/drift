@@ -160,19 +160,18 @@ struct MilestoneBadge: View {
     let milestone: TimeInterval
     let index: Int
 
-    /// Unit tier — encoded as concentric rings (0 = days, 1 = weeks, 2 = months,
-    /// 3 = year+). Countable rings stay distinct where polygon sides don't.
+    /// Two signals that BOTH climb with the milestone, so the longest earns the
+    /// most of each:
+    /// - points: the primary, fine-grained signal — one more spike per milestone.
+    /// - tier rings: the coarse, instantly-countable signal (days 0 → year 3).
+    private var points: Int { 5 + index }
+    /// Unit tier — concentric rings (0 = days, 1 = weeks, 2 = months, 3 = year+).
     private var tier: Int {
         if milestone >= 365 * 86_400 { return 3 }
         if milestone >= 30 * 86_400 { return 2 }
         if milestone >= 7 * 86_400 { return 1 }
         return 0
     }
-    /// Step within the unit → soft-star point count (small, so it stays legible).
-    private var step: Int {
-        driftMilestones.prefix(index).filter { tierOf($0) == tier }.count
-    }
-    private var points: Int { 5 + step }
     private var t: Double {
         let total = driftMilestones.count
         return total > 1 ? Double(index) / Double(total - 1) : 0
@@ -207,13 +206,6 @@ struct MilestoneBadge: View {
                 .multilineTextAlignment(.center)
         }
         .frame(height: 116)
-    }
-
-    private func tierOf(_ sec: TimeInterval) -> Int {
-        if sec >= 365 * 86_400 { return 3 }
-        if sec >= 30 * 86_400 { return 2 }
-        if sec >= 7 * 86_400 { return 1 }
-        return 0
     }
 
     private func lerpRGB(_ a: (Double, Double, Double), _ b: (Double, Double, Double), _ t: Double) -> Color {

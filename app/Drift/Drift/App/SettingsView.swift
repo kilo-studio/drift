@@ -43,6 +43,9 @@ struct SettingsView: View {
                     dataCard
                     onboardingCard
                     aboutCard
+                    #if DEBUG
+                    debugCard
+                    #endif
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 120)
@@ -263,6 +266,34 @@ struct SettingsView: View {
             .buttonStyle(.plain)
         }
     }
+
+    #if DEBUG
+    /// Debug-only dataset switcher — seed any home-screen mode/state on tap so
+    /// the long-stretch work is easy to jump between. Compiled out of release.
+    private var debugCard: some View {
+        SettingsCard {
+            VStack(spacing: 0) {
+                Text("debug · seed scenario")
+                    .font(.driftRowDescription)
+                    .foregroundStyle(.driftInkSoft)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                ForEach(DebugScenario.allCases) { scenario in
+                    SettingsDivider()
+                    Button {
+                        store.seedScenario(scenario)
+                    } label: {
+                        Text(scenario.label)
+                            .font(.driftRowLabel)
+                            .foregroundStyle(.driftInk)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+    #endif
 
     private var aboutCard: some View {
         SettingsCard {

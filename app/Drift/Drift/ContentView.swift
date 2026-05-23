@@ -21,6 +21,10 @@ struct ContentView: View {
     /// layers in this ContentView's body, so the celebration overlay sits
     /// outside both.
     @State private var showBaselineCelebration: Bool = false
+    /// Carries the just-ended long stretch while its acknowledgment is on
+    /// screen. Driven off `store.endedLongStretch`; mirrors the baseline
+    /// celebration's layering so it sits above the tab bar and spirit.
+    @State private var endedStretchAck: EndedLongStretch?
 
     private let spiritSize: CGFloat = 96
 
@@ -70,6 +74,7 @@ struct ContentView: View {
         .overlay { addTapInterceptor }
         .overlay { spiritOverlay }
         .overlay { baselineCelebrationOverlay }
+        .overlay { relapseAckOverlay }
         .sheet(isPresented: $showAddSheet) {
             AddHitSheet()
                 .presentationBackground(.driftSkyLowerMid)
@@ -95,6 +100,22 @@ struct ContentView: View {
                 }
             }
         }
+        .onChange(of: store.endedLongStretch) { _, newValue in
+            // A long stretch just ended (a hit was logged). Acknowledge it
+            // gently — as a kept record, never a broken streak — then clear the
+            // store signal so it doesn't re-fire on unrelated re-renders.
+            guard let ended = newValue else { return }
+            store.endedLongStretch = nil
+            withAnimation(.easeInOut(duration: 0.6)) {
+                endedStretchAck = ended
+            }
+            Task {
+                try? await Task.sleep(for: .seconds(2.8))
+                withAnimation(.easeInOut(duration: 0.8)) {
+                    endedStretchAck = nil
+                }
+            }
+        }
     }
 
     /// Full-screen cream wash + handwritten message. Lives at this layer so
@@ -115,6 +136,34 @@ struct ContentView: View {
             }
             .transition(.opacity)
         }
+    }
+
+    /// Shame-free acknowledgment when a long stretch ends: the just-ended drift
+    /// is framed as a kept record, never a broken streak. Same cream-wash +
+    /// Caveat treatment as the baseline celebration, layered above everything.
+    @ViewBuilder
+    private var relapseAckOverlay: some View {
+        if let ack = endedStretchAck {
+            ZStack {
+                Color.driftCream.ignoresSafeArea()
+                Text(relapseAckMessage(ack))
+                    .font(.custom("Caveat", size: 40).weight(.semibold))
+                    .foregroundStyle(.driftInk)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.7)
+                    .padding(.horizontal, 32)
+            }
+            .transition(.opacity)
+        }
+    }
+
+    private func relapseAckMessage(_ ack: EndedLongStretch) -> String {
+        let dur = formatDurationHuman(ack.gapSec)
+        // Thin-spaces guard the Caveat swashes from clipping at this size.
+        if ack.wasNewRecord {
+            return "\u{2009}\u{2009}\(dur) — your longest drift yet, saved.\u{2009}\u{2009}"
+        }
+        return "\u{2009}\u{2009}\(dur) of drifting — kept.\u{2009}\u{2009}"
     }
 
     /// Reject any selection of the search-role + slot: keep the current tab and

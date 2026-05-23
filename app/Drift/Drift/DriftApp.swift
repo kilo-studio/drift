@@ -41,6 +41,17 @@ struct DriftApp: App {
                     defaults.set(true, forKey: driftOnboardingCompleteKey)
                 }
                 DriftApp.sharedStore = s
+                #if DEBUG
+                // Launch-arg seeding for testing: `--seed longWeek` (any
+                // DebugScenario rawValue). Also forces onboarding complete so
+                // the seeded scenario is what you land on. Compiled out of release.
+                let args = ProcessInfo.processInfo.arguments
+                if let i = args.firstIndex(of: "--seed"), i + 1 < args.count,
+                   let scenario = DebugScenario(rawValue: args[i + 1]) {
+                    UserDefaults.standard.set(true, forKey: driftOnboardingCompleteKey)
+                    s.seedScenario(scenario)
+                }
+                #endif
                 return s
             } catch {
                 fatalError("Failed to create HitStore: \(error)")
@@ -62,12 +73,28 @@ struct DriftApp: App {
 /// triggers an automatic swap.
 private struct RootView: View {
     @AppStorage(driftOnboardingCompleteKey) private var onboardingComplete: Bool = false
+    #if DEBUG
+    @Environment(HitStore.self) private var store
+    #endif
 
     var body: some View {
-        if onboardingComplete {
-            ContentView()
-        } else {
-            OnboardingView()
+        Group {
+            if onboardingComplete {
+                ContentView()
+            } else {
+                OnboardingView()
+            }
         }
+        #if DEBUG
+        // `--relapse` (paired with `--seed <longScenario>`): log a hit shortly
+        // after launch so the relapse acknowledgment fires — a way to test that
+        // path without tapping. Compiled out of release.
+        .task {
+            guard ProcessInfo.processInfo.arguments.contains("--relapse") else { return }
+            store.notifsEnabled = false   // avoid the auth prompt obscuring the ack in tests
+            try? await Task.sleep(for: .seconds(1.5))
+            try? store.append()
+        }
+        #endif
     }
 }

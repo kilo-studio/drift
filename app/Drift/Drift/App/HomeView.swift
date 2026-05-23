@@ -41,8 +41,19 @@ struct HomeView: View, Equatable {
             }
 
             if store.isBaselineEstablished {
-                dashboard
-                    .transition(.opacity.animation(.easeIn(duration: 0.6)))
+                // A coarse 60s tick is enough to flip into long-stretch mode at
+                // the 24h threshold (a minute of lag is invisible at day-scale),
+                // and it keeps the per-second cost out of the normal dashboard —
+                // the long hero's own 1s ticker only exists while in long mode.
+                TimelineView(.periodic(from: .now, by: 60)) { ctx in
+                    if isLongStretch(now: ctx.date) {
+                        longStretchState(now: ctx.date)
+                            .transition(.opacity.animation(.easeInOut(duration: 0.6)))
+                    } else {
+                        dashboard
+                            .transition(.opacity.animation(.easeIn(duration: 0.6)))
+                    }
+                }
             } else {
                 baselineState
                     .transition(.opacity.animation(.easeOut(duration: 0.4)))
@@ -56,6 +67,39 @@ struct HomeView: View, Equatable {
                 )
             }
         }
+    }
+
+    /// True once the last session ended ≥ a day ago — the home reframes into
+    /// long-stretch mode. `now` is supplied by the coarse TimelineView so this
+    /// stays a pure function of the store + wall clock (no stored state, so
+    /// `HomeView`'s `.equatable()` short-circuit is preserved).
+    private func isLongStretch(now: Date) -> Bool {
+        guard let end = store.lastSessionEnd() else { return false }
+        return now.timeIntervalSince(end) >= HitStore.longStretchThresholdSec
+    }
+
+    /// Long-stretch home: the durable "free for X" timer + a longest-yet record
+    /// line + a milestone trail. No frequency cards/charts (they're meaningless
+    /// here). Top headroom clears the resting spirit in ContentView's overlay.
+    private func longStretchState(now: Date) -> some View {
+        let end = store.lastSessionEnd()
+        let freeForSec = end.map { now.timeIntervalSince($0) } ?? 0
+        return VStack(spacing: 0) {
+            Spacer().frame(height: spiritSize)   // clear the top-right spirit
+            Spacer()
+
+            LongStretchHero(lastSessionEnd: end)
+
+            LongStretchRecord(freeForSec: freeForSec, longestGapSec: store.longestGapSec)
+                .padding(.top, 28)
+
+            Spacer()
+
+            MilestoneTrail(freeForSec: freeForSec)
+                .padding(.horizontal, 36)
+                .padding(.bottom, 120)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     /// Pre-baseline home: a single VStack flow so the donut + caption + body

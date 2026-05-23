@@ -125,12 +125,8 @@ struct MilestonesReachedCard: View {
     @State private var burstIndex: Int?
 
     private var reached: [(index: Int, value: TimeInterval)] {
-        driftMilestones.enumerated()
-            .filter { freeForSec >= $0.element }
-            .map { (index: $0.offset, value: $0.element) }
+        milestonesReached(upTo: freeForSec)
     }
-
-    private let columns = [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)]
 
     var body: some View {
         if reached.isEmpty {
@@ -142,15 +138,7 @@ struct MilestonesReachedCard: View {
                     .foregroundStyle(.driftInk)
                     .padding(.bottom, 16)
 
-                LazyVGrid(columns: columns, spacing: 14) {
-                    // Most recent (largest) first.
-                    ForEach(reached.reversed(), id: \.index) { item in
-                        MilestoneBadge(milestone: item.value, index: item.index, burst: burstIndex == item.index)
-                            // Crossing a milestone springs the new badge in.
-                            .transition(.scale(scale: 0.4).combined(with: .opacity))
-                    }
-                }
-                .animation(.spring(response: 0.5, dampingFraction: 0.55), value: reached.count)
+                MilestoneBadgeGrid(reached: reached, burstIndex: burstIndex)
             }
             .frame(maxWidth: .infinity)
             .driftCard()
@@ -165,6 +153,36 @@ struct MilestonesReachedCard: View {
                 }
             }
         }
+    }
+}
+
+/// Milestones reached for a given elapsed duration, as (index, value) pairs —
+/// shared by the home card (current stretch) and the History records sheet
+/// (all-time longest).
+func milestonesReached(upTo seconds: TimeInterval) -> [(index: Int, value: TimeInterval)] {
+    driftMilestones.enumerated()
+        .filter { seconds >= $0.element }
+        .map { (index: $0.offset, value: $0.element) }
+}
+
+/// Shared 2-column grid of milestone badges (home + History → Records), so the
+/// two stay identical. `burstIndex` drives the home crossing flourish; History
+/// passes nil (static).
+struct MilestoneBadgeGrid: View {
+    let reached: [(index: Int, value: TimeInterval)]
+    var burstIndex: Int? = nil
+
+    private let columns = [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)]
+
+    var body: some View {
+        LazyVGrid(columns: columns, spacing: 14) {
+            // Most recent (largest) first.
+            ForEach(reached.reversed(), id: \.index) { item in
+                MilestoneBadge(milestone: item.value, index: item.index, burst: burstIndex == item.index)
+                    .transition(.scale(scale: 0.4).combined(with: .opacity))
+            }
+        }
+        .animation(.spring(response: 0.5, dampingFraction: 0.55), value: reached.count)
     }
 }
 
@@ -220,10 +238,15 @@ struct MilestoneBadge: View {
                     .scaleEffect(1 - 0.17 * Double(k + 1))
             }
 
-            Text(formatDurationHuman(milestone))
-                .font(.driftCardTitle)
-                .foregroundStyle(.white)
-                .multilineTextAlignment(.center)
+            // Number stacked over the cadence, e.g. "1" / "week".
+            VStack(spacing: -2) {
+                Text(numberText)
+                    .font(.custom("Quicksand-SemiBold", size: 30))
+                Text(unitText)
+                    .font(.custom("Quicksand-Medium", size: 13))
+            }
+            .foregroundStyle(.white)
+            .multilineTextAlignment(.center)
 
             if burst {
                 BurstOverlay(progress: burstProgress)
@@ -236,6 +259,15 @@ struct MilestoneBadge: View {
                 withAnimation(.easeOut(duration: 0.9)) { burstProgress = 1 }
             }
         }
+    }
+
+    /// "1 week" → number "1" / unit "week" (split on the first space).
+    private var numberText: String {
+        String(formatDurationHuman(milestone).split(separator: " ", maxSplits: 1).first ?? "")
+    }
+    private var unitText: String {
+        let parts = formatDurationHuman(milestone).split(separator: " ", maxSplits: 1)
+        return parts.count > 1 ? String(parts[1]) : ""
     }
 
     private func lerpRGB(_ a: (Double, Double, Double), _ b: (Double, Double, Double), _ t: Double) -> Color {

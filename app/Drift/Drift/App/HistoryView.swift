@@ -684,8 +684,8 @@ struct RecordsSheet: View {
     private var longest: TimeInterval { max(store.longestGapSec, currentDrift) }
     private var longestIsCurrent: Bool { currentDrift > store.longestGapSec }
 
-    private var milestonesReached: [TimeInterval] {
-        driftMilestones.filter { longest >= $0 }
+    private var reachedBadges: [(index: Int, value: TimeInterval)] {
+        milestonesReached(upTo: longest)
     }
 
     var body: some View {
@@ -716,31 +716,16 @@ struct RecordsSheet: View {
                         }
                     }
 
-                    if !milestonesReached.isEmpty {
+                    if !reachedBadges.isEmpty {
                         SettingsCard {
-                            VStack(alignment: .leading, spacing: 0) {
-                                Text.caveatLeading("milestones reached")
+                            VStack(spacing: 0) {
+                                Text.caveat("milestones reached")
                                     .font(.driftCardTitle)
-                                    .foregroundStyle(.driftInkSoft)
-                                    .padding(.bottom, 10)
-                                ForEach(Array(milestonesReached.reversed().enumerated()), id: \.offset) { idx, m in
-                                    if idx > 0 { SettingsDivider() }
-                                    HStack(spacing: 12) {
-                                        ZStack {
-                                            Circle().fill(Color.driftSage).frame(width: 24, height: 24)
-                                            Image(systemName: "checkmark")
-                                                .font(.system(size: 13, weight: .bold))
-                                                .foregroundStyle(.white)
-                                        }
-                                        Text("\(formatDurationHuman(m)) free")
-                                            .font(.driftRowLabel)
-                                            .foregroundStyle(.driftInk)
-                                        Spacer()
-                                    }
-                                    .padding(.vertical, 8)
-                                }
+                                    .foregroundStyle(.driftInk)
+                                    .padding(.bottom, 16)
+                                MilestoneBadgeGrid(reached: reachedBadges)
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(maxWidth: .infinity)
                         }
                     }
                 }

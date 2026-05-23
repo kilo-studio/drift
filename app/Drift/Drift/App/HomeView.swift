@@ -78,26 +78,31 @@ struct HomeView: View, Equatable {
         return now.timeIntervalSince(end) >= HitStore.longStretchThresholdSec
     }
 
-    /// Long-stretch home: the durable "free for X" timer + a longest-yet record
-    /// line + a milestone trail. No frequency cards/charts (they're meaningless
-    /// here). Top headroom clears the resting spirit in ContentView's overlay.
+    /// Long-stretch home: the durable "free for X" timer, a progress donut
+    /// toward the next time milestone, and a "longest drift" reference card. No
+    /// frequency cards/charts (meaningless here). Top headroom clears the
+    /// resting spirit in ContentView's overlay.
     private func longStretchState(now: Date) -> some View {
         let end = store.lastSessionEnd()
         let freeForSec = end.map { now.timeIntervalSince($0) } ?? 0
+        let bounds = store.longestGapBounds()
         return VStack(spacing: 0) {
             Spacer().frame(height: spiritSize)   // clear the top-right spirit
             Spacer()
 
             LongStretchHero(lastSessionEnd: end)
+                .padding(.bottom, 28)
 
-            LongStretchRecord(freeForSec: freeForSec, longestGapSec: store.longestGapSec)
-                .padding(.top, 28)
+            MilestoneDonut(freeForSec: freeForSec)
 
             Spacer()
 
-            MilestoneTrail(freeForSec: freeForSec)
-                .padding(.horizontal, 36)
-                .padding(.bottom, 120)
+            if store.longestGapSec > 0 {
+                LongestDriftCard(gapSec: store.longestGapSec, from: bounds?.from, to: bounds?.to)
+                    .padding(.horizontal, 16)
+            }
+
+            Spacer().frame(height: 120)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

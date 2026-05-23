@@ -454,6 +454,25 @@ final class HitStore {
     var longestGapSec: TimeInterval { records.longestGapSec }
     var longestWakingGapSec: TimeInterval { records.longestWakingGapSec }
 
+    /// The from→to dates of the longest gap between completed sessions — used to
+    /// label the "longest drift" card. Excludes the current ongoing drift (no
+    /// closing session yet), so mid-drift this returns the previous best, which
+    /// is what we want to show as the number to beat. nil with < 2 sessions.
+    func longestGapBounds() -> (from: Date, to: Date)? {
+        let sessions = hits.sessions(threshold: effectiveSessionThreshold)
+        guard sessions.count >= 2 else { return nil }
+        var best: TimeInterval = 0
+        var bounds: (from: Date, to: Date)?
+        for i in 1..<sessions.count {
+            let gap = sessions[i].start.timeIntervalSince(sessions[i - 1].end)
+            if gap > best {
+                best = gap
+                bounds = (sessions[i - 1].end, sessions[i].start)
+            }
+        }
+        return bounds
+    }
+
     // MARK: - Live metrics — session-level (frequency, drives spirit + dashboard)
 
     var lastHit: Hit? { hits.last }

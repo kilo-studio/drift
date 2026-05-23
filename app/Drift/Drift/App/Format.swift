@@ -68,15 +68,10 @@ private let secPerYear = 365 * 86_400
 func formatElapsedLongParts(_ seconds: TimeInterval) -> [ElapsedPart] {
     let s = max(0, Int(seconds))
     if s < secPerDay { return formatElapsedParts(seconds) }
-    // Dominant unit + remainder, but drop the remainder when it's zero so we
-    // never show "1mo 0w" / "2d 0h" — just "1mo" / "2d".
-    func parts(_ big: Int, _ bigUnit: String, _ small: Int, _ smallUnit: String) -> [ElapsedPart] {
-        guard small > 0 else { return [.number("\(big)"), .unit(bigUnit)] }
-        return [.number("\(big)"), .unit("\(bigUnit) "), .number("\(small)"), .unit(smallUnit)]
-    }
-    if s < secPerWeek { return parts(s / secPerDay, "d", (s % secPerDay) / 3600, "h") }
-    if s < secPerMonth { return parts(s / secPerWeek, "w", (s % secPerWeek) / secPerDay, "d") }
-    return parts(s / secPerMonth, "mo", (s % secPerMonth) / secPerWeek, "w")
+    // Days + hours is precise, always includes the live hours, and matches how
+    // people actually count a long stretch ("Day 32"). Weeks/months live on as
+    // milestone labels, not as the running number.
+    return [.number("\(s / secPerDay)"), .unit("d "), .number("\((s % secPerDay) / 3600)"), .unit("h")]
 }
 
 /// Humane sentence fragment picking the largest natural unit, singular/plural

@@ -48,7 +48,7 @@ struct HomeView: View, Equatable {
                 // the long hero's own 1s ticker only exists while in long mode.
                 TimelineView(.periodic(from: .now, by: 60)) { ctx in
                     if isLongStretch(now: ctx.date) {
-                        longStretchState(now: ctx.date)
+                        longStretchState
                             .transition(.opacity.animation(.easeInOut(duration: 0.6)))
                     } else {
                         dashboard
@@ -84,9 +84,8 @@ struct HomeView: View, Equatable {
     /// toward the next time milestone, and a "longest drift" reference card. No
     /// frequency cards/charts (meaningless here). Top headroom clears the
     /// resting spirit in ContentView's overlay.
-    private func longStretchState(now: Date) -> some View {
+    private var longStretchState: some View {
         let end = store.lastSessionEnd()
-        let freeForSec = end.map { now.timeIntervalSince($0) } ?? 0
         // Scrollable so the milestones-reached card can grow on long drifts
         // without overflowing. Top padding clears the resting spirit overlay.
         // The longest-drift record lives on History → Records, so the home
@@ -97,13 +96,20 @@ struct HomeView: View, Equatable {
                     .padding(.top, spiritSize + 24)
                     .padding(.bottom, 8)
 
-                // Once every milestone is reached there's no "next" — drop the
-                // donut card entirely rather than show an empty/terminal state.
-                if let last = driftMilestones.last, freeForSec < last {
-                    NextMilestoneCard(freeForSec: freeForSec)
+                // Driven by a live 1s timeline (not the coarse mode tick) so the
+                // donut counts down and a milestone crossing fires its flourish
+                // in sync with the hero, instead of up to a minute late.
+                TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                    let freeForSec = end.map { ctx.date.timeIntervalSince($0) } ?? 0
+                    VStack(spacing: 16) {
+                        // Once every milestone is reached there's no "next" —
+                        // drop the donut card rather than show a terminal state.
+                        if let last = driftMilestones.last, freeForSec < last {
+                            NextMilestoneCard(freeForSec: freeForSec)
+                        }
+                        MilestonesReachedCard(freeForSec: freeForSec)
+                    }
                 }
-
-                MilestonesReachedCard(freeForSec: freeForSec)
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 120)

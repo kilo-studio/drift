@@ -80,7 +80,7 @@ struct NextMilestoneCard: View {
             Text.caveat("next milestone")
                 .font(.driftCardTitle)
                 .foregroundStyle(.driftInk)
-                .padding(.bottom, 10)
+                .padding(.bottom, 24)
 
             ZStack {
                 Circle().stroke(Color.driftInk.opacity(0.15), lineWidth: 10)
@@ -101,7 +101,7 @@ struct NextMilestoneCard: View {
                 }
             }
             .frame(width: 132, height: 132)
-            .padding(.bottom, 10)
+            .padding(.bottom, 22)
 
             Text(next.map { "\(formatGap($0 - freeForSec)) to go" } ?? "all drifted past")
                 .font(.driftLabel)
@@ -160,11 +160,19 @@ struct MilestoneBadge: View {
     let milestone: TimeInterval
     let index: Int
 
-    /// 1 day → 4 sides, climbing one per milestone toward a near-circle. High-
-    /// side polygons converge visually, so magnitude is *also* encoded as a
-    /// deepening green (short = light sage, long = deep forest) — the two
-    /// signals together keep every badge distinct.
-    private var sides: Int { index + 4 }
+    /// Unit tier — encoded as concentric rings (0 = days, 1 = weeks, 2 = months,
+    /// 3 = year+). Countable rings stay distinct where polygon sides don't.
+    private var tier: Int {
+        if milestone >= 365 * 86_400 { return 3 }
+        if milestone >= 30 * 86_400 { return 2 }
+        if milestone >= 7 * 86_400 { return 1 }
+        return 0
+    }
+    /// Step within the unit → soft-star point count (small, so it stays legible).
+    private var step: Int {
+        driftMilestones.prefix(index).filter { tierOf($0) == tier }.count
+    }
+    private var points: Int { 5 + step }
     private var t: Double {
         let total = driftMilestones.count
         return total > 1 ? Double(index) / Double(total - 1) : 0
@@ -172,8 +180,8 @@ struct MilestoneBadge: View {
 
     var body: some View {
         ZStack {
-            let shape = RoundedPolygon(sides: sides)
-            shape.fill(
+            let star = StarShape(points: points)
+            star.fill(
                 LinearGradient(
                     colors: [
                         lerpRGB((0.659, 0.737, 0.576), (0.36, 0.46, 0.31), t),   // sage → forest (top)
@@ -183,7 +191,15 @@ struct MilestoneBadge: View {
                     endPoint: .bottomTrailing
                 )
             )
-            shape.stroke(.white.opacity(0.25), lineWidth: 1.5)
+            star.stroke(.white.opacity(0.3), lineWidth: 1.5)
+
+            // Concentric inset outlines = the unit tier (weeks/months/year get
+            // visibly more ornate, instantly countable).
+            ForEach(0..<tier, id: \.self) { k in
+                star
+                    .stroke(.white.opacity(0.28), lineWidth: 1.2)
+                    .scaleEffect(1 - 0.17 * Double(k + 1))
+            }
 
             Text(formatDurationHuman(milestone))
                 .font(.driftCardTitle)
@@ -193,40 +209,44 @@ struct MilestoneBadge: View {
         .frame(height: 116)
     }
 
+    private func tierOf(_ sec: TimeInterval) -> Int {
+        if sec >= 365 * 86_400 { return 3 }
+        if sec >= 30 * 86_400 { return 2 }
+        if sec >= 7 * 86_400 { return 1 }
+        return 0
+    }
+
     private func lerpRGB(_ a: (Double, Double, Double), _ b: (Double, Double, Double), _ t: Double) -> Color {
         Color(red: a.0 + (b.0 - a.0) * t, green: a.1 + (b.1 - a.1) * t, blue: a.2 + (b.2 - a.2) * t)
     }
 }
 
-/// A regular polygon with softly rounded corners (radially symmetric). More
-/// `sides` = rounder, so milestone magnitude reads as shape complexity.
-struct RoundedPolygon: Shape {
-    var sides: Int
-    /// Fraction of each edge taken up by the corner round (0 = sharp, ~0.5 = max).
-    var cornerFraction: CGFloat = 0.4
+/// A soft, radially-symmetric star (rounded points). `points` outer spikes
+/// alternate with inner valleys; smoothing through edge midpoints gives the
+/// gentle bloom look. Few points stay far more distinguishable than the side
+/// count of a high-order polygon.
+struct StarShape: Shape {
+    var points: Int
+    var innerRatio: CGFloat = 0.66
 
     func path(in rect: CGRect) -> Path {
-        let n = max(3, sides)
-        let center = CGPoint(x: rect.midX, y: rect.midY)
-        let r = min(rect.width, rect.height) / 2
-        let verts = (0..<n).map { i -> CGPoint in
-            let a = Double(i) / Double(n) * 2 * .pi - .pi / 2   // first vertex at top
-            return CGPoint(x: center.x + cos(a) * r, y: center.y + sin(a) * r)
+        let n = max(3, points)
+        let c = CGPoint(x: rect.midX, y: rect.midY)
+        let outer = min(rect.width, rect.height) / 2
+        let inner = outer * innerRatio
+        let verts: [CGPoint] = (0..<(2 * n)).map { i in
+            let a = Double(i) / Double(2 * n) * 2 * .pi - .pi / 2
+            let r = (i % 2 == 0) ? outer : inner
+            return CGPoint(x: c.x + cos(a) * r, y: c.y + sin(a) * r)
         }
-
-        func lerp(_ a: CGPoint, _ b: CGPoint, _ t: CGFloat) -> CGPoint {
-            CGPoint(x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t)
+        func mid(_ a: CGPoint, _ b: CGPoint) -> CGPoint {
+            CGPoint(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
         }
-
+        let m = verts.count
         var path = Path()
-        for i in 0..<n {
-            let curr = verts[i]
-            let prev = verts[(i - 1 + n) % n]
-            let next = verts[(i + 1) % n]
-            let entering = lerp(curr, prev, cornerFraction)
-            let leaving = lerp(curr, next, cornerFraction)
-            if i == 0 { path.move(to: entering) } else { path.addLine(to: entering) }
-            path.addQuadCurve(to: leaving, control: curr)
+        path.move(to: mid(verts[m - 1], verts[0]))
+        for i in 0..<m {
+            path.addQuadCurve(to: mid(verts[i], verts[(i + 1) % m]), control: verts[i])
         }
         path.closeSubpath()
         return path

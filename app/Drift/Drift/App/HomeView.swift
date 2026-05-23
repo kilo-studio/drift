@@ -36,6 +36,7 @@ struct HomeView: View, Equatable {
                 SparkleField(
                     lastSessionEnd: store.lastSessionEnd(),
                     wakingAvgSec: store.wakingAvgSec(),
+                    longestWakingGapSec: store.longestWakingGapSec,
                     layer: .back
                 )
             }
@@ -63,6 +64,7 @@ struct HomeView: View, Equatable {
                 SparkleField(
                     lastSessionEnd: store.lastSessionEnd(),
                     wakingAvgSec: store.wakingAvgSec(),
+                    longestWakingGapSec: store.longestWakingGapSec,
                     layer: .front
                 )
             }

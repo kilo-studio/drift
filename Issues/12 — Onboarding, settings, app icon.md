@@ -76,7 +76,7 @@ Each card's setting writes to UserDefaults immediately, so by the time the user 
 
 ### Data
 
-- [ ] **Sync iCloud** — toggle, default off. Toggling on triggers CloudKit setup.
+- [x] **Sync iCloud** — toggle, default off; applies on next launch (SwiftData picks CloudKit at container creation). Container gates CloudKit on `driftSyncEnabledKey` with a local fallback on failure; `Hit` got default values for CloudKit compat (no migration — defaults don't change the store schema); iCloud/CloudKit capability + `remote-notification` background mode added. Verified syncing on device. Optional follow-up: a first-run onboarding screen for it.
 - [x] **Reset data** — destructive button with confirmation alert; calls `HitStore.resetEverything()`.
 
 ### About

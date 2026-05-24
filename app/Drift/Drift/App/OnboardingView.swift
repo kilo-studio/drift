@@ -394,7 +394,7 @@ private struct SleepCard: View {
                     SettingsDivider()
                     SettingsPickerRow(
                         label: "end of day",
-                        description: "Hits before this hour count as the previous day.",
+                        description: "Hits before this hour count as the previous day's stats.",
                         selection: $store.sleepEndHour,
                         options: Self.hourOptions,
                         formatted: { formatHour($0) }

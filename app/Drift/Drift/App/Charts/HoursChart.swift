@@ -24,8 +24,12 @@ struct HoursChart: View {
     private var chart: some View {
         Chart(buckets) { b in
             BarMark(
+                // Hour is a quantitative Int on a continuous x-scale, so Charts
+                // can't infer a band width and warns; specify it explicitly
+                // (ratio of the 1-hour step between bars).
                 x: .value("hour", b.id),
-                y: .value("count", b.count)
+                y: .value("count", b.count),
+                width: .ratio(0.8)
             )
             .foregroundStyle(LinearGradient(
                 colors: [Color.driftSage, Color.driftSageDeep.opacity(0.7)],

@@ -10,5 +10,13 @@
 	<array>
 		<string>shortcuts</string>
 	</array>
+	<!-- CloudKit pushes silent notifications so SwiftData can pull synced
+	     changes in the background; without this background mode CloudKit logs
+	     "BUG IN CLIENT OF CLOUDKIT: ... require the 'remote-notification'
+	     background mode" and only syncs on launch/foreground. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

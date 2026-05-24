@@ -99,11 +99,11 @@ Implemented in `SettingsView.swift` as a fourth `TabView` tab. See [Issue 12](..
 - **Use sessions** — toggle, default on (Issue 16's master switch; routes metrics through `effectiveSessionThreshold`)
 - **Session threshold** — picker, 1 / 3 / 5 / 10 / 15 / 30 min, default 5 (hidden when use-sessions is off)
 - **Rolling window** — picker, 7 / 14 / 30 / 60 days, default 7
-- **Sleep window** — two hour pickers (bedtime + wake up), default 23 and 6; drives waking-day cutoff and notification hedge
+- **Sleep window** — two hour pickers (bedtime + wake up), default 23 and 6; drives the waking-day cutoff and suppresses scheduled notifications during sleep (they don't fire)
 - **Notifications** — master toggle + per-type toggles (immediate / beat-average / beat-record) + timing offset pickers (right-at / +1 / +5 / +10 / +15 min)
 - **Reset all data** — destructive, confirms via alert, calls `HitStore.resetEverything()`
 - **About** — version, privacy policy link, github link
-- *(Pending)* **Sync iCloud** — toggle, off by default
+- **Sync iCloud** — always on (CloudKit, the user's own private database); no in-app toggle. Disable per-app in iOS Settings → iCloud.
 - **Reduce motion** — automatically respects iOS setting (no per-app toggle needed)
 
-No accent color picker, no theme variants. The Ghibli sky is the design.
+No accent color picker, no theme variants. The one soft sky is the design.

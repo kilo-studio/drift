@@ -85,7 +85,7 @@ On every log run, the script:
 
 ## Visual design
 
-Ghibli-inspired sky aesthetic: soft sky-blue gradient at top fading to cream at bottom, drifting cloud SVGs (clipped to viewport via `position: fixed; overflow: hidden` layer), a small floating cloud spirit character at the top, glassy cream-colored cards with soft shadows.
+Soft sky aesthetic: a sky-blue gradient at top fading to cream at bottom, drifting cloud SVGs (clipped to viewport via `position: fixed; overflow: hidden` layer), a small floating cloud spirit character at the top, glassy cream-colored cards with soft shadows.
 
 **Spirit character** — cloud body with soft round eyes (Totoro-style dots, not vertical pupils), gentle blink animation. Its appearance is driven by a single ratio = `ms / avgMs` (time since last hit ÷ rolling-30d waking-gap average). Eyes scale up bottom-anchored as ratio grows; a 200-sparkle viewport-fill reveals progressively from halo to full screen; soft golden drop-shadow at milestones.
 

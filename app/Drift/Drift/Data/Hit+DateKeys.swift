@@ -12,15 +12,17 @@ let utcCalendar: Calendar = {
 let driftSleepStartHourKey = "drift.sleep.startHour"
 let driftSleepEndHourKey = "drift.sleep.endHour"
 
-/// Hour 0–23 the user typically goes to sleep. Drives the notification overnight
-/// hedge. Default 23 (matches Issue 12 spec).
+/// Hour 0–23 the user typically goes to sleep. Drives overnight notification
+/// suppression (scheduled notifications don't fire during sleep). Default 23
+/// (matches Issue 12 spec).
 func driftSleepStartHour() -> Int {
     (UserDefaults.standard.object(forKey: driftSleepStartHourKey) as? Int) ?? 23
 }
 
 /// Hour 0–23 the user typically wakes. Drives both the waking-day cutoff (hits
-/// before this hour roll back to the previous day's bucket) and the notification
-/// overnight hedge. Default 6 (matches Issue 12 spec).
+/// before this hour roll back to the previous day's bucket) and overnight
+/// notification suppression (scheduled notifications don't fire during sleep).
+/// Default 6 (matches Issue 12 spec).
 func driftSleepEndHour() -> Int {
     (UserDefaults.standard.object(forKey: driftSleepEndHourKey) as? Int) ?? 6
 }

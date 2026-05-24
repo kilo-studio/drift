@@ -10,7 +10,7 @@ Decide the public name and App Store positioning. Avoid "vape" in the name to ke
 
 ## Resolution
 
-**Name: Drift.** Verb (cloud drift, drifting between hits) and noun (a slow change, a mood). Soft, abstract, fits the Ghibli aesthetic.
+**Name: Drift.** Verb (cloud drift, drifting between hits) and noun (a slow change, a mood). Soft, abstract, fits the gentle aesthetic.
 
 **Tagline candidates** (pick one for App Store):
 - *Notice the gaps.*

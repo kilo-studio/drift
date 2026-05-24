@@ -13,18 +13,18 @@ Port the prototype's three-notification system to `UNUserNotificationCenter`. So
 - [x] `NotificationScheduler` enum (MainActor) — `requestAuthorization`, `reschedule(after:)`
 - [x] Permission request: triggered on the user's first hit (not cold launch). Idempotent.
 - [x] Immediate notification on log
-  - [x] Pre-baseline body: "Xm since last hit · N/10 baseline" / "First hit logged. Building your baseline."
+  - [x] Pre-baseline body: "Xm since last hit · N/5 baseline" / "First hit logged. Building your baseline."
   - [x] Post-baseline body: "⏱ Xm since last hit · avg Ym"
-  - [x] Appends "· 🥇 new waking best" when `longestWakingGap` was just updated by this append
+  - [x] Appends "· 🏆 new longest drift" (all-time) or "· 🥇 new longest drift while awake" when a record was just set by this append
   - [x] Unique identifier per immediate notification so two quick hits both surface
 - [x] Scheduled "beat your average" (`drift-beat-average`)
-  - [x] Only when `totalHits >= 10` and `wakingAvgSec > 0`
+  - [x] Only when `totalHits >= 5` and `wakingAvgSec > 0`
   - [x] Trigger: `wakingAvgSec + notifsBeatAverageOffsetSec` from now (configurable picker; default 60s)
-  - [x] Overnight hedge body when trigger lands inside the configured sleep window
+  - [x] Not scheduled when the trigger lands inside the configured sleep window (don't fire while asleep)
 - [x] Scheduled "beat your record" (`drift-beat-record`)
   - [x] Trigger: `longestWakingGapSec + notifsBeatRecordOffsetSec` from now (configurable picker; default 0s = "right at")
   - [x] Skipped if trigger lands past `endOfWakingDay(now)` (next sleep-end cutoff, default 6am)
-  - [x] Overnight hedge body, same window
+  - [x] Not scheduled when the trigger lands in the sleep window, same as beat-average
   - [x] Skipped when `longestWakingGapSec == 0` or `totalHits < 2`
 
 ## Settings hooks (from [Issues/12 — Onboarding, settings, app icon](12%20%E2%80%94%20Onboarding%2C%20settings%2C%20app%20icon.md))
@@ -40,9 +40,9 @@ Port the prototype's three-notification system to `UNUserNotificationCenter`. So
 ## Tests
 
 Manual:
-1. Log at 11:50pm with a 2h record. Verify the scheduled record-beat is hedged (`If you're still awake...`).
+1. Log at 11:50pm with a 2h record. Verify the scheduled record-beat is **not fired** — its trigger lands in the sleep window, so it isn't scheduled.
 2. Log a hit. Wait 30s. Log another. Verify the first scheduled notification is gone, the new one is queued for the new time.
-3. With < 10 hits, verify beat-average is not scheduled and immediate body says "N/10 baseline".
+3. With < 5 hits, verify beat-average is not scheduled and immediate body says "N/5 baseline".
 
 ## Out of scope
 

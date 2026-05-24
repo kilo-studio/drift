@@ -8,7 +8,7 @@ tags: [polish]
 
 Polish layer. Pre-launch.
 
-> **Implementation status:** Settings tab + Behavior, Notifications, About, Reset, and Export rows are in. App icon is in (Drift.icon Icon Composer bundle dropped into the Xcode target, App Icon build setting set to `Drift`). iCloud sync toggle and the first-launch experience still remain.
+> **Implementation status: done.** Settings tab (Behavior, Notifications, Data, About) is in, the app icon is in (Drift.icon Icon Composer bundle), the onboarding carousel is in, and iCloud sync shipped always-on (no toggle — it's the user's private DB).
 
 ## Onboarding
 
@@ -30,7 +30,7 @@ Each card's setting writes to UserDefaults immediately, so by the time the user 
 
 3. **Sleep window.** Explain the waking-gap concept — "Drift tracks both your longest overall gap and your longest *waking* gap, since most overnight gaps don't really feel like progress." Inline bedtime + wake-up hour pickers. Default: 23 / 6.
 
-4. **Notifications.** Explain the three types in one short paragraph each (immediate confirmation, beating-your-average, beating-your-record) and the overnight hedge in one line. Master toggle to request the system permission; if approved, expose the three per-type toggles. Default suggestion: all three on.
+4. **Notifications.** Explain the three types in one short paragraph each (immediate confirmation, beating-your-average, beating-your-record) and note in one line that notifications pause during sleep. Master toggle to request the system permission; if approved, expose the three per-type toggles. Default suggestion: all three on.
 
 5. **Logging a hit.** Explain that one tap or one Action Button press logs a hit, and the app updates everything. Show **how to bind the Action Button to "Log a hit in Drift"** — ideally with a button that deep-links into iOS Settings → Action Button. If the deep link isn't reliably available, fall back to a clear screenshot/illustration of the path through Settings. Secondary: an "add a Control Center shortcut" suggestion (the iOS 18+ Control Center custom controls picker) and "or run from Shortcuts" mention.
 
@@ -62,7 +62,7 @@ Each card's setting writes to UserDefaults immediately, so by the time the user 
 - [x] **Use sessions** — toggle, default **on**. Implemented via `useSessions: Bool` on `HitStore` plus `effectiveSessionThreshold`, which collapses to `0` when sessions are off so `sessions(threshold: 0)` yields one-hit sessions and every metric becomes hit-based without parallel implementations. See [Issues/16 — Sessions vs individual hits](16%20%E2%80%94%20Sessions%20vs%20individual%20hits.md#the-use-sessions-toggle).
 - [x] **Session threshold** — picker: 1 / 3 / 5 / 10 / 15 / 30 minutes, default 5. **Hidden when "Use sessions" is off.** Persisted as `drift.session.thresholdSec`.
 - [x] **Rolling window length** — picker: 7 / 14 / 30 / 60 days, **default 7**. Drives the "X-day avg" stat card, `wakingAvgSec`, `avgSessionsPerDay`, `avgHitsPerDay`, and the rolling-avg chart's smoothing window.
-- [x] **Sleep window** — two hour pickers (*bedtime* + *wake up*), default 23 and 6. `sleepEndHour` drives the waking-day cutoff in `wakingDayKey` / `currentWakingDayKey` / `endOfWakingDay`. Both drive the notification overnight hedge in `NotificationScheduler.isOvernight`. Changing `sleepEndHour` recomputes records since waking-day buckets shift. Hour-only granularity (DatePicker minute precision deferred — comparisons only need hours).
+- [x] **Sleep window** — two hour pickers (*bedtime* + *wake up*), default 23 and 6. `sleepEndHour` drives the waking-day cutoff in `wakingDayKey` / `currentWakingDayKey` / `endOfWakingDay`. Both drive overnight notification suppression in `NotificationScheduler.isOvernight` (scheduled notifications don't fire during sleep). Changing `sleepEndHour` recomputes records since waking-day buckets shift. Hour-only granularity (DatePicker minute precision deferred — comparisons only need hours).
 - [x] `HitStore.init` now ends with `recomputeRecords()` so persisted records re-sync with the *current* settings on every launch — covers settings changes between sessions.
 
 ### Notifications
@@ -108,5 +108,5 @@ For v1 the external link is the pragmatic shortcut; IAP is the cleaner end-state
 
 ## Out of scope
 
-- Multiple themes (just the Ghibli sky)
+- Multiple themes (just the one soft sky)
 - Custom (user-selectable) app icons

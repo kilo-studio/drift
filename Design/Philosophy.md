@@ -2,7 +2,7 @@
 
 ## What Drift is
 
-A small, gentle iOS app for noticing the gaps between hits. It rewards time spent *not* reaching for the thing, without ever shaming you for the times you do. The visual language is Ghibli — soft skies, drifting clouds, a small floating cloud spirit who gets visibly happier the longer you've drifted.
+A small, gentle iOS app for noticing the time between hits. It rewards time spent *not* reaching for the thing, without ever shaming you for the times you do. The visual language is soft and hand-painted: gentle skies, drifting clouds, a small floating cloud spirit who gets visibly happier the longer you've drifted.
 
 ## What Drift is not
 
@@ -40,11 +40,11 @@ There was a third concept on this list at one point — **achievements** (person
 
 ### Honest celebrations
 
-When the spirit celebrates, the celebration should be earned. The notification overnight hedge is the canonical example: if we can't tell whether the user was actually awake when they "beat" the record, we soften the wording. False praise is worse than no praise.
+When the spirit celebrates, the celebration should be earned. The overnight notification rule is the canonical example: if a celebration would fire during the user's sleep window, where we can't tell whether they're actually awake, it simply doesn't fire at all. (An earlier version softened the wording instead, with an "if you're still awake…" prefix, but that read as confusing on wake-up, so not firing won out.) False praise is worse than no praise.
 
 ### Soft, not flat
 
-The aesthetic is hand-painted Ghibli, not iOS-default flat. Warm cream backgrounds with sky-blue gradients. Handwritten Caveat for labels. Drifting cloud SVGs. Soft shadows. The numbers are big and confident but the surrounding chrome is gentle.
+The aesthetic is soft and hand-painted, not iOS-default flat. Warm cream backgrounds with sky-blue gradients. Handwritten Caveat for labels. Drifting cloud SVGs. Soft shadows. The numbers are big and confident but the surrounding chrome is gentle.
 
 ## Why a spirit
 
@@ -54,4 +54,4 @@ The spirit was originally trying to do too much (friends, rainbows, confetti, ha
 
 ## Source of the aesthetic
 
-Direct lineage: Studio Ghibli's atmospheric backgrounds (My Neighbor Totoro, Spirited Away). Indirect: small iOS apps in the "calm tech" tradition (Dot, Streaks) that respect the user's attention.
+Soft, atmospheric, hand-painted skies and a warm, gentle palette. Kindred spirits in the "calm tech" tradition: small iOS apps (Dot, Streaks) that respect the user's attention.

@@ -1,5 +1,5 @@
 ---
-status: todo
+status: doing
 priority: high
 tags: [launch]
 ---
@@ -7,6 +7,13 @@ tags: [launch]
 # App Store submission
 
 Everything required to ship. Don't start until v1 features are locked.
+
+> **Submitted for review 2026-05-24** — v1.0 build 1, iPhone-only. App Store name
+> "Drift - Calmly cut back", subtitle "Wean off vaping", Lifestyle (primary) +
+> Health & Fitness (secondary), Free, Data Not Collected, age rating 17+,
+> copyright "2026 Kilo". Awaiting Apple review. The final promotional text +
+> description as actually submitted are under "Final copy" below (reworded from
+> the earlier drafts at submission time).
 
 ## Metadata
 
@@ -27,17 +34,15 @@ Everything required to ship. Don't start until v1 features are locked.
 
 **Subtitle:** Wean off vaping
 
-**Promotional text:**
-> A calm, Ghibli-inspired companion for noticing the time between hits and gently stretching it. No streaks, no shame, and nothing ever leaves your device.
+**Promotional text:** (as submitted 2026-05-24)
+> A calm companion for noticing the time between hits and gently stretching it. No ads, no tracking, no accounts, no in-app purchases.
 
-**Description:**
-> Drift is a small, gentle companion for noticing the time between hits — and slowly stretching it.
+**Description:** (as submitted 2026-05-24)
+> At its heart is your spirit. Drift past your average time between hits to make your spirit happy. The longer between hits, the happier your spirit. After you're notified you've gone longer than average between hits, wait as long as you can before your next one. You'll be drifting!
 >
-> At its heart is a little cloud spirit. The longer it's been since your last hit, the brighter and happier it grows, and the more the sky fills with sparkles. A running "free for" timer counts the time since your last hit, and when you go a long while — a day, a week, a month — Drift quietly reframes around that, celebrating how far you've drifted.
+> There's no shame when you slip, Drift just shows you, honestly and in the present tense, what's actually happening. See how long it's been, how your days compare, and when your cravings tend to hit. Progress is up to you. Drift just helps you track and celebrate it.
 >
-> There are no streaks to break and no shame when you slip. Drift never says "quit." It just shows you, honestly and in the present tense, what's actually happening: how long it's been, how your days compare, when your cravings tend to hit. Progress here is something you notice, not something you're scored on.
->
-> Everything stays private. Your data lives on your device and syncs only through your own iCloud — we never see it. No ads, no tracking, no accounts. Drift is completely free.
+> Everything stays private. Your data lives on your device and syncs only through your own iCloud, so we never see it. No ads, no tracking, no accounts, no in-app purchases.
 
 **Keywords:**
 `vape,vaping,nicotine,quit,craving,habit,tracker,smoking,cigarette,puff,wean,reduce,mindful,calm`

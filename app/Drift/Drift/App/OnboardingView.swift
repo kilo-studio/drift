@@ -435,7 +435,7 @@ private struct NotificationsCard: View {
                     .foregroundStyle(.driftInk)
                     .multilineTextAlignment(.center)
 
-                Text("Wait as long as you can after you're notified you're beating your average before the next hit and you'll be drifting!")
+                Text("After you're notified you've gone longer than average between hits, wait as long as you can before your next one. You'll be drifting!")
                     .font(.onboardingSubtitle)
                     .foregroundStyle(.driftInkSoft)
                     .multilineTextAlignment(.center)

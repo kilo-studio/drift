@@ -460,7 +460,7 @@ private struct NotificationsCard: View {
                         }
                         SettingsDivider()
                         SettingsToggleRow(
-                            label: "beat your record",
+                            label: "beat your longest drift",
                             description: "Celebration when you set a new longest drift.",
                             isOn: $store.notifsBeatRecordEnabled
                         )

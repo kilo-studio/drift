@@ -173,7 +173,7 @@ struct HistoryView: View {
             // Stretches chart, full-width like home's chart cards.
             if !stretches.isEmpty {
                 ChartCard(
-                    title: "stretches",
+                    title: "drifts",
                     subtitle: "minutes between sessions",
                     chartHeight: 140
                 ) {

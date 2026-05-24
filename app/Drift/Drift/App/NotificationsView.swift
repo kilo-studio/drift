@@ -72,7 +72,7 @@ struct NotificationsView: View {
                         SettingsCard {
                             VStack(spacing: 0) {
                                 SettingsToggleRow(
-                                    label: "beat your record",
+                                    label: "beat your longest drift",
                                     description: "Fires when you pass your longest drift while awake.",
                                     isOn: $store.notifsBeatRecordEnabled
                                 )

@@ -145,9 +145,9 @@ enum NotificationScheduler {
         let avgMin = Int((ctx.wakingAvgSec ?? 0) / 60)
         var body = "⏱ \(deltaMin)m since last hit · avg \(avgMin)m"
         if ctx.isNewOverallBest {
-            body += " · 🏆 new all-time best"
+            body += " · 🏆 new longest drift"
         } else if ctx.isNewWakingBest {
-            body += " · 🥇 new waking best"
+            body += " · 🥇 new longest drift while awake"
         }
         return body
     }
@@ -164,7 +164,7 @@ enum NotificationScheduler {
 
         let avgMin = Int(avgSec / 60)
         let content = UNMutableNotificationContent()
-        content.title = "👏 You're beating your average"
+        content.title = "👏 you're beating your average"
         content.body = "Don't hit it. You're past your average of \(avgMin)m"
 
         let req = UNNotificationRequest(
@@ -188,7 +188,7 @@ enum NotificationScheduler {
 
         let bestMin = Int(longestSec / 60)
         let content = UNMutableNotificationContent()
-        content.title = "🥇 new waking best"
+        content.title = "🥇 new longest drift while awake"
         content.body = "You just beat your longest drift while awake: \(bestMin)m. Keep drifting."
 
         let req = UNNotificationRequest(
@@ -213,7 +213,7 @@ enum NotificationScheduler {
 
         let bestMin = Int(longestSec / 60)
         let content = UNMutableNotificationContent()
-        content.title = "🏆 new all-time best"
+        content.title = "🏆 new longest drift"
         content.body = "You just beat your longest drift ever: \(bestMin)m. Keep drifting."
 
         let req = UNNotificationRequest(

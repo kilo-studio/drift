@@ -221,7 +221,7 @@ struct HomeView: View, Equatable {
 
                 wakingGapRow
 
-                ChartCard(title: "today's stretches", subtitle: "minutes between \(unit.plural) today") {
+                ChartCard(title: "today's drifts", subtitle: "minutes between \(unit.plural) today") {
                     TodayStretchesChart(stretches: store.todayStretches())
                 }
 

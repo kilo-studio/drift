@@ -90,7 +90,7 @@ struct SettingsView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Every logged hit will be deleted and your records reset to zero — on this device and every other device signed in to your iCloud. This can't be undone.")
+            Text("Every logged hit will be deleted and your records reset to zero. This affects every device signed in to your iCloud and can't be undone.")
         }
         .fileImporter(isPresented: $showImporter, allowedContentTypes: [.json]) { result in
             handleImportPick(result)

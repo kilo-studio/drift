@@ -2,7 +2,7 @@
 
 **Last updated: 2026-05-24**
 
-Drift is built so your data stays in your own hands — on your devices and, through your own private iCloud, nowhere we can ever see.
+Drift is built so your data stays in your own hands: on your devices and, through your own private iCloud, nowhere we can ever see.
 
 ## What Drift stores
 
@@ -12,11 +12,11 @@ Your settings (session threshold, rolling-window length, sleep window, notificat
 
 ## What Drift sends anywhere else
 
-Your hits sync through your own private iCloud so they stay consistent across your devices (details below). They never reach a server we operate — we don't run any — and we never receive a copy.
+Your hits sync through your own private iCloud so they stay consistent across your devices (details below). They never reach a server we operate (we don't run any), and we never receive a copy.
 
 ## iCloud sync
 
-Drift keeps your hits in step across your devices using iCloud, automatically — there's nothing to set up.
+Drift keeps your hits in step across your devices using iCloud, automatically. There's nothing to set up.
 
 Your hits sync through the private iCloud database tied to your Apple Account, using Apple's CloudKit. That's the same place the rest of your iCloud data lives. They move between your own devices and Apple's servers, and nowhere else. They never pass through a server we operate, because we don't operate any, and we never receive a copy. What Apple does with data held in iCloud is covered by Apple's privacy policy and your iCloud terms.
 

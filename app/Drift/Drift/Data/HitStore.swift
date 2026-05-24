@@ -45,13 +45,13 @@ final class HitStore {
     var endedLongStretch: EndedLongStretch?
 
     /// Observes CloudKit background imports so the cached `hits` array refreshes
-    /// when synced changes land — otherwise the snapshot taken at launch stays
+    /// when synced changes land. Otherwise the snapshot taken at launch stays
     /// stale until the app is relaunched.
     /// `nonisolated(unsafe)` so the nonisolated `deinit` can remove the observer
     /// and cancel the task. Both are only ever touched on the main thread (the
     /// store is `@MainActor`), so the unchecked access is safe in practice.
     nonisolated(unsafe) private var remoteChangeToken: (any NSObjectProtocol)?
-    /// Debounces the reload — a CloudKit import can post many change
+    /// Debounces the reload, since a CloudKit import can post many change
     /// notifications in a burst.
     nonisolated(unsafe) private var remoteReloadTask: Task<Void, Never>?
 
@@ -260,7 +260,7 @@ final class HitStore {
         remoteReloadTask?.cancel()
     }
 
-    /// Debounced reload after a CloudKit import — coalesces a burst of remote
+    /// Debounced reload after a CloudKit import; coalesces a burst of remote
     /// change notifications into one re-fetch + record recompute.
     private func scheduleRemoteReload() {
         remoteReloadTask?.cancel()

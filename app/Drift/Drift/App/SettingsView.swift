@@ -160,7 +160,7 @@ struct SettingsView: View {
                     SettingsDivider()
                     SettingsPickerRow(
                         label: "session threshold",
-                        description: "Rapid hits within this gap collapse into a single session.",
+                        description: "Rapid hits within this window collapse into a single session.",
                         selection: store.sessionThresholdSec,
                         options: Self.thresholdOptions,
                         formatted: { formatThreshold($0) }

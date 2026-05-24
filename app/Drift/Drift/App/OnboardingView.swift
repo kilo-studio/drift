@@ -67,7 +67,7 @@ struct OnboardingView: View {
             TabView(selection: $page) {
                 IntroCard(scrolled: bindingFor(0)).tag(0)
                 SpiritPreviewCard(scrolled: bindingFor(1)).tag(1)
-                NotificationsCard(store: store, scrolled: bindingFor(2)).tag(2)
+                NotificationsCard(store: store, scrolled: bindingFor(2), isActive: page == 2).tag(2)
                 SleepCard(store: store, scrolled: bindingFor(3)).tag(3)
                 LoggingCard(scrolled: bindingFor(4)).tag(4)
                 SessionsCard(store: store, scrolled: bindingFor(5)).tag(5)
@@ -315,7 +315,7 @@ private struct IntroCard: View {
                     .multilineTextAlignment(.center)
 
                 VStack(spacing: 10) {
-                    factLine("Data stays on your device.")
+                    factLine("We never see your data.")
                     factLine("No ads, no tracking.")
                     factLine("Completely free.")
                 }
@@ -344,7 +344,7 @@ private struct SpiritPreviewCard: View {
                     .foregroundStyle(.driftInk)
                     .multilineTextAlignment(.center)
 
-                Text("Drift past your average gap between hits to make your spirit happy. The longer between hits, the happier your spirit.")
+                Text("Drift past your average time between hits to make your spirit happy. The longer between hits, the happier your spirit.")
                     .font(.onboardingSubtitle)
                     .foregroundStyle(.driftInkSoft)
                     .multilineTextAlignment(.center)
@@ -405,6 +405,12 @@ private struct SleepCard: View {
 private struct NotificationsCard: View {
     @Bindable var store: HitStore
     @Binding var scrolled: Bool
+    /// True only while this is the visible page. A paging `TabView` calls
+    /// `.onAppear` for preloaded neighbor pages, so requesting on appear fired
+    /// the system prompt a page early (while the user was still on Sleep). We
+    /// request when the card actually becomes the active page instead.
+    var isActive: Bool
+    @State private var didRequest = false
 
     /// Offset picker options for the "beat your average" timing. Stored in
     /// seconds (0, 1m, 5m, 10m, 15m). Matches `NotificationsView`'s shape.
@@ -439,13 +445,13 @@ private struct NotificationsCard: View {
                         SettingsDivider()
                         SettingsToggleRow(
                             label: "beat your average",
-                            description: "Nudge when you pass your rolling-average gap.",
+                            description: "Nudge when you pass your rolling-average drift.",
                             isOn: $store.notifsBeatAverageEnabled
                         )
                         if store.notifsBeatAverageEnabled {
                             SettingsDivider()
                             SettingsPickerRow(
-                                label: "gap after average",
+                                label: "drift after average",
                                 description: "How long past your average before the nudge fires.",
                                 selection: $store.notifsBeatAverageOffsetSec,
                                 options: Self.offsetOptions,
@@ -455,7 +461,7 @@ private struct NotificationsCard: View {
                         SettingsDivider()
                         SettingsToggleRow(
                             label: "beat your record",
-                            description: "Celebration when you set a new longest gap.",
+                            description: "Celebration when you set a new longest drift.",
                             isOn: $store.notifsBeatRecordEnabled
                         )
                     }
@@ -463,11 +469,14 @@ private struct NotificationsCard: View {
                 .driftCard()
             }
         }
-        .onAppear {
-            // Request permission as soon as the user lands on this card —
-            // the master switch defaults on, so otherwise we'd never trigger
-            // the prompt. iOS only shows the dialog once per install; later
-            // calls return the existing status.
+        .onChange(of: isActive) { _, active in
+            // Request once the card is actually the visible page. The master
+            // switch defaults on, so otherwise we'd never trigger the prompt.
+            // iOS only shows the dialog once per install; later calls return
+            // the existing status. Guarded so a swipe back-and-forth doesn't
+            // re-invoke it.
+            guard active, !didRequest else { return }
+            didRequest = true
             Task { await requestNotificationPermission() }
         }
     }
@@ -644,7 +653,7 @@ private struct SessionsCard: View {
                         SettingsDivider()
                         SettingsPickerRow(
                             label: "session threshold",
-                            description: "Rapid hits within this gap collapse into one session.",
+                            description: "Rapid hits within this window collapse into one session.",
                             selection: $store.sessionThresholdSec,
                             options: Self.thresholdOptions,
                             formatted: { formatThreshold($0) }

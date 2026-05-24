@@ -189,7 +189,7 @@ enum NotificationScheduler {
         let bestMin = Int(longestSec / 60)
         let content = UNMutableNotificationContent()
         content.title = "🥇 new waking best"
-        content.body = "You just beat your longest waking stretch of \(bestMin)m. Keep drifting."
+        content.body = "You just beat your longest drift while awake: \(bestMin)m. Keep drifting."
 
         let req = UNNotificationRequest(
             identifier: beatWakingRecordID,
@@ -214,7 +214,7 @@ enum NotificationScheduler {
         let bestMin = Int(longestSec / 60)
         let content = UNMutableNotificationContent()
         content.title = "🏆 new all-time best"
-        content.body = "You just beat your longest gap ever: \(bestMin)m. Keep drifting."
+        content.body = "You just beat your longest drift ever: \(bestMin)m. Keep drifting."
 
         let req = UNNotificationRequest(
             identifier: beatOverallRecordID,

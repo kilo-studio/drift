@@ -53,7 +53,7 @@ struct NotificationsView: View {
                             VStack(spacing: 0) {
                                 SettingsToggleRow(
                                     label: "beat your average",
-                                    description: "Fires when you've drifted past your typical gap.",
+                                    description: "Fires when you pass your typical drift.",
                                     isOn: $store.notifsBeatAverageEnabled
                                 )
                                 if store.notifsBeatAverageEnabled {
@@ -73,7 +73,7 @@ struct NotificationsView: View {
                             VStack(spacing: 0) {
                                 SettingsToggleRow(
                                     label: "beat your record",
-                                    description: "Fires when you've passed your longest waking stretch.",
+                                    description: "Fires when you pass your longest drift while awake.",
                                     isOn: $store.notifsBeatRecordEnabled
                                 )
                                 if store.notifsBeatRecordEnabled {

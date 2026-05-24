@@ -44,8 +44,8 @@ struct HeroBestsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            bestRow(label: "longest gap while awake", value: longestWakingGapSec)
-            bestRow(label: "all time longest gap", value: longestGapSec)
+            bestRow(label: "longest drift while awake", value: longestWakingGapSec)
+            bestRow(label: "all time longest drift", value: longestGapSec)
         }
     }
 

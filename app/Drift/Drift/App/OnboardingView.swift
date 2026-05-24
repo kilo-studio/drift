@@ -9,7 +9,18 @@ struct OnboardingView: View {
     @Environment(HitStore.self) private var store
     @AppStorage(driftOnboardingCompleteKey) private var complete: Bool = false
 
-    @State private var page: Int = 0
+    @State private var page: Int = {
+        #if DEBUG
+        // `--onboard-page N`: start onboarding on a specific card so App Store
+        // screenshots of any page can be captured (simctl can't swipe).
+        let args = ProcessInfo.processInfo.arguments
+        if let i = args.firstIndex(of: "--onboard-page"), i + 1 < args.count,
+           let n = Int(args[i + 1]) {
+            return n
+        }
+        #endif
+        return 0
+    }()
     /// Per-page scroll state — keyed by page index so each card preserves its
     /// own scrolled flag. Swiping between pages reads the destination page's
     /// stored value, so a previously-scrolled card still shows the spirit in

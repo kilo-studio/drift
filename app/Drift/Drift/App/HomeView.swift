@@ -196,6 +196,7 @@ struct HomeView: View, Equatable {
 
 
     private var dashboard: some View {
+        ScrollViewReader { proxy in
         ScrollView {
             VStack(spacing: 16) {
                 HStack(alignment: .top) {
@@ -224,6 +225,7 @@ struct HomeView: View, Equatable {
                 ChartCard(title: "today's drifts", subtitle: "minutes between \(unit.plural) today") {
                     TodayStretchesChart(stretches: store.todayStretches())
                 }
+                .id("charts-anchor")
 
                 ChartCard(title: "the last fortnight", subtitle: "\(unit.plural) per day · last 14 days") {
                     FortnightChart(counts: store.dailySessionCounts(lastN: 14))
@@ -236,6 +238,7 @@ struct HomeView: View, Equatable {
                 ChartCard(title: "stretching the drift", subtitle: "minutes between \(unit.plural)\n\(store.rollingWindowDays)-day rolling average") {
                     RollingAvgChart(series: store.rollingAvg(lastN: 30))
                 }
+                .id("charts-bottom")
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 120)
@@ -244,6 +247,23 @@ struct HomeView: View, Equatable {
             geom.contentOffset.y > 8
         } action: { _, shouldStick in
             onScrolledChange(shouldStick)
+        }
+        #if DEBUG
+        .onAppear {
+            // `--home-scroll` jumps to the top of the charts; `--home-scroll-bottom`
+            // jumps to the last chart ("stretching the drift"). For App Store
+            // screenshots (simctl can't scroll). A short delay lets layout settle.
+            let args = ProcessInfo.processInfo.arguments
+            let target: (id: String, anchor: UnitPoint)? =
+                args.contains("--home-scroll-bottom") ? ("charts-bottom", .bottom)
+                : args.contains("--home-scroll") ? ("charts-anchor", .top)
+                : nil
+            guard let target else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                proxy.scrollTo(target.id, anchor: target.anchor)
+            }
+        }
+        #endif
         }
     }
 

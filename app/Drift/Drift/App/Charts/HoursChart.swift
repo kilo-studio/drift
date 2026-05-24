@@ -25,11 +25,13 @@ struct HoursChart: View {
         Chart(buckets) { b in
             BarMark(
                 // Hour is a quantitative Int on a continuous x-scale, so Charts
-                // can't infer a band width and warns; specify it explicitly
-                // (ratio of the 1-hour step between bars).
+                // can't infer a band width and warns. `.ratio` has no defined
+                // step on a continuous axis (it collapsed the bars to ~zero
+                // width), so give an exact width — which is what the warning
+                // asks for and renders visible bars.
                 x: .value("hour", b.id),
                 y: .value("count", b.count),
-                width: .ratio(0.8)
+                width: .fixed(8)
             )
             .foregroundStyle(LinearGradient(
                 colors: [Color.driftSage, Color.driftSageDeep.opacity(0.7)],

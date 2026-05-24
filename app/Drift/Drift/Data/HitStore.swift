@@ -659,6 +659,31 @@ extension HitStore {
         endedLongStretch = nil
     }
 
+    /// Loads a real exported `drift-export.json` (or prototype `vape-log.json`)
+    /// from the app's Documents directory and replaces all data with it. Used to
+    /// drive App Store screenshots off real data instead of synthetic seeds —
+    /// `simctl` copies the file into the container, then `--import-doc <name>`
+    /// triggers this on launch.
+    func seedFromExportDoc(_ filename: String) {
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        guard let data = try? Data(contentsOf: docs.appendingPathComponent(filename)),
+              let parsed = try? PrototypeImport.parse(data) else { return }
+        for h in hits { context.delete(h) }
+        records.longestGapSec = 0
+        records.longestWakingGapSec = 0
+        try? context.save()
+        try? reload()
+        baselineSkipped = true
+        let tz = TimeZone.current.secondsFromGMT() / 60
+        for ph in parsed.hits {
+            context.insert(Hit(t: ph.t, tzOffsetMinutes: ph.tzOffsetMinutes == 0 ? tz : ph.tzOffsetMinutes))
+        }
+        try? context.save()
+        try? reload()
+        recomputeRecords()
+        endedLongStretch = nil
+    }
+
     /// Generates realistic daily session clusters for `days` days, with the very
     /// last hit pinned exactly at `anchor`. Sessions are spread across waking
     /// hours (8am–11pm) with light jitter; some sessions get a quick second hit.

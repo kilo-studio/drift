@@ -73,10 +73,21 @@ struct ContentView: View {
         .tabBarMinimizeBehavior(.onScrollDown)
         #if DEBUG
         .onAppear {
+            let args = ProcessInfo.processInfo.arguments
             // `--records`: start on History so the records sheet (opened by
             // HistoryView's matching hook) is reachable for testing.
-            if ProcessInfo.processInfo.arguments.contains("--records") {
+            if args.contains("--records") {
                 currentTab = .history
+            }
+            // `--tab home|history|settings`: deep-link to a tab on launch.
+            // Used for App Store screenshot capture (simctl can't tap the bar).
+            if let i = args.firstIndex(of: "--tab"), i + 1 < args.count {
+                switch args[i + 1] {
+                case "home": currentTab = .home
+                case "history": currentTab = .history
+                case "settings": currentTab = .settings
+                default: break
+                }
             }
         }
         #endif

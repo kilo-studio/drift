@@ -68,6 +68,12 @@ struct DriftApp: App {
                     UserDefaults.standard.set(true, forKey: driftOnboardingCompleteKey)
                     s.seedScenario(scenario)
                 }
+                // `--import-doc <name>`: load real exported data from the app's
+                // Documents dir (simctl copies it in first). For screenshots.
+                if let i = args.firstIndex(of: "--import-doc"), i + 1 < args.count {
+                    UserDefaults.standard.set(true, forKey: driftOnboardingCompleteKey)
+                    s.seedFromExportDoc(args[i + 1])
+                }
                 #endif
                 return s
             } catch {

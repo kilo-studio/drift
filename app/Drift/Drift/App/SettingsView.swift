@@ -160,7 +160,7 @@ struct SettingsView: View {
                     SettingsDivider()
                     SettingsPickerRow(
                         label: "session threshold",
-                        description: "Rapid hits within this window collapse into a single session.",
+                        description: "Rapid hits within this window collapse into one session.",
                         selection: store.sessionThresholdSec,
                         options: Self.thresholdOptions,
                         formatted: { formatThreshold($0) }
@@ -187,7 +187,7 @@ struct SettingsView: View {
             VStack(spacing: 0) {
                 SettingsPickerRow(
                     label: "bedtime",
-                    description: "Notifications soften their tone after this hour.",
+                    description: "Notifications pause after this hour.",
                     selection: store.sleepStartHour,
                     options: Self.hourOptions,
                     formatted: { formatHour($0) }

@@ -18,7 +18,7 @@ Lock in the data and privacy stance before any code. This is a **feature**, not 
 - [x] **Privacy policy text** lives in `Privacy.md` at repo root
 - [x] **Hosting** — no Pages site. Repo is public (flipped 2026-05-23), so `Privacy.md` is served directly by GitHub at https://github.com/kilo-studio/drift/blob/main/Privacy.md. GitHub Pages + the `docs/` site (landing + privacy + css) were briefly set up then torn down to keep surfaces minimal — the only things to maintain are the repo (README + Privacy.md) and the app.
 - [x] **Update `SettingsView` privacy URL** — now `https://github.com/kilo-studio/drift/blob/main/Privacy.md` (change is in the uncommitted SettingsView edits; commits with the rest of the settings work)
-- [ ] **Update policy when iCloud sync ships** — current text intentionally omits CloudKit details since the toggle isn't live yet
+- [x] **Policy describes iCloud sync** — the opt-in CloudKit section was added to `Privacy.md` preemptively on 2026-05-24, ahead of the toggle shipping (Issue 12). The doc is published from the public repo, and there's no released app yet, so a policy that's slightly ahead of the in-development build is harmless and will line up by App Store submission. **When the toggle lands**, verify it matches the copy: off by default, lives in Settings, only hits sync (derived metrics recompute per device). **If sync is descoped from v1**, remove that section from `Privacy.md` before submitting.
 
 ## Pre-public history scrub (2026-05-23)
 

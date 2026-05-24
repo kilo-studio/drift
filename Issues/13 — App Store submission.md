@@ -10,8 +10,8 @@ Everything required to ship. Don't start until v1 features are locked.
 
 ## Metadata
 
-- [x] **App name**: Drift
-- [x] **Subtitle** (30 chars): **"Calmly cut back"** (15)
+- [x] **App Store name**: **"Drift - Calmly cut back"** (23) — plain "Drift" was already taken on the App Store. Home-screen name (`CFBundleDisplayName`) stays just **"Drift"**, independent of the store name.
+- [x] **Subtitle** (30 chars): **"A gentle space between hits"** (27) — the tagline moved into the name, so the subtitle adds new descriptive/search terms instead of repeating it.
 - [x] **Promotional text** (170 chars): below
 - [x] **Description**: below
 - [x] **Keywords** (100 chars): vape/nicotine terms included for discoverability (keywords aren't shown publicly, so lower review-risk than the name/screenshots)
@@ -23,7 +23,9 @@ Everything required to ship. Don't start until v1 features are locked.
 
 ### Final copy (locked 2026-05-24)
 
-**Subtitle:** Calmly cut back
+**App Store name:** Drift - Calmly cut back
+
+**Subtitle:** A gentle space between hits
 
 **Promotional text:**
 > A calm, Ghibli-inspired companion for noticing the time between hits and gently stretching it. No streaks, no shame, and nothing ever leaves your device.

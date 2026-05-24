@@ -1,10 +1,34 @@
 ---
-status: todo
-priority: medium
+status: resolved
+priority: low
 tags: [polish, design-system, icon]
 ---
 
 # Icon tinted variant + appiconset cleanup
+
+## Resolution (2026-05-24)
+
+**The original diagnosis below was wrong, and the placeholder was a non-issue.**
+The Control Center "Open Drift" tile showed a grid placeholder, but the icon and its
+tinted variant were fine all along:
+
+- The iOS 26 `.icon` (Icon Composer) format **auto-derives** the Tinted/monochrome
+  appearance from the layers. A Debug build's `Assets.car` contains
+  `ISAppearanceTintable` (plus `UIAppearanceAny` / `UIAppearanceDark`) renditions even
+  though `icon.json` has no explicit `appearances` block.
+- The tinted glyph renders correctly in Icon Composer **and** on the device Home Screen
+  in tinted appearance mode.
+- The Control Center placeholder was purely a **stale Control Center icon cache**.
+  Removing the tile and **rebooting the device** cleared it; the cloud glyph then
+  rendered correctly. Not related to App Store / TestFlight — these surfaces behave
+  identically in development builds.
+
+No icon authoring work is needed. The only optional leftover is the cosmetic widget
+appiconset cleanup in the "Secondary cleanup" section below.
+
+---
+
+## Original (incorrect) diagnosis — kept for the record
 
 The home screen icon renders correctly, but adding a "Open Drift" tile in Control Center (and possibly Focus mode, Lock Screen widgets, and Shortcuts thumbnails) shows a generic placeholder instead of the cloud spirit. Cause: `Drift.icon` only authors the default appearance, so iOS has nothing to derive a single-color template glyph from for surfaces that demand one.
 

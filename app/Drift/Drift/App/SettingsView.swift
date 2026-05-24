@@ -90,7 +90,7 @@ struct SettingsView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Every logged hit will be deleted and your records reset to zero. This can't be undone.")
+            Text("Every logged hit will be deleted and your records reset to zero. This affects every device signed in to your iCloud and can't be undone.")
         }
         .fileImporter(isPresented: $showImporter, allowedContentTypes: [.json]) { result in
             handleImportPick(result)
@@ -224,11 +224,6 @@ struct SettingsView: View {
     private var dataCard: some View {
         SettingsCard {
             VStack(spacing: 0) {
-                Text("iCloud sync (coming soon)")
-                    .font(.driftRowDescription)
-                    .foregroundStyle(.driftInkSoft)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                SettingsDivider()
                 ShareLink(item: store.makeHitsExport(), preview: SharePreview("Drift history")) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("export history")

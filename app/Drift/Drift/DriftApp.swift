@@ -9,14 +9,31 @@ struct DriftApp: App {
     /// have the pre-removal V1 schema (with achievement tables) on disk —
     /// `.lightweight` drops the unused tables while preserving `Hit` and
     /// `Records` data.
+    ///
+    /// iCloud sync is always on (CloudKit `.automatic`, reading the container
+    /// from the entitlement) — it's the user's own private CloudKit database, so
+    /// it's privacy-preserving (we never receive a copy) and matches how Apple's
+    /// own apps behave; users disable it per-app in iOS Settings → iCloud. With
+    /// no account it just no-ops to local. If container creation throws (e.g.
+    /// the CloudKit capability/container is misconfigured) we fall back to a
+    /// plain local store at the same URL so the app still launches.
     static let container: ModelContainer = {
         do {
             return try ModelContainer(
                 for: Hit.self, Records.self,
-                migrationPlan: DriftMigrationPlan.self
+                migrationPlan: DriftMigrationPlan.self,
+                configurations: ModelConfiguration(cloudKitDatabase: .automatic)
             )
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            NSLog("Drift: CloudKit container unavailable, using local store: \(error)")
+            do {
+                return try ModelContainer(
+                    for: Hit.self, Records.self,
+                    migrationPlan: DriftMigrationPlan.self
+                )
+            } catch {
+                fatalError("Failed to create ModelContainer: \(error)")
+            }
         }
     }()
 

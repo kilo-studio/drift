@@ -76,7 +76,7 @@ Each card's setting writes to UserDefaults immediately, so by the time the user 
 
 ### Data
 
-- [ ] **Sync iCloud** — toggle, default off. Toggling on triggers CloudKit setup.
+- [x] **Sync iCloud** — **always on, no in-app toggle.** The container uses CloudKit `.automatic` (the user's own private CloudKit DB — privacy-preserving, we never receive a copy; matches how Apple's apps behave), with a local fallback if container creation throws. Users disable it per-app in iOS Settings → iCloud. `Hit` got default values for CloudKit compat (no migration — defaults don't change the store schema); iCloud/CloudKit capability + `remote-notification` background mode added. Verified syncing on device. (Started as a Settings toggle defaulting off + "applies next launch" alert, but SwiftData fixes CloudKit at container creation so a live toggle isn't possible and the disclaimer felt off; always-on is the platform norm and fixes the "second device sits empty" case — an empty device pulls existing records down, CloudKit merges and never overwrites.)
 - [x] **Reset data** — destructive button with confirmation alert; calls `HitStore.resetEverything()`.
 
 ### About

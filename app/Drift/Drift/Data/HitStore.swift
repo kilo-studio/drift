@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import CoreData
 import CoreTransferable
 import UniformTypeIdentifiers
 
@@ -42,6 +43,17 @@ final class HitStore {
     /// ≥ `longStretchThresholdSec`). ContentView shows the acknowledgment and
     /// then clears this back to nil. Not persisted — it's a transient signal.
     var endedLongStretch: EndedLongStretch?
+
+    /// Observes CloudKit background imports so the cached `hits` array refreshes
+    /// when synced changes land. Otherwise the snapshot taken at launch stays
+    /// stale until the app is relaunched.
+    /// `nonisolated(unsafe)` so the nonisolated `deinit` can remove the observer
+    /// and cancel the task. Both are only ever touched on the main thread (the
+    /// store is `@MainActor`), so the unchecked access is safe in practice.
+    nonisolated(unsafe) private var remoteChangeToken: (any NSObjectProtocol)?
+    /// Debounces the reload, since a CloudKit import can post many change
+    /// notifications in a burst.
+    nonisolated(unsafe) private var remoteReloadTask: Task<Void, Never>?
 
     private let thresholdKey = "drift.session.thresholdSec"
     private let rollingWindowKey = "drift.rollingWindowDays"
@@ -229,6 +241,35 @@ final class HitStore {
         // settings between launches would leave records computed under the old
         // configuration. publishToWidget runs at the tail of recomputeRecords.
         recomputeRecords()
+
+        // Refresh when CloudKit imports synced changes in the background, so a
+        // fresh device fills in (and edits/deletes from other devices land)
+        // without needing a relaunch. NSPersistentCloudKitContainer posts this;
+        // for a local-only store it simply never fires.
+        remoteChangeToken = NotificationCenter.default.addObserver(
+            forName: .NSPersistentStoreRemoteChange,
+            object: nil,
+            queue: nil
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in self?.scheduleRemoteReload() }
+        }
+    }
+
+    deinit {
+        if let remoteChangeToken { NotificationCenter.default.removeObserver(remoteChangeToken) }
+        remoteReloadTask?.cancel()
+    }
+
+    /// Debounced reload after a CloudKit import; coalesces a burst of remote
+    /// change notifications into one re-fetch + record recompute.
+    private func scheduleRemoteReload() {
+        remoteReloadTask?.cancel()
+        remoteReloadTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            try? self.reload()
+            self.recomputeRecords()
+        }
     }
 
     func reload() throws {
@@ -347,9 +388,12 @@ final class HitStore {
             }
         }
 
-        records.longestGapSec = longestGap
-        records.longestWakingGapSec = longestWaking
-        try? context.save()
+        // Only write when a value actually changed. Recompute runs on launch and
+        // on every remote (CloudKit) import; an unconditional save would push a
+        // no-op change back to CloudKit and could ping-pong between devices.
+        if records.longestGapSec != longestGap { records.longestGapSec = longestGap }
+        if records.longestWakingGapSec != longestWaking { records.longestWakingGapSec = longestWaking }
+        if context.hasChanges { try? context.save() }
         publishToWidget()
     }
 

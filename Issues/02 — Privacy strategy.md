@@ -18,7 +18,7 @@ Lock in the data and privacy stance before any code. This is a **feature**, not 
 - [x] **Privacy policy text** lives in `Privacy.md` at repo root
 - [x] **Hosting** — no Pages site. Repo is public (flipped 2026-05-23), so `Privacy.md` is served directly by GitHub at https://github.com/kilo-studio/drift/blob/main/Privacy.md. GitHub Pages + the `docs/` site (landing + privacy + css) were briefly set up then torn down to keep surfaces minimal — the only things to maintain are the repo (README + Privacy.md) and the app.
 - [x] **Update `SettingsView` privacy URL** — now `https://github.com/kilo-studio/drift/blob/main/Privacy.md` (change is in the uncommitted SettingsView edits; commits with the rest of the settings work)
-- [ ] **Update policy when iCloud sync ships** — current text intentionally omits CloudKit details since the toggle isn't live yet
+- [x] **Policy describes iCloud sync** — the CloudKit section in `Privacy.md` matches the shipped behavior: **always-on private-iCloud sync, no in-app toggle** (disable per-app in iOS Settings → iCloud); only hits sync, derived metrics recompute per device; data never reaches a server we run, so **"Data Not Collected" still holds** (private CloudKit ≠ developer collection). Updated 2026-05-24 from the earlier "off by default, in Settings" framing when sync went always-on (Issue 12).
 
 ## Pre-public history scrub (2026-05-23)
 

@@ -10,20 +10,20 @@ A small, gentle iOS app for noticing the time between hits.
   <img src="assets/screenshots/7-history.png" width="30%" alt="History calendar">
 </p>
 
-Drift is an iOS app for tracking vaping (or any small repeated habit you'd like to notice more clearly). It started as a personal Scriptable prototype and was rebuilt as a native SwiftUI app for iOS 26 — now submitted to the App Store.
+Drift is an iOS app for tracking vaping (or any small repeated habit you'd like to notice more clearly). It started as a personal Scriptable prototype and was rebuilt as a native SwiftUI app for iOS 26, now submitted to the App Store.
 
 ## What it is
 
-A Ghibli-inspired tracker that visualizes the **time between hits** — the *drift* — as a cloud spirit. Log a hit and the spirit drops to baseline-sad. The longer the drift, the bigger the spirit's eyes get and the more sparkles fill the sky around it. There are no streaks to break, no fire emojis counting up, no shame for logging. It's a present-tense, neutral view of right now, the kind of mirror you'd want from a kindly friend, not a fitness app.
+A Ghibli-inspired tracker that visualizes the **time between hits** (the *drift*) as a cloud spirit. Log a hit and the spirit drops to baseline-sad. The longer the drift, the bigger the spirit's eyes get and the more sparkles fill the sky around it. There are no streaks to break, no fire emojis counting up, no shame for logging. It's a present-tense, neutral view of right now, the kind of mirror you'd want from a kindly friend, not a fitness app.
 
-The design tries hard to celebrate without judging. False praise is worse than no praise, so the notifications soften their tone overnight (we can't tell whether you were awake when the trigger fired). The spirit's growth is continuous, not stepwise: no plateaus, no levels, no "earn this badge." Just real-time visualization of one ratio: current drift ÷ rolling-average drift.
+The design tries hard to celebrate without judging. False praise is worse than no praise, so notifications stay quiet during your sleep window; better to say nothing than to congratulate a gap you spent asleep. The spirit's growth is continuous, not stepwise: no plateaus, no levels, no "earn this badge." Just real-time visualization of one ratio: current drift ÷ rolling-average drift.
 
 ## Features
 
 - **One-tap logging.** Bind the Action Button to "Log a hit in Drift": silent, works on the Lock Screen, lands the hit and updates the widget in under a second. Also works from Shortcuts, Siri, Spotlight, and the trailing **+** tab.
 - **Dashboard.** Today's sessions, average drift, your longest drifts, when cravings tend to hit, and a rolling average of how the drift is stretching over time.
 - **History.** Month calendar with donut day cells. Tap a day to see per-day stats and individual hits. Edit or delete any hit.
-- **Notifications.** Local-only, three kinds (immediate confirmation, beating-your-average, beating-your-record), each with its own toggle and timing offset. The overnight hedge softens wording when we can't tell if you're awake.
+- **Notifications.** Local-only, three kinds (immediate confirmation, beating-your-average, beating-your-record), each with its own toggle and timing offset. They stay quiet during your sleep window, so a gap you spent asleep is never celebrated.
 - **Cloud sky.** Drifting clouds in light mode, twinkling stars + a dark cloud in dark mode. The ambient layer runs underneath the dashboard so the surface always feels alive.
 - **Export your data.** Settings → Data → "export hits" writes every logged hit to a JSON file. Save it anywhere (Files, iCloud Drive, email) and own your data outright.
 - **Sessions or individual hits.** Toggleable. Sessions collapse rapid hits within a configurable threshold; off treats every tap as its own event.
@@ -31,7 +31,7 @@ The design tries hard to celebrate without judging. False praise is worse than n
 ## Screenshots
 
 <p align="center">
-  <img src="assets/screenshots/2-onboarding-spirit.png" width="19%" alt="Onboarding — meet the spirit">
+  <img src="assets/screenshots/2-onboarding-spirit.png" width="19%" alt="Onboarding: meet the spirit">
   <img src="assets/screenshots/3-dashboard.png" width="19%" alt="Daily dashboard">
   <img src="assets/screenshots/4-one-week-free.png" width="19%" alt="Long-stretch mode, one week free">
   <img src="assets/screenshots/5-charts.png" width="19%" alt="Charts">
@@ -47,7 +47,7 @@ Drift declares **"Data Not Collected"** on the App Store, and that's accurate.
 - All hit data lives on your device via SwiftData.
 - No analytics SDKs, no third-party crash reporting, no servers we operate.
 - Notifications are scheduled locally and delivered by Apple's notification system.
-- iCloud sync routes through your own private iCloud account via CloudKit — never anywhere we can see. It's on by default (it's your own database); disable it per-app in iOS Settings → iCloud.
+- iCloud sync routes through your own private iCloud account via CloudKit, never anywhere we can see. It's on by default (it's your own database); disable it per-app in iOS Settings → iCloud.
 
 Full policy: [Privacy.md](Privacy.md).
 

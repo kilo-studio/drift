@@ -8,12 +8,6 @@ import UniformTypeIdentifiers
 /// baseline framing) can reach it.
 let driftBaselineSkippedKey = "drift.baseline.skipped"
 
-/// iCloud sync toggle (default off). Read at `ModelContainer` creation in
-/// `DriftApp`, so a change applies on the next launch. Lives here (not the
-/// `@main` file, which can't have top-level declarations) alongside the other
-/// defaults keys.
-let driftSyncEnabledKey = "drift.sync.enabled"
-
 /// JSON snapshot of every logged hit, shaped like the Scriptable prototype
 /// payload so it round-trips through `PrototypeImport.parse`. Carried via
 /// `ShareLink` from Settings → Data → "export hits".

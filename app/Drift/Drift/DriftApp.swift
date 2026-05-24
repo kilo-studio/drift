@@ -10,32 +10,30 @@ struct DriftApp: App {
     /// `.lightweight` drops the unused tables while preserving `Hit` and
     /// `Records` data.
     ///
-    /// iCloud sync is gated on `driftSyncEnabledKey` (default off). With sync
-    /// OFF the call is byte-identical to before — same local store, no config —
-    /// so nothing changes for existing users. With sync ON we add a CloudKit
-    /// `.automatic` configuration (reads the container from the entitlement);
-    /// if that fails (capability/container not set up, or no iCloud account) we
-    /// fall back to local and clear the flag so the app never crash-loops.
+    /// iCloud sync is always on (CloudKit `.automatic`, reading the container
+    /// from the entitlement) — it's the user's own private CloudKit database, so
+    /// it's privacy-preserving (we never receive a copy) and matches how Apple's
+    /// own apps behave; users disable it per-app in iOS Settings → iCloud. With
+    /// no account it just no-ops to local. If container creation throws (e.g.
+    /// the CloudKit capability/container is misconfigured) we fall back to a
+    /// plain local store at the same URL so the app still launches.
     static let container: ModelContainer = {
-        if UserDefaults.standard.bool(forKey: driftSyncEnabledKey) {
-            do {
-                return try ModelContainer(
-                    for: Hit.self, Records.self,
-                    migrationPlan: DriftMigrationPlan.self,
-                    configurations: ModelConfiguration(cloudKitDatabase: .automatic)
-                )
-            } catch {
-                UserDefaults.standard.set(false, forKey: driftSyncEnabledKey)
-                NSLog("Drift: CloudKit unavailable, falling back to local store: \(error)")
-            }
-        }
         do {
             return try ModelContainer(
                 for: Hit.self, Records.self,
-                migrationPlan: DriftMigrationPlan.self
+                migrationPlan: DriftMigrationPlan.self,
+                configurations: ModelConfiguration(cloudKitDatabase: .automatic)
             )
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            NSLog("Drift: CloudKit container unavailable, using local store: \(error)")
+            do {
+                return try ModelContainer(
+                    for: Hit.self, Records.self,
+                    migrationPlan: DriftMigrationPlan.self
+                )
+            } catch {
+                fatalError("Failed to create ModelContainer: \(error)")
+            }
         }
     }()
 

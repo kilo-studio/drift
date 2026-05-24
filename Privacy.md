@@ -2,7 +2,7 @@
 
 **Last updated: 2026-05-24**
 
-Drift is built so the only place your data lives is your own device.
+Drift is built so your data stays in your own hands — on your devices and, through your own private iCloud, nowhere we can ever see.
 
 ## What Drift stores
 
@@ -12,17 +12,17 @@ Your settings (session threshold, rolling-window length, sleep window, notificat
 
 ## What Drift sends anywhere else
 
-Nothing, unless you turn on iCloud sync. With sync off (the default), every hit stays on your device. With it on, your hits sync through your own iCloud account, and even then they never reach a server we run. Details below.
+Your hits sync through your own private iCloud so they stay consistent across your devices (details below). They never reach a server we operate — we don't run any — and we never receive a copy.
 
-## iCloud sync (optional, off by default)
+## iCloud sync
 
-Drift can keep your hits in step across your devices using iCloud. It's off until you turn it on, in Settings.
+Drift keeps your hits in step across your devices using iCloud, automatically — there's nothing to set up.
 
-When it's on, your hits sync through the private iCloud database tied to your Apple Account, using Apple's CloudKit. That's the same place the rest of your iCloud data lives. They move between your own devices and Apple's servers, and nowhere else. They never pass through a server we operate, because we don't operate any, and we never receive a copy. What Apple does with data held in iCloud is covered by Apple's privacy policy and your iCloud terms.
+Your hits sync through the private iCloud database tied to your Apple Account, using Apple's CloudKit. That's the same place the rest of your iCloud data lives. They move between your own devices and Apple's servers, and nowhere else. They never pass through a server we operate, because we don't operate any, and we never receive a copy. What Apple does with data held in iCloud is covered by Apple's privacy policy and your iCloud terms.
 
 Only your hits sync. The stats Drift shows you are recomputed on each device, not synced.
 
-Turn sync off and Drift stops syncing from that point on. Hits already on each device stay where they are.
+You can turn iCloud sync off for Drift in iOS Settings → [your name] → iCloud. Hits already on each device stay where they are.
 
 ## Analytics, crash reporting, third-party services
 

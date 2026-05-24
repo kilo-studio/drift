@@ -1,5 +1,5 @@
 ---
-status: doing
+status: done
 priority: high
 tags: [logging]
 ---
@@ -7,6 +7,8 @@ tags: [logging]
 # Logging via App Intent + Widget
 
 The most important interaction in the app: log a hit fast, from anywhere, without opening Drift.
+
+> **v1 scope done.** Phases A + B shipped (App Intent + AppShortcuts surface, App Group + WidgetBridge, display-only widget). **Phase C — silent tap-to-log from the widget — is deferred post-v1** (needs `LogHitIntent` shared with the widget target); not a v1 blocker.
 
 ## App Intent
 

@@ -29,21 +29,15 @@ Drift declares **"Data Not Collected"** on the App Store, and that's accurate.
 - All hit data lives on your device via SwiftData.
 - No analytics SDKs, no third-party crash reporting, no servers we operate.
 - Notifications are scheduled locally and delivered by Apple's notification system.
-- Optional iCloud sync (planned, not yet shipped) will route through your own iCloud account via CloudKit, never anywhere we can see.
+- iCloud sync routes through your own private iCloud account via CloudKit — never anywhere we can see. It's on by default (it's your own database); disable it per-app in iOS Settings → iCloud.
 
 Full policy: [Privacy.md](Privacy.md).
 
 ## Status
 
-Native iOS rebuild is feature-complete for v1's core; the Scriptable prototype is still in daily personal use as the system continues to bake. What's left before App Store submission:
+v1 is feature-complete and **submitted to the App Store** (2026-05-24, awaiting review). The native rebuild shipped everything: the dashboard, the spirit + sparkle field, the ambient cloud/star layer, App Intent logging, notifications, hit history, the full settings tab, the app icon, the onboarding carousel, the baseline empty-state, **long-stretch mode** (days/weeks/months free), always-on iCloud sync, and the data-migration safeguards. The Scriptable prototype is still in daily personal use as the system continues to bake.
 
-- Empty-state polish for the home dashboard
-- First-launch onboarding carousel that walks through key settings and explains the spirit
-- iCloud sync toggle
-- Polish punch list: sparkle-field render performance at high ratio, the add-hit sheet's visual treatment, the icon's Tinted appearance variant
-- App Store metadata, screenshots, TestFlight, submission
-
-See [Issues/](Issues/) for individual work items.
+The only remaining v1 work is portfolio packaging (this README as a designed artifact, plus a case study). See [Issues/](Issues/) for individual work items.
 
 ## Built with
 

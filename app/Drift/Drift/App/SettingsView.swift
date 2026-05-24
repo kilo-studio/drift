@@ -17,6 +17,14 @@ struct SettingsView: View {
     @State private var pendingImport: PrototypeImport.Parsed?
     @State private var importError: String?
 
+    #if DEBUG
+    /// The debug seed card is hidden until you tap the version row 7 times —
+    /// keeps it out of the way during normal use (and it's already compiled out
+    /// of release builds entirely).
+    @State private var debugTapCount: Int = 0
+    @State private var showDebugCard: Bool = false
+    #endif
+
     private static let thresholdOptions: [TimeInterval] = [60, 180, 300, 600, 900, 1800]
     private static let windowOptions: [Int] = [7, 14, 30, 60]
     private static let hourOptions: [Int] = Array(0...23)
@@ -35,6 +43,17 @@ struct SettingsView: View {
                         .foregroundStyle(.driftInkSoft)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 36)
+                        #if DEBUG
+                        // Secret: tap the title 7× to reveal the debug seed card.
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            guard !showDebugCard else { return }
+                            debugTapCount += 1
+                            if debugTapCount >= 7 {
+                                withAnimation(.easeInOut(duration: 0.4)) { showDebugCard = true }
+                            }
+                        }
+                        #endif
 
                     sessionsCard(store: $store)
                     rollingWindowCard(store: $store)
@@ -44,7 +63,10 @@ struct SettingsView: View {
                     onboardingCard
                     aboutCard
                     #if DEBUG
-                    debugCard
+                    if showDebugCard {
+                        debugCard
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    }
                     #endif
                 }
                 .padding(.horizontal, 16)

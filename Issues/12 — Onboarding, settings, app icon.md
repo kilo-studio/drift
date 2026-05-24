@@ -8,7 +8,7 @@ tags: [polish]
 
 Polish layer. Pre-launch.
 
-> **Implementation status:** Settings tab + Behavior, Notifications, About, Reset, and Export rows are in. App icon is in (Drift.icon Icon Composer bundle dropped into the Xcode target, App Icon build setting set to `Drift`). iCloud sync toggle and the first-launch experience still remain.
+> **Implementation status: done.** Settings tab (Behavior, Notifications, Data, About) is in, the app icon is in (Drift.icon Icon Composer bundle), the onboarding carousel is in, and iCloud sync shipped always-on (no toggle — it's the user's private DB).
 
 ## Onboarding
 

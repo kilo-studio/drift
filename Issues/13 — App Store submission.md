@@ -10,16 +10,35 @@ Everything required to ship. Don't start until v1 features are locked.
 
 ## Metadata
 
-- [ ] **App name**: Drift
-- [ ] **Subtitle** (30 chars): "Notice the gaps."  *or* "A gentler tracker."
-- [ ] **Promotional text** (170 chars): one warm sentence about what it is + privacy
-- [ ] **Description**: 3–4 paragraphs. Lead with the spirit + "free for X" framing. End with privacy stance.
-- [ ] **Keywords**: harm reduction, mindfulness, tracking, habits, hits, gaps, calm. Avoid "vape" if possible.
-- [ ] **Category**: Lifestyle (primary), Health & Fitness (secondary)
+- [x] **App name**: Drift
+- [x] **Subtitle** (30 chars): **"Calmly cut back"** (15)
+- [x] **Promotional text** (170 chars): below
+- [x] **Description**: below
+- [x] **Keywords** (100 chars): vape/nicotine terms included for discoverability (keywords aren't shown publicly, so lower review-risk than the name/screenshots)
+- [x] **Category**: Lifestyle (primary), Health & Fitness (secondary)
 - [ ] **Age rating**: probably 17+ given the substance-tracking nature; verify with the rating questionnaire
-- [ ] **Support URL**: GitHub Issues on the public repo
-- [ ] **Marketing URL**: GitHub Pages landing page
-- [ ] **Privacy policy URL**: Same domain as marketing
+- [x] **Support URL**: `https://github.com/kilo-studio/drift/issues`
+- [x] **Marketing URL**: `https://github.com/kilo-studio/drift` (no Pages site — Issue 02)
+- [x] **Privacy policy URL**: `https://github.com/kilo-studio/drift/blob/main/Privacy.md`
+
+### Final copy (locked 2026-05-24)
+
+**Subtitle:** Calmly cut back
+
+**Promotional text:**
+> A calm, Ghibli-inspired companion for noticing the time between hits and gently stretching it. No streaks, no shame, and nothing ever leaves your device.
+
+**Description:**
+> Drift is a small, gentle companion for noticing the time between hits — and slowly stretching it.
+>
+> At its heart is a little cloud spirit. The longer it's been since your last hit, the brighter and happier it grows, and the more the sky fills with sparkles. A running "free for" timer counts the time since your last hit, and when you go a long while — a day, a week, a month — Drift quietly reframes around that, celebrating how far you've drifted.
+>
+> There are no streaks to break and no shame when you slip. Drift never says "quit." It just shows you, honestly and in the present tense, what's actually happening: how long it's been, how your days compare, when your cravings tend to hit. Progress here is something you notice, not something you're scored on.
+>
+> Everything stays private. Your data lives on your device and syncs only through your own iCloud — we never see it. No ads, no tracking, no accounts. Drift is completely free.
+
+**Keywords:**
+`vape,vaping,nicotine,quit,craving,habit,tracker,smoking,cigarette,puff,wean,reduce,mindful,calm`
 
 ## Privacy nutrition labels
 

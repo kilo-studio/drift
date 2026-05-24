@@ -19,12 +19,12 @@ The top of the dashboard. Source of truth: [Design system](../Design/Design%20sy
 - [x] `Text.caveat(_:)` generalized from the old `driftCardTitle` helper so all Caveat-rendered text gets the swash-padding fix
 - [x] HitStore wired into the app via `@Environment` — `DriftApp` constructs the `ModelContainer` and `HitStore`, exposes the store
 - [x] Debug `+` floating button (`#if DEBUG` only) appends a hit so we can populate data before Issue 06 lands
-- [ ] **Deferred to Issue 14:** milestone glows (peach text-shadow at waking ratio, animated gold at overall ratio) and 1.6s ease transitions — these need spirit ratio + the milestone state from Issue 10
+- [x] **Cut from v1 (2026-05-24):** milestone glows (peach text-shadow at waking ratio, animated gold at overall ratio) on the timer/bests row. Decided not to ship; the spirit's own glow already carries the celebration, and a second glowing element competes with it. Not v1, not v1.x.
 
 ## Animations
 
 - Float speedup at waking milestone (5s → 3.6s) is on the spirit, not the timer
-- The timer/best-num glows fade in over 1.6s, no scaling
+- ~~The timer/best-num glows fade in over 1.6s, no scaling~~ (glows cut from v1; see above)
 
 ## Out of scope
 

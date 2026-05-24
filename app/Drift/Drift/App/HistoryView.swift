@@ -163,7 +163,7 @@ struct HistoryView: View {
                     label: store.useSessions ? "\(totalHits) hit\(totalHits == 1 ? "" : "s")" : "this day"
                 )
                 StatCard(
-                    title: "avg gap",
+                    title: "avg drift",
                     bigNumberParts: avgGap.map { formatGapParts($0) } ?? [.number("—")],
                     bigNumberColor: .driftSageDeep,
                     label: store.useSessions ? "between sessions" : "between hits"
@@ -173,7 +173,7 @@ struct HistoryView: View {
             // Stretches chart, full-width like home's chart cards.
             if !stretches.isEmpty {
                 ChartCard(
-                    title: "stretches",
+                    title: "drifts",
                     subtitle: "minutes between sessions",
                     chartHeight: 140
                 ) {

@@ -221,7 +221,7 @@ struct HomeView: View, Equatable {
 
                 wakingGapRow
 
-                ChartCard(title: "today's stretches", subtitle: "minutes between \(unit.plural) today") {
+                ChartCard(title: "today's drifts", subtitle: "minutes between \(unit.plural) today") {
                     TodayStretchesChart(stretches: store.todayStretches())
                 }
 
@@ -233,7 +233,7 @@ struct HomeView: View, Equatable {
                     HoursChart(counts: store.sessionsByHour())
                 }
 
-                ChartCard(title: "stretching the gaps", subtitle: "minutes between \(unit.plural)\n\(store.rollingWindowDays)-day rolling average") {
+                ChartCard(title: "stretching the drift", subtitle: "minutes between \(unit.plural)\n\(store.rollingWindowDays)-day rolling average") {
                     RollingAvgChart(series: store.rollingAvg(lastN: 30))
                 }
             }

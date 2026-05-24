@@ -70,9 +70,28 @@ struct SparkleField: View {
                     let elapsed = now.timeIntervalSinceReferenceDate
                     let realRatio = currentRatio(now: now)
                     let (ratio, sparkleScale) = snapState(now: now, realRatio: realRatio)
+                    // Resolve the per-color star textures once this frame, then
+                    // blit them. A texture draw is far cheaper than building +
+                    // tessellating a vector path per sparkle per frame, which is
+                    // what chugged once most of the field (200+ stars) revealed.
+                    let symbols = palette.indices.map { gc.resolveSymbol(id: $0) }
+                    var gc = gc
                     for s in sparkles {
-                        guard ratio >= s.revealAt else { continue }
-                        drawSparkle(s, in: gc, size: size, time: elapsed, scale: sparkleScale)
+                        guard ratio >= s.revealAt, let sym = symbols[s.colorIndex] else { continue }
+                        let (drift, opacity) = animState(for: s, time: elapsed)
+                        let d = s.size * sparkleScale
+                        let cx = (s.xPct / 100) * size.width + drift.x
+                        let cy = (s.yPct / 100) * size.height + drift.y
+                        gc.opacity = opacity
+                        gc.draw(sym, in: CGRect(x: cx - d / 2, y: cy - d / 2, width: d, height: d))
+                    }
+                } symbols: {
+                    // One pre-rendered star per palette colour, tagged by index.
+                    ForEach(palette.indices, id: \.self) { i in
+                        SparkleStar()
+                            .fill(palette[i])
+                            .frame(width: 30, height: 30)
+                            .tag(i)
                     }
                 }
                 .frame(width: geo.size.width, height: geo.size.height)
@@ -109,17 +128,6 @@ struct SparkleField: View {
         return (blendedRatio, 1 - easedT)
     }
 
-    private func drawSparkle(_ s: Sparkle, in ctx: GraphicsContext, size: CGSize, time: Double, scale: Double) {
-        let (drift, opacity) = animState(for: s, time: time)
-        let cx = (s.xPct / 100) * size.width + drift.x
-        let cy = (s.yPct / 100) * size.height + drift.y
-
-        var ctx = ctx
-        ctx.translateBy(x: cx, y: cy)
-        ctx.opacity = opacity
-        ctx.fill(starPath(radius: s.size / 2 * scale), with: .color(s.color))
-    }
-
     private func animState(for s: Sparkle, time: Double) -> (drift: CGPoint, opacity: Double) {
         if reduceMotion {
             return (.zero, 1)
@@ -148,7 +156,7 @@ private struct Sparkle {
     let driftPhase: Double     // 0..1
     let twinkleDuration: Double
     let twinklePhase: Double   // 0..1
-    let color: Color
+    let colorIndex: Int        // into `palette` — picks the pre-resolved star texture
 }
 
 // Warm palette weighted toward the coral/peach end so sparkles read against both
@@ -224,26 +232,31 @@ private func makeSparkles(layer: SparkleLayer, spiritPercent: CGPoint) -> [Spark
             driftPhase: Double.random(in: 0...1, using: &generator),
             twinkleDuration: twinkleDur,
             twinklePhase: Double.random(in: 0...1, using: &generator),
-            color: palette.randomElement(using: &generator)!
+            colorIndex: Int.random(in: palette.indices, using: &generator)
         )
     }
 }
 
 // MARK: - Star path
 
-/// 4-point star matching the prototype's path: tight inner radius (0.23 × outer)
-/// gives the pinched-corner look.
-private func starPath(radius r: CGFloat) -> Path {
-    let inner = r * 0.23
-    var p = Path()
-    p.move(to: CGPoint(x: 0, y: -r))
-    p.addLine(to: CGPoint(x: inner, y: -inner))
-    p.addLine(to: CGPoint(x: r, y: 0))
-    p.addLine(to: CGPoint(x: inner, y: inner))
-    p.addLine(to: CGPoint(x: 0, y: r))
-    p.addLine(to: CGPoint(x: -inner, y: inner))
-    p.addLine(to: CGPoint(x: -r, y: 0))
-    p.addLine(to: CGPoint(x: -inner, y: -inner))
-    p.closeSubpath()
-    return p
+/// 4-point star (tight inner radius 0.23 × outer for the pinched-corner look),
+/// centered in `rect`. Used as the Canvas symbol that gets resolved to a texture
+/// once per palette colour and blitted per sparkle.
+struct SparkleStar: Shape {
+    func path(in rect: CGRect) -> Path {
+        let cx = rect.midX, cy = rect.midY
+        let r = min(rect.width, rect.height) / 2
+        let inner = r * 0.23
+        var p = Path()
+        p.move(to: CGPoint(x: cx, y: cy - r))
+        p.addLine(to: CGPoint(x: cx + inner, y: cy - inner))
+        p.addLine(to: CGPoint(x: cx + r, y: cy))
+        p.addLine(to: CGPoint(x: cx + inner, y: cy + inner))
+        p.addLine(to: CGPoint(x: cx, y: cy + r))
+        p.addLine(to: CGPoint(x: cx - inner, y: cy + inner))
+        p.addLine(to: CGPoint(x: cx - r, y: cy))
+        p.addLine(to: CGPoint(x: cx - inner, y: cy - inner))
+        p.closeSubpath()
+        return p
+    }
 }

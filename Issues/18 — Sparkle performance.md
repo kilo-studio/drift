@@ -1,20 +1,20 @@
 ---
-status: doing
+status: done
 priority: high
 tags: [performance, spirit, sparkles]
 ---
 
-> **In progress — render-cheaper-per-particle (count kept).** The Canvas was
+> **Done (2026-05-24), render-cheaper-per-particle (count kept).** The Canvas was
 > building + filling a vector star Path per sparkle per frame (~225 × 30fps × 2
 > layers). Now each palette colour's star is a Canvas `symbol`, resolved to a
-> texture once and **blitted** per sparkle (`gc.draw(resolvedSymbol, in:)`) —
+> texture once and **blitted** per sparkle (`gc.draw(resolvedSymbol, in:)`),
 > a textured quad instead of re-tessellating a path. Static values (colour
-> index, base position, revealAt) were already precomputed at init and the ratio
-> is already snapshotted per tick. Appearance verified unchanged. **Pending:**
-> on-device frame-pacing confirmation (couldn't run Instruments here); if still
-> bound, the easy next lever is dropping the TimelineView to ~20fps once the
-> field is fully revealed (`ratio > 8`). Count deliberately kept (~225) per the
-> user's preference.
+> index, base position, revealAt) are precomputed at init and the ratio is
+> snapshotted per tick. The TimelineViews are capped at 30fps. Verified smooth
+> on-device, including long-stretch (which keeps the field fully revealed), with
+> appearance unchanged. Count deliberately kept (~225) per the user's preference.
+> If it ever regresses, the next lever is dropping the field to ~20fps once fully
+> revealed (`ratio > 8`).
 
 # Sparkle performance
 

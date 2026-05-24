@@ -16,7 +16,7 @@ Port the prototype's design tokens to a SwiftUI design system. Source of truth: 
 - [x] `Font+Drift.swift` — `.driftDisplay` (80), `.driftStatNum` (52), `.driftBestNum` (22), `.driftCardTitle` (Caveat 24), `.driftLabel` (13), `.driftSub` (12), plus `.driftRowLabel` (16) and `.driftRowDescription` (14) for settings rows. Tracking applied at call site via `.tracking()` on `Text`.
 - [x] Bundled Quicksand + Caveat as variable fonts; registered at runtime in `DriftApp.init()` via `CTFontManagerRegisterFontsForURL` (no Info.plist surgery needed against auto-generated plist).
 - [x] `DesignSystemShowcase.swift` — visual spec sheet wired into `ContentView`; doubles as case-study artifact.
-- [ ] Milestone glow modifiers (`.wakingGlow`, `.overallGlow`) — **deferred to Issue 14** (need the milestone state and the targets they apply to)
+- [x] ~~Milestone glow modifiers (`.wakingGlow`, `.overallGlow`)~~ **Cut from v1 (2026-05-24)**: the hero/bests milestone glow treatment was dropped (the spirit's own glow already carries the celebration). See Issue 08.
 - [ ] Bar-chart corner-rounding helper — **deferred to Issues 09/10** (need the actual `Chart` surface)
 
 ## Tests

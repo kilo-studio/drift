@@ -23,6 +23,8 @@ struct SettingsView: View {
     /// of release builds entirely).
     @State private var debugTapCount: Int = 0
     @State private var showDebugCard: Bool = false
+    /// Held between tapping a scenario and confirming the destructive replace.
+    @State private var pendingSeed: DebugScenario?
     #endif
 
     private static let thresholdOptions: [TimeInterval] = [60, 180, 300, 600, 900, 1800]
@@ -113,6 +115,20 @@ struct SettingsView: View {
         } message: {
             Text(importError ?? "")
         }
+        #if DEBUG
+        .alert("Replace all data?", isPresented: Binding(
+            get: { pendingSeed != nil },
+            set: { if !$0 { pendingSeed = nil } }
+        ), presenting: pendingSeed) { scenario in
+            Button("Seed", role: .destructive) {
+                store.seedScenario(scenario)
+                pendingSeed = nil
+            }
+            Button("Cancel", role: .cancel) { pendingSeed = nil }
+        } message: { scenario in
+            Text("This wipes every logged hit and replaces it with the “\(scenario.label)” scenario. Debug only — can't be undone.")
+        }
+        #endif
     }
 
     /// Read + parse the picked file. Validation happens before the replace
@@ -302,7 +318,7 @@ struct SettingsView: View {
                 ForEach(DebugScenario.allCases) { scenario in
                     SettingsDivider()
                     Button {
-                        store.seedScenario(scenario)
+                        pendingSeed = scenario
                     } label: {
                         Text(scenario.label)
                             .font(.driftRowLabel)

@@ -26,22 +26,20 @@ The portfolio layer. Half the value of this project lives outside the app.
   ├── Privacy.md
   └── LICENSE
   ```
-- [ ] **Flip repo visibility to public** (currently `kilo-studio/drift` is private; GitHub Pages on free plans requires public).
-- [ ] **Pin repo Topics**: `swiftui`, `swiftdata`, `ios`, `harm-reduction`, `mindfulness`.
-- [ ] **Issues enabled, public** — once repo is public.
+- [x] **Repo public** — flipped 2026-05-23 (`kilo-studio/drift`).
+- [x] **Pin repo Topics**: `swiftui`, `swiftdata`, `ios`, `harm-reduction`, `mindfulness` (set 2026-05-24).
+- [x] **Issues enabled, public**.
 
-## Landing + privacy on GitHub Pages
+## Landing + privacy on GitHub Pages — **dropped**
 
-- [x] `docs/index.html` + `docs/privacy.html` + `docs/styles.css` — Drift-styled supporting docs site under `docs/`. Mirrors the app's design tokens (sky gradient, sun haze, cream cards, Quicksand + Caveat, coral links). Dark mode mirror in CSS.
-- [ ] **Enable Pages in repo settings** → Source = `main` / `/docs` (after the visibility flip).
-- [ ] **Optional**: custom domain (e.g. `drift.kilo.studio` or `drift.app`) with DNS + Pages settings.
-- [ ] **Update `SettingsView`'s hardcoded privacy URL** to the live Pages URL once published.
+The `docs/` Pages site (landing + privacy + css) was built then **torn down** to keep surfaces minimal (see Issue 02). Privacy is served directly from the repo blob (`Privacy.md`), which is what the in-app About link points at. No Pages site, no custom domain. If a landing page is ever wanted, it'd be a fresh decision, not a v1 item.
 
 ## README polish
 
-- [ ] **Hero screenshot or recorded GIF** at the top of the README. Currently text-only. The spirit + sparkles scaling with ratio is the visual story.
-- [ ] **App Store badge** once shipped (in the Status section).
-- [ ] **Screenshots gallery** — 3-4 well-composed shots (hero, history, settings, spirit at high ratio).
+- [x] **Hero** — a centered row of three phone screenshots at the top of the README (dashboard · long-stretch · history).
+- [x] **Screenshots gallery** — a 5-shot `## Screenshots` section (onboarding spirit · dashboard · long-stretch · charts · history). Web-sized assets live in `assets/screenshots/` (downscaled to 600px wide).
+- [x] **Vocabulary** — README prose uses "drift" to match the shipped in-app labels.
+- [ ] **App Store badge** — add the official "Download on the App Store" badge + link in the Status section once Apple approves (currently the Status section says "submitted, awaiting review").
 
 ## Case study writeup
 

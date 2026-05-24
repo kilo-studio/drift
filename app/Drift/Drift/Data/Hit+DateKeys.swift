@@ -19,8 +19,9 @@ func driftSleepStartHour() -> Int {
 }
 
 /// Hour 0–23 the user typically wakes. Drives both the waking-day cutoff (hits
-/// before this hour roll back to the previous day's bucket) and the notification
-/// overnight hedge. Default 6 (matches Issue 12 spec).
+/// before this hour roll back to the previous day's bucket) and overnight
+/// notification suppression (scheduled notifications don't fire during sleep).
+/// Default 6 (matches Issue 12 spec).
 func driftSleepEndHour() -> Int {
     (UserDefaults.standard.object(forKey: driftSleepEndHourKey) as? Int) ?? 6
 }

@@ -139,9 +139,9 @@ final class HitStore {
         }
     }
 
-    /// Hour of day (0–23) when the user typically goes to sleep. Drives the
-    /// notification overnight hedge in `NotificationScheduler.isOvernight`.
-    /// Default 23 per Issue 12.
+    /// Hour of day (0–23) when the user typically goes to sleep. Drives overnight
+    /// notification suppression in `NotificationScheduler.isOvernight` (scheduled
+    /// notifications don't fire during sleep). Default 23 per Issue 12.
     var sleepStartHour: Int {
         didSet {
             UserDefaults.standard.set(sleepStartHour, forKey: driftSleepStartHourKey)
@@ -149,8 +149,8 @@ final class HitStore {
     }
 
     /// Hour of day (0–23) when the user typically wakes. Drives both the waking-day
-    /// cutoff (hits before this hour roll into the previous waking day) and the
-    /// overnight hedge. Default 6 per Issue 12. Changing this re-shapes every
+    /// cutoff (hits before this hour roll into the previous waking day) and overnight
+    /// notification suppression. Default 6 per Issue 12. Changing this re-shapes every
     /// waking-day bucket, so `didSet` recomputes the longest-gap records.
     var sleepEndHour: Int {
         didSet {

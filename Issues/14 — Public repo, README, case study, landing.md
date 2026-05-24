@@ -50,7 +50,7 @@ The long-form portfolio piece lives on the personal portfolio site, not in this 
 Highest-leverage stories to tell in the case study:
 
 - The iteration history — the joy-ladder design → continuous ratio model. Best single design story.
-- The notification overnight hedge — false praise is worse than no praise. Shows real product thinking, not just code.
+- The overnight notification rule, and its evolution: first we softened the wording ("if you're still awake…"), then realized silence is cleaner and made celebrations simply not fire during sleep. False praise is worse than no praise. Shows real product thinking, not just code.
 - The data-loss incident and the migration plan that came out of it. Engineering-side story.
 - The Drift → Linger split — what counted as enough difference to warrant a sibling app.
 

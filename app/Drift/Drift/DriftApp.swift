@@ -9,7 +9,26 @@ struct DriftApp: App {
     /// have the pre-removal V1 schema (with achievement tables) on disk —
     /// `.lightweight` drops the unused tables while preserving `Hit` and
     /// `Records` data.
+    ///
+    /// iCloud sync is gated on `driftSyncEnabledKey` (default off). With sync
+    /// OFF the call is byte-identical to before — same local store, no config —
+    /// so nothing changes for existing users. With sync ON we add a CloudKit
+    /// `.automatic` configuration (reads the container from the entitlement);
+    /// if that fails (capability/container not set up, or no iCloud account) we
+    /// fall back to local and clear the flag so the app never crash-loops.
     static let container: ModelContainer = {
+        if UserDefaults.standard.bool(forKey: driftSyncEnabledKey) {
+            do {
+                return try ModelContainer(
+                    for: Hit.self, Records.self,
+                    migrationPlan: DriftMigrationPlan.self,
+                    configurations: ModelConfiguration(cloudKitDatabase: .automatic)
+                )
+            } catch {
+                UserDefaults.standard.set(false, forKey: driftSyncEnabledKey)
+                NSLog("Drift: CloudKit unavailable, falling back to local store: \(error)")
+            }
+        }
         do {
             return try ModelContainer(
                 for: Hit.self, Records.self,

@@ -17,6 +17,12 @@ struct SettingsView: View {
     @State private var pendingImport: PrototypeImport.Parsed?
     @State private var importError: String?
 
+    /// iCloud sync preference. Applied at next launch (the `ModelContainer` reads
+    /// it on creation), so toggling shows an explanatory note rather than syncing
+    /// live. Default off — nothing leaves the device until opted in.
+    @AppStorage(driftSyncEnabledKey) private var syncEnabled: Bool = false
+    @State private var showSyncNote: Bool = false
+
     #if DEBUG
     /// The debug seed card is hidden until you tap the version row 7 times —
     /// keeps it out of the way during normal use (and it's already compiled out
@@ -114,6 +120,13 @@ struct SettingsView: View {
             Button("OK", role: .cancel) { importError = nil }
         } message: {
             Text(importError ?? "")
+        }
+        .alert(syncEnabled ? "iCloud sync on" : "iCloud sync off", isPresented: $showSyncNote) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(syncEnabled
+                 ? "Sync turns on the next time you open Drift. As a precaution, export your history first (the row below) so you can re-import if anything goes wrong."
+                 : "Sync turns off the next time you open Drift.")
         }
         #if DEBUG
         .alert("Replace all data?", isPresented: Binding(
@@ -224,10 +237,12 @@ struct SettingsView: View {
     private var dataCard: some View {
         SettingsCard {
             VStack(spacing: 0) {
-                Text("iCloud sync (coming soon)")
-                    .font(.driftRowDescription)
-                    .foregroundStyle(.driftInkSoft)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                SettingsToggleRow(
+                    label: "iCloud sync",
+                    description: "Keep your history in sync across your devices. Off by default — nothing leaves this device until you turn it on. Applies the next time you open Drift.",
+                    isOn: $syncEnabled
+                )
+                .onChange(of: syncEnabled) { _, _ in showSyncNote = true }
                 SettingsDivider()
                 ShareLink(item: store.makeHitsExport(), preview: SharePreview("Drift history")) {
                     VStack(alignment: .leading, spacing: 4) {

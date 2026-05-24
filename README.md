@@ -14,7 +14,7 @@ Drift is an iOS app for tracking vaping (or any small repeated habit you'd like 
 
 ## What it is
 
-A Ghibli-inspired tracker that visualizes the **time between hits** (the *drift*) as a cloud spirit. Log a hit and the spirit drops to baseline-sad. The longer the drift, the bigger the spirit's eyes get and the more sparkles fill the sky around it. There are no streaks to break, no fire emojis counting up, no shame for logging. It's a present-tense, neutral view of right now, the kind of mirror you'd want from a kindly friend, not a fitness app.
+A gentle tracker that visualizes the **time between hits** (the *drift*) as a cloud spirit. Log a hit and the spirit drops to baseline-sad. The longer the drift, the bigger the spirit's eyes get and the more sparkles fill the sky around it. There are no streaks to break, no fire emojis counting up, no shame for logging. It's a present-tense, neutral view of right now, the kind of mirror you'd want from a kindly friend, not a fitness app.
 
 The design tries hard to celebrate without judging. False praise is worse than no praise, so notifications stay quiet during your sleep window; better to say nothing than to congratulate a gap you spent asleep. The spirit's growth is continuous, not stepwise: no plateaus, no levels, no "earn this badge." Just real-time visualization of one ratio: current drift ÷ rolling-average drift.
 
@@ -129,7 +129,7 @@ When opening issues or PRs, please:
 
 ## Acknowledgments
 
-- The cloud spirit's character draws from Studio Ghibli: soft, present, watchful, never judgmental.
+- The cloud spirit's character is meant to feel soft, present, watchful, and never judgmental.
 - The "no streak, no nag" stance was shaped by a lot of frustration with habit-tracker apps that turn every relapse into a graphic failure.
 - Built with [Claude Code](https://claude.com/claude-code) as a pair-programming collaborator on the SwiftUI rebuild.
 

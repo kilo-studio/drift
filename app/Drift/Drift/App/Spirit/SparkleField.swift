@@ -15,6 +15,11 @@ enum SparkleLayer {
 struct SparkleField: View {
     let lastSessionEnd: Date?
     let wakingAvgSec: TimeInterval?
+    /// Fallback denominator when `wakingAvgSec` is nil (e.g. a long stretch with
+    /// no hits in the rolling window) so the reveal ratio still climbs with how
+    /// long it's been — matches `SpiritView`. Without it the field stayed bare
+    /// during a long drift even as the spirit maxed out.
+    let longestWakingGapSec: TimeInterval
 
     /// Spirit center in viewport percentage coords (0–100). Sparkles are sorted by
     /// distance from this point, so the halo grows out from the spirit.
@@ -34,14 +39,22 @@ struct SparkleField: View {
     init(
         lastSessionEnd: Date?,
         wakingAvgSec: TimeInterval?,
+        longestWakingGapSec: TimeInterval = 0,
         layer: SparkleLayer = .back,
         spiritPercent: CGPoint = CGPoint(x: 78, y: 14)
     ) {
         self.lastSessionEnd = lastSessionEnd
         self.wakingAvgSec = wakingAvgSec
+        self.longestWakingGapSec = longestWakingGapSec
         self.spiritPercent = spiritPercent
         self.layer = layer
         self._sparkles = State(initialValue: makeSparkles(layer: layer, spiritPercent: spiritPercent))
+    }
+
+    /// Effective average — the rolling waking gap, or a fallback so the ratio
+    /// still scales during a long stretch. Mirrors `SpiritView`.
+    private var effectiveAvg: TimeInterval {
+        wakingAvgSec ?? (longestWakingGapSec > 0 ? longestWakingGapSec : 1800)
     }
 
     var body: some View {
@@ -70,17 +83,15 @@ struct SparkleField: View {
         .onChange(of: lastSessionEnd) { oldValue, newValue in
             guard !reduceMotion, let old = oldValue else { return }
             if let new = newValue, new <= old { return }
-            let avg = wakingAvgSec ?? 0
             let now = Date.now
-            preSnapRatio = avg > 0 ? now.timeIntervalSince(old) / avg : 0
+            preSnapRatio = effectiveAvg > 0 ? now.timeIntervalSince(old) / effectiveAvg : 0
             snapStartedAt = now
         }
     }
 
     private func currentRatio(now: Date) -> Double {
         let secSince = lastSessionEnd.map { now.timeIntervalSince($0) } ?? 0
-        let avg = wakingAvgSec ?? 0
-        return avg > 0 ? max(0.001, secSince / avg) : 1.0
+        return effectiveAvg > 0 ? max(0.001, secSince / effectiveAvg) : 1.0
     }
 
     /// During the snap window, returns a blended ratio that decays from the

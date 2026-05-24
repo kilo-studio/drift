@@ -1,8 +1,14 @@
 ---
-status: doing
+status: done
 priority: high
 tags: [polish, dashboard, notifications]
 ---
+
+> **Done.** Baseline donut (count/target) + caption + skip + supporting counts
+> ship as the pre-baseline home; the spirit sits neutral until baseline is
+> established; History hides until then; the earned-only "now let's start
+> drifting" celebration fires on crossing (not skip). Long stretches past
+> baseline are now their own mode — see [[Issues/22 — Long-stretch mode]].
 
 # Baseline + empty state
 

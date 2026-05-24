@@ -1,8 +1,13 @@
 ---
-status: todo
+status: done
 priority: medium
 tags: [design, polish, design-system]
 ---
+
+> **Done.** `AddHitSheet` was rewritten from a Form to the Drift sheet
+> vocabulary (sky `ZStack` background, Caveat hero label, `SettingsCard`s,
+> solid-coral CTA — matching Notifications / Settings), and now opens at a
+> half-height `.medium` detent (draggable to `.large`) with a grabber.
 
 # Add-hit menu visual treatment
 

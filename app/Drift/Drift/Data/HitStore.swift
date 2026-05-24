@@ -21,12 +21,27 @@ struct HitsExport: Transferable {
     }
 }
 
+/// Emitted by `HitStore.append` when the gap that just ended was a long stretch
+/// (≥ `longStretchThresholdSec`). ContentView observes it to show a one-time,
+/// shame-free "record saved" acknowledgment, then clears it. `id` is fresh each
+/// time so two consecutive long stretches of equal length still re-fire.
+struct EndedLongStretch: Equatable {
+    let gapSec: TimeInterval
+    let wasNewRecord: Bool
+    let id: UUID
+}
+
 @Observable
 @MainActor
 final class HitStore {
     private let context: ModelContext
     private(set) var hits: [Hit] = []
     private var records: Records
+
+    /// Set by `append` when a long stretch just ended (the new hit closed a gap
+    /// ≥ `longStretchThresholdSec`). ContentView shows the acknowledgment and
+    /// then clears this back to nil. Not persisted — it's a transient signal.
+    var endedLongStretch: EndedLongStretch?
 
     private let thresholdKey = "drift.session.thresholdSec"
     private let rollingWindowKey = "drift.rollingWindowDays"
@@ -37,6 +52,13 @@ final class HitStore {
     /// spirit ratio. Drives the pre-baseline empty state, the X/N framing in
     /// the immediate notification, and the gate on scheduled notifications.
     static let baselineTarget = 5
+
+    /// Once "free for" (now − last session end) reaches this, the home screen
+    /// reframes into long-stretch mode — the frequency dashboard stops making
+    /// sense (averages go stale, daily counts hit zero) and the durable
+    /// "free for X" timer takes over. A full day is the human-scale threshold
+    /// the user thinks in ("more than a day? a week?").
+    static let longStretchThresholdSec: TimeInterval = 24 * 3600
     // Sleep-window keys live in Hit+DateKeys.swift so the date-key free functions
     // can read them without taking HitStore as a dependency. Mirrored here as
     // observable stored properties so settings UI can bind two-way.
@@ -244,6 +266,16 @@ final class HitStore {
         hits.append(hit)
         publishToWidget()
 
+        // If this hit closed a long stretch, surface a one-time acknowledgment.
+        // Framed (in the UI) as a kept record, never a broken streak — the
+        // longest-gap record above is already persisted and only ever grows.
+        if let last = prevLast {
+            let endedGap = hit.t.timeIntervalSince(last.t)
+            if endedGap >= Self.longStretchThresholdSec {
+                endedLongStretch = EndedLongStretch(gapSec: endedGap, wasNewRecord: isNewOverallBest, id: UUID())
+            }
+        }
+
         let notifContext = HitNotificationContext(
             now: hit.t,
             previousHitDate: prevLast?.t,
@@ -422,6 +454,25 @@ final class HitStore {
     var longestGapSec: TimeInterval { records.longestGapSec }
     var longestWakingGapSec: TimeInterval { records.longestWakingGapSec }
 
+    /// The from→to dates of the longest gap between completed sessions — used to
+    /// label the "longest drift" card. Excludes the current ongoing drift (no
+    /// closing session yet), so mid-drift this returns the previous best, which
+    /// is what we want to show as the number to beat. nil with < 2 sessions.
+    func longestGapBounds() -> (from: Date, to: Date)? {
+        let sessions = hits.sessions(threshold: effectiveSessionThreshold)
+        guard sessions.count >= 2 else { return nil }
+        var best: TimeInterval = 0
+        var bounds: (from: Date, to: Date)?
+        for i in 1..<sessions.count {
+            let gap = sessions[i].start.timeIntervalSince(sessions[i - 1].end)
+            if gap > best {
+                best = gap
+                bounds = (sessions[i - 1].end, sessions[i].start)
+            }
+        }
+        return bounds
+    }
+
     // MARK: - Live metrics — session-level (frequency, drives spirit + dashboard)
 
     var lastHit: Hit? { hits.last }
@@ -466,3 +517,129 @@ final class HitStore {
         hits.avgHitsPerDay(now: now, window: window ?? rollingWindowDays)
     }
 }
+
+// MARK: - Debug scenario seeding
+
+#if DEBUG
+/// Preset datasets for jumping between the home screen's modes/states while
+/// developing. Surfaced as a debug-only card in Settings.
+enum DebugScenario: String, CaseIterable, Identifiable {
+    case fresh
+    case baselinePartial
+    case normal
+    case longDay
+    case longWeek
+    case longMonth
+    case maxedOut
+    case belowRecord
+    case nearMilestone
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .fresh:           return "Fresh — baseline 0/5"
+        case .baselinePartial: return "Baseline 3/5"
+        case .normal:          return "Normal — last hit 30m ago"
+        case .longDay:         return "Long stretch — 1 day free"
+        case .longWeek:        return "Long stretch — 1 week free"
+        case .longMonth:       return "Long stretch — 1 month free"
+        case .maxedOut:        return "Long stretch — 5 years (all badges)"
+        case .belowRecord:     return "Long stretch — 2d, below your record"
+        case .nearMilestone:   return "Long stretch — ~30s before 1 week (watch the crossing)"
+        }
+    }
+}
+
+extension HitStore {
+    /// Wipe and replace the store with a generated dataset for `scenario`.
+    /// DEBUG-only. Same-file extension so it can reach the private `context`,
+    /// `records`, `hits`, and `recomputeRecords()`.
+    func seedScenario(_ scenario: DebugScenario) {
+        for h in hits { context.delete(h) }
+        records.longestGapSec = 0
+        records.longestWakingGapSec = 0
+        try? context.save()
+        try? reload()
+
+        let now = Date()
+        var dates: [Date] = []
+        switch scenario {
+        case .fresh:
+            baselineSkipped = false
+        case .baselinePartial:
+            baselineSkipped = false
+            dates = [-3, -2, -1].map { now.addingTimeInterval(Double($0) * 3600) }
+        case .normal:
+            baselineSkipped = true
+            dates = Self.seedHistory(endingAt: now.addingTimeInterval(-30 * 60), days: 14, sessionsPerDay: 11)
+        case .longDay:
+            baselineSkipped = true
+            dates = Self.seedHistory(endingAt: now.addingTimeInterval(-26 * 3600), days: 14, sessionsPerDay: 11)
+        case .longWeek:
+            baselineSkipped = true
+            dates = Self.seedHistory(endingAt: now.addingTimeInterval(-8 * 86400), days: 14, sessionsPerDay: 11)
+        case .longMonth:
+            baselineSkipped = true
+            dates = Self.seedHistory(endingAt: now.addingTimeInterval(-32 * 86400), days: 14, sessionsPerDay: 11)
+        case .maxedOut:
+            // ~5 years free → every milestone (≤ 1 year) reached, and the
+            // donut hits its "all drifted past" terminal state.
+            baselineSkipped = true
+            dates = Self.seedHistory(endingAt: now.addingTimeInterval(-5 * 365 * 86400), days: 14, sessionsPerDay: 11)
+        case .belowRecord:
+            // An older block ending ~16 days ago, then a ~12-day void, then
+            // recent activity ending 2 days ago → longest gap ~12 days while
+            // the current free-for (2 days) sits below it → the "below record"
+            // treatment on the record line.
+            baselineSkipped = true
+            dates = Self.seedHistory(endingAt: now.addingTimeInterval(-16 * 86400), days: 4, sessionsPerDay: 12)
+                  + Self.seedHistory(endingAt: now.addingTimeInterval(-2 * 86400), days: 2, sessionsPerDay: 12)
+        case .nearMilestone:
+            // ~30s shy of 1 week → the crossing (and its badge flourish) fires
+            // about half a minute after launch, so it's easy to sit and watch.
+            baselineSkipped = true
+            dates = Self.seedHistory(endingAt: now.addingTimeInterval(-(7 * 86400 - 30)), days: 14, sessionsPerDay: 11)
+        }
+
+        let tz = TimeZone.current.secondsFromGMT() / 60
+        for t in dates.sorted() {
+            let hit = Hit(t: t, tzOffsetMinutes: tz)
+            context.insert(hit)
+            hits.append(hit)
+        }
+        try? context.save()
+        try? reload()
+        recomputeRecords()
+        // Seeding shouldn't fire the relapse acknowledgment.
+        endedLongStretch = nil
+    }
+
+    /// Generates realistic daily session clusters for `days` days, with the very
+    /// last hit pinned exactly at `anchor`. Sessions are spread across waking
+    /// hours (8am–11pm) with light jitter; some sessions get a quick second hit.
+    /// The overnight void between waking days becomes the natural longest-gap.
+    private static func seedHistory(endingAt anchor: Date, days: Int, sessionsPerDay: Int) -> [Date] {
+        let cal = Calendar(identifier: .gregorian)
+        let wakeStartSec = 8.0 * 3600
+        let wakeSpanSec = 15.0 * 3600   // 8:00 → 23:00
+        var out: [Date] = []
+        for d in 0..<days {
+            guard let day = cal.date(byAdding: .day, value: -d, to: anchor) else { continue }
+            let dayStart = cal.startOfDay(for: day)
+            for i in 0..<sessionsPerDay {
+                let frac = (Double(i) + 0.5) / Double(sessionsPerDay)
+                let jitter = Double.random(in: -700...700)
+                let t = dayStart.addingTimeInterval(wakeStartSec + frac * wakeSpanSec + jitter)
+                if t <= anchor { out.append(t) }
+                if Bool.random() {
+                    let t2 = t.addingTimeInterval(Double.random(in: 20...90))
+                    if t2 <= anchor { out.append(t2) }
+                }
+            }
+        }
+        out.append(anchor)
+        return out
+    }
+}
+#endif

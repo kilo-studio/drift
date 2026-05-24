@@ -12,6 +12,7 @@ struct HistoryView: View {
     @State private var selectedDay: Date = Calendar(identifier: .gregorian).startOfDay(for: Date())
     @State private var hitToEdit: Hit?
     @State private var hitToDelete: Hit?
+    @State private var showRecords: Bool = false
 
     var body: some View {
         ZStack {
@@ -29,6 +30,18 @@ struct HistoryView: View {
         .sheet(item: $hitToEdit) { hit in
             EditHitSheet(hit: hit)
         }
+        .sheet(isPresented: $showRecords) {
+            RecordsSheet()
+                .presentationBackground(.driftSkyLowerMid)
+        }
+        #if DEBUG
+        .task {
+            if ProcessInfo.processInfo.arguments.contains("--records") {
+                try? await Task.sleep(for: .seconds(0.8))
+                showRecords = true
+            }
+        }
+        #endif
         .alert("Delete this hit?", isPresented: .init(
             get: { hitToDelete != nil },
             set: { if !$0 { hitToDelete = nil } }
@@ -75,6 +88,8 @@ struct HistoryView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 36)
 
+                recordsCard
+
                 CalendarCard(
                     countsByDay: countsByDay,
                     displayedMonth: $displayedMonth,
@@ -86,6 +101,23 @@ struct HistoryView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 120)
         }
+    }
+
+    /// Tappable entry to the durable records sheet. Sits above the calendar —
+    /// your all-time records (longest drift, milestones ever reached) live here,
+    /// kept safe and out of the way rather than in your face on the home screen.
+    private var recordsCard: some View {
+        Button {
+            showRecords = true
+        } label: {
+            SettingsCard {
+                SettingsNavRow(
+                    label: "records",
+                    description: "Your longest drifts and the milestones you've reached."
+                )
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     /// Computed once per body render and passed down so the calendar and the
@@ -279,7 +311,7 @@ private struct CalendarCard: View {
         let canNext = canGoNext
         return HStack {
             chevron(.left, enabled: canPrev) {
-                displayedMonth = cal.date(byAdding: .month, value: -1, to: displayedMonth)!
+                if let p = prevMonth { displayedMonth = p }
             }
 
             Spacer()
@@ -291,7 +323,7 @@ private struct CalendarCard: View {
             Spacer()
 
             chevron(.right, enabled: canNext) {
-                displayedMonth = cal.date(byAdding: .month, value: 1, to: displayedMonth)!
+                if let n = nextMonth { displayedMonth = n }
             }
         }
     }
@@ -311,23 +343,36 @@ private struct CalendarCard: View {
         .disabled(!enabled)
     }
 
-    /// Allow going back as long as the previous month contains the user's first
-    /// session, or any session — no point browsing pre-history months.
-    private var canGoPrev: Bool {
-        guard let oldestKey = countsByDay.keys.min() else { return false }
-        let prevMonthStart = cal.date(byAdding: .month, value: -1, to: cal.startOfMonth(displayedMonth))!
-        let prevMonthEndKey = String(
-            format: "%04d-%02d-31",
-            cal.component(.year, from: prevMonthStart),
-            cal.component(.month, from: prevMonthStart)
-        )
-        return oldestKey <= prevMonthEndKey
+    /// Months worth visiting: any with data, plus the current month so "today"
+    /// stays reachable. Navigation jumps between adjacent entries, so a long run
+    /// of empty months (a long drift) is skipped instead of tapped through one
+    /// at a time.
+    private var navigableMonths: [Date] {
+        var months = Set<Date>()
+        for key in countsByDay.keys {
+            if let m = monthStart(fromKey: key) { months.insert(m) }
+        }
+        months.insert(cal.startOfMonth(Date()))
+        return months.sorted()
     }
 
-    /// Don't browse forward past the current month — no data there yet.
-    private var canGoNext: Bool {
-        let nowMonthStart = cal.startOfMonth(Date())
-        return cal.startOfMonth(displayedMonth) < nowMonthStart
+    private var prevMonth: Date? {
+        let cur = cal.startOfMonth(displayedMonth)
+        return navigableMonths.last { $0 < cur }
+    }
+    private var nextMonth: Date? {
+        let cur = cal.startOfMonth(displayedMonth)
+        return navigableMonths.first { $0 > cur }
+    }
+    private var canGoPrev: Bool { prevMonth != nil }
+    private var canGoNext: Bool { nextMonth != nil }
+
+    private func monthStart(fromKey key: String) -> Date? {
+        let parts = key.split(separator: "-")
+        guard parts.count >= 2, let y = Int(parts[0]), let m = Int(parts[1]) else { return nil }
+        var c = DateComponents()
+        c.year = y; c.month = m; c.day = 1
+        return cal.date(from: c)
     }
 
     private func monthYearLabel(_ date: Date) -> String {
@@ -630,6 +675,97 @@ struct EditHitSheet: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Records sheet
+
+/// The durable, never-erased record of what you've reached: your all-time
+/// longest drift (with dates) and the milestones you've ever hit. Unlike the
+/// live milestones on the home screen, these persist through a relapse — they
+/// describe your history, they don't judge a bad day. Milestones-ever-reached
+/// is derived from the all-time longest gap, so there's nothing extra to store.
+struct RecordsSheet: View {
+    @Environment(HitStore.self) private var store
+
+    /// The current ongoing drift counts toward "longest" — if you're on your
+    /// best-ever run right now, the records should say so (it becomes the
+    /// permanent record once you next log a hit). Durable either way.
+    private var currentDrift: TimeInterval {
+        store.lastSessionEnd().map { Date.now.timeIntervalSince($0) } ?? 0
+    }
+    private var longest: TimeInterval { max(store.longestGapSec, currentDrift) }
+    private var longestIsCurrent: Bool { currentDrift > store.longestGapSec }
+
+    private var reachedBadges: [(index: Int, value: TimeInterval)] {
+        milestonesReached(upTo: longest)
+    }
+
+    var body: some View {
+        ZStack {
+            Color.driftSkyLowerMid.ignoresSafeArea()
+
+            ScrollView {
+                VStack(spacing: 16) {
+                    Text.caveat("records")
+                        .font(.driftHeroLabel)
+                        .foregroundStyle(.driftInkSoft)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 28)
+
+                    SettingsCard {
+                        recordRow(
+                            label: "longest drift",
+                            value: longest > 0 ? formatGap(longest) : "—",
+                            detail: longestDriftDates
+                        )
+                    }
+
+                    if !reachedBadges.isEmpty {
+                        SettingsCard {
+                            VStack(spacing: 0) {
+                                Text.caveat("milestones reached")
+                                    .font(.driftCardTitle)
+                                    .foregroundStyle(.driftInk)
+                                    .padding(.bottom, 16)
+                                MilestoneBadgeGrid(reached: reachedBadges)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 60)
+            }
+        }
+    }
+
+    private var longestDriftDates: String? {
+        if longestIsCurrent, let start = store.lastSessionEnd() {
+            return "\(driftShortDate.string(from: start)) → now"
+        }
+        guard let b = store.longestGapBounds() else { return nil }
+        return "\(driftShortDate.string(from: b.from)) → \(driftShortDate.string(from: b.to))"
+    }
+
+    private func recordRow(label: String, value: String, detail: String?) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(label)
+                    .font(.driftRowLabel)
+                    .foregroundStyle(.driftInk)
+                Spacer()
+                Text(value)
+                    .font(.driftBestNum)
+                    .foregroundStyle(.driftInk)
+            }
+            if let detail {
+                Text(detail)
+                    .font(.driftBestLabel)
+                    .foregroundStyle(.driftInkSoft)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

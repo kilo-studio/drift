@@ -36,13 +36,25 @@ struct HomeView: View, Equatable {
                 SparkleField(
                     lastSessionEnd: store.lastSessionEnd(),
                     wakingAvgSec: store.wakingAvgSec(),
+                    longestWakingGapSec: store.longestWakingGapSec,
                     layer: .back
                 )
             }
 
             if store.isBaselineEstablished {
-                dashboard
-                    .transition(.opacity.animation(.easeIn(duration: 0.6)))
+                // A coarse 60s tick is enough to flip into long-stretch mode at
+                // the 24h threshold (a minute of lag is invisible at day-scale),
+                // and it keeps the per-second cost out of the normal dashboard —
+                // the long hero's own 1s ticker only exists while in long mode.
+                TimelineView(.periodic(from: .now, by: 60)) { ctx in
+                    if isLongStretch(now: ctx.date) {
+                        longStretchState
+                            .transition(.opacity.animation(.easeInOut(duration: 0.6)))
+                    } else {
+                        dashboard
+                            .transition(.opacity.animation(.easeIn(duration: 0.6)))
+                    }
+                }
             } else {
                 baselineState
                     .transition(.opacity.animation(.easeOut(duration: 0.4)))
@@ -52,9 +64,55 @@ struct HomeView: View, Equatable {
                 SparkleField(
                     lastSessionEnd: store.lastSessionEnd(),
                     wakingAvgSec: store.wakingAvgSec(),
+                    longestWakingGapSec: store.longestWakingGapSec,
                     layer: .front
                 )
             }
+        }
+    }
+
+    /// True once the last session ended ≥ a day ago — the home reframes into
+    /// long-stretch mode. `now` is supplied by the coarse TimelineView so this
+    /// stays a pure function of the store + wall clock (no stored state, so
+    /// `HomeView`'s `.equatable()` short-circuit is preserved).
+    private func isLongStretch(now: Date) -> Bool {
+        guard let end = store.lastSessionEnd() else { return false }
+        return now.timeIntervalSince(end) >= HitStore.longStretchThresholdSec
+    }
+
+    /// Long-stretch home: the durable "free for X" timer, a progress donut
+    /// toward the next time milestone, and a "longest drift" reference card. No
+    /// frequency cards/charts (meaningless here). Top headroom clears the
+    /// resting spirit in ContentView's overlay.
+    private var longStretchState: some View {
+        let end = store.lastSessionEnd()
+        // Scrollable so the milestones-reached card can grow on long drifts
+        // without overflowing. Top padding clears the resting spirit overlay.
+        // The longest-drift record lives on History → Records, so the home
+        // stretch view stays focused: timer, next milestone, badges.
+        return ScrollView {
+            VStack(spacing: 16) {
+                LongStretchHero(lastSessionEnd: end)
+                    .padding(.top, spiritSize + 24)
+                    .padding(.bottom, 8)
+
+                // Driven by a live 1s timeline (not the coarse mode tick) so the
+                // donut counts down and a milestone crossing fires its flourish
+                // in sync with the hero, instead of up to a minute late.
+                TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                    let freeForSec = end.map { ctx.date.timeIntervalSince($0) } ?? 0
+                    VStack(spacing: 16) {
+                        // Once every milestone is reached there's no "next" —
+                        // drop the donut card rather than show a terminal state.
+                        if let last = driftMilestones.last, freeForSec < last {
+                            NextMilestoneCard(freeForSec: freeForSec)
+                        }
+                        MilestonesReachedCard(freeForSec: freeForSec)
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 120)
         }
     }
 

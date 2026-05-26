@@ -170,8 +170,23 @@ struct OnboardingView: View {
         }
     }
 
+    #if DEBUG
+    /// `--spirit-ratio R`: freeze the spirit-preview ratio at R (instead of the
+    /// live cycle) so the spirit can be screenshotted at a specific state for
+    /// the case-study animation frames. Drives both the spirit and the sparkles.
+    private static let frozenSpiritRatio: Double? = {
+        let args = ProcessInfo.processInfo.arguments
+        if let i = args.firstIndex(of: "--spirit-ratio"), i + 1 < args.count,
+           let r = Double(args[i + 1]) { return r }
+        return nil
+    }()
+    #endif
+
     /// Cosine-eased loop between ratio 0.3 and 5 over 12s.
     private func demoRatio(at date: Date) -> Double {
+        #if DEBUG
+        if let r = Self.frozenSpiritRatio { return r }
+        #endif
         let cycleSec: Double = 12
         let cyclePos = date.timeIntervalSinceReferenceDate
             .truncatingRemainder(dividingBy: cycleSec) / cycleSec

@@ -10,7 +10,7 @@ A small, gentle iOS app for noticing the time between hits.
   <img src="assets/screenshots/7-history.png" width="30%" alt="History calendar">
 </p>
 
-Drift is an iOS app for tracking vaping (or any small repeated habit you'd like to notice more clearly). It started as a personal Scriptable prototype and was rebuilt as a native SwiftUI app for iOS 26, now submitted to the App Store.
+Drift is an iOS app for tracking vaping (or any small repeated habit you'd like to notice more clearly). It started as a personal Scriptable prototype and was rebuilt as a native SwiftUI app for iOS 26, now live on the App Store.
 
 ## What it is
 
@@ -53,9 +53,9 @@ Full policy: [Privacy.md](Privacy.md).
 
 ## Status
 
-v1 is feature-complete and **submitted to the App Store** (2026-05-24, awaiting review). The native rebuild shipped everything: the dashboard, the spirit + sparkle field, the ambient cloud/star layer, App Intent logging, notifications, hit history, the full settings tab, the app icon, the onboarding carousel, the baseline empty-state, **long-stretch mode** (days/weeks/months free), always-on iCloud sync, and the data-migration safeguards. The Scriptable prototype is still in daily personal use as the system continues to bake.
+v1 is **live on the App Store** (submitted 2026-05-24, approved + released 2026-05-28). The native rebuild shipped everything: the dashboard, the spirit + sparkle field, the ambient cloud/star layer, App Intent logging, notifications, hit history, the full settings tab, the app icon, the onboarding carousel, the baseline empty-state, **long-stretch mode** (days/weeks/months free), always-on iCloud sync, and the data-migration safeguards. The Scriptable prototype is still in daily personal use as the system continues to bake.
 
-The only remaining v1 work is portfolio packaging (this README as a designed artifact, plus a case study). See [Issues/](Issues/) for individual work items.
+Active v1.x polish: chart refinements (tap-to-inspect, scrollable time-series, label/subtitle pass, smarter y-axis bounds) — see [Issues/23](<Issues/23 — Chart refinements.md>). Portfolio packaging (this README as a designed artifact, plus a case study) is ongoing alongside. See [Issues/](Issues/) for the full backlog.
 
 ## Built with
 

@@ -1,5 +1,5 @@
 ---
-status: doing
+status: done
 priority: high
 tags: [launch]
 ---
@@ -8,12 +8,12 @@ tags: [launch]
 
 Everything required to ship. Don't start until v1 features are locked.
 
-> **Submitted for review 2026-05-24** — v1.0 build 1, iPhone-only. App Store name
-> "Drift - Calmly cut back", subtitle "Wean off vaping", Lifestyle (primary) +
-> Health & Fitness (secondary), Free, Data Not Collected, age rating 17+,
-> copyright "2026 Kilo". Awaiting Apple review. The final promotional text +
-> description as actually submitted are under "Final copy" below (reworded from
-> the earlier drafts at submission time).
+> **Live on the App Store** — v1.0 build 1, iPhone-only. Submitted 2026-05-24,
+> approved + released 2026-05-28. App Store name "Drift - Calmly cut back",
+> subtitle "Wean off vaping", Lifestyle (primary) + Health & Fitness
+> (secondary), Free, Data Not Collected, age rating 17+, copyright "2026 Kilo".
+> The final promotional text + description as actually submitted are under
+> "Final copy" below (reworded from the earlier drafts at submission time).
 
 ## Metadata
 

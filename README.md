@@ -55,7 +55,7 @@ Full policy: [Privacy.md](Privacy.md).
 
 v1 is **live on the App Store** (submitted 2026-05-24, approved + released 2026-05-28). The native rebuild shipped everything: the dashboard, the spirit + sparkle field, the ambient cloud/star layer, App Intent logging, notifications, hit history, the full settings tab, the app icon, the onboarding carousel, the baseline empty-state, **long-stretch mode** (days/weeks/months free), always-on iCloud sync, and the data-migration safeguards. The Scriptable prototype is still in daily personal use as the system continues to bake.
 
-Active v1.x polish: chart refinements (tap-to-inspect, scrollable time-series, label/subtitle pass, smarter y-axis bounds) — see [Issues/23](<Issues/23 — Chart refinements.md>). Portfolio packaging (this README as a designed artifact, plus a case study) is ongoing alongside. See [Issues/](Issues/) for the full backlog.
+Active v1.x backlog: chart refinements (tap-to-inspect, scrollable time-series, label/subtitle pass, smarter y-axis bounds) in [Issues/23](<Issues/23 — Chart refinements.md>), and a first-milestone donut at the bottom of the home dashboard filling toward 1 day free in [Issues/24](<Issues/24 — First-milestone donut on home.md>). Portfolio packaging (this README as a designed artifact, plus a case study) is ongoing alongside. See [Issues/](Issues/) for the full backlog.
 
 ## Built with
 
